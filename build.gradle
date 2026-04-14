@@ -2,9 +2,10 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.5'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.19.0'
 }
 
-group = 'com.skulikelion'
+group = 'com.skulikelion.festival'
 version = '0.0.1-SNAPSHOT'
 description = '14th-skuniv-festival-be'
 
@@ -19,11 +20,80 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
+    // Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // DB
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // flyway
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-mysql")
+
+    // Jwt
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // S3
+    implementation platform("software.amazon.awssdk:bom:2.41.10")
+    implementation "software.amazon.awssdk:s3"
+
+    // MinIO
+    implementation 'io.minio:minio:8.4.3'
+
+    // Swagger openapi-ui
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.1'
+
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Logging
+    implementation 'org.springframework.boot:spring-boot-starter-logging'
+
+    // webp
+    implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
+    implementation("com.sksamuel.scrimage:scrimage-webp:4.2.0")
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+spotless {
+    java {
+        // Google JAVA Format 적용
+        googleJavaFormat()
+        // 아래 순서로 import 문 정렬
+        importOrder('java', 'javax', 'jakarta', 'org', 'com')
+        // 사용하지 않는 import 제거
+        removeUnusedImports()
+        // 각 라인 끝에 있는 공백을 제거
+        trimTrailingWhitespace()
+        // 파일 끝에 새로운 라인 추가
+        endWithNewline()
+        // 라이선스 헤더 추가
+        licenseHeader '/* \n * Copyright (c) SKU LIKELION \n */'
+        // 어노테이션 정렬을 일관성 있게 유지
+        formatAnnotations()
+        // 들여쓰기를 공백 2칸으로 고정
+        indentWithSpaces(2)
+        // 파일 인코딩을 UTF-8로 강제
+        encoding 'UTF-8'
+    }
 }

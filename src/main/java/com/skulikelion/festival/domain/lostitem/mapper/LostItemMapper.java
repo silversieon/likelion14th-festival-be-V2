@@ -1,9 +1,13 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.lostitem.mapper;
+
+import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
 import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
 import com.skulikelion.festival.domain.lostitem.entity.LostItem;
-import org.springframework.stereotype.Component;
 
 @Component
 public class LostItemMapper {

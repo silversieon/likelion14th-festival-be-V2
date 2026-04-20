@@ -1,3 +1,6 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.global.minio.converter;
 
 import com.skulikelion.festival.global.minio.dto.MinioResponseDTO;

@@ -1,4 +1,18 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.service;
+
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.booth.dto.response.BoothDetailInfoResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
@@ -8,18 +22,9 @@ import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.mapper.BoothMapper;
 import com.skulikelion.festival.domain.booth.repository.*;
 import com.skulikelion.festival.global.exception.CustomException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -120,7 +125,7 @@ public class BoothInfoService {
 
     // 메뉴 조회
 
-//    OpeningHours menuTimeType = getTimeType();
+    //    OpeningHours menuTimeType = getTimeType();
 
     List<InBoothMenuResponse> menuResponses;
 
@@ -128,10 +133,10 @@ public class BoothInfoService {
     List<BoothMenu> menus = boothMenuRepository.findByBoothId(id);
     menuResponses =
         menus.stream()
-//            .filter(
-//                menu ->
-//                    menu.getMenuTimeType() == menuTimeType
-//                        || menu.getMenuTimeType() == OpeningHours.FULL)
+            //            .filter(
+            //                menu ->
+            //                    menu.getMenuTimeType() == menuTimeType
+            //                        || menu.getMenuTimeType() == OpeningHours.FULL)
             .map(menu -> new InBoothMenuResponse(menu, lang))
             .toList();
 
@@ -142,8 +147,8 @@ public class BoothInfoService {
 
   // 검색으로 부스 조회
   @Transactional(readOnly = true)
-  public List<BoothListResponse> searchBooths(String lang, String facultyName,
-      Boolean serviceAgreement) {
+  public List<BoothListResponse> searchBooths(
+      String lang, String facultyName, Boolean serviceAgreement) {
     List<Long> boothIds;
 
     boothIds =
@@ -164,8 +169,8 @@ public class BoothInfoService {
         };
 
     // Booth 전체 조회 후 필터링
-    List<Booth> booths = boothRepository.findAllByServiceAgreementAndIdIn(serviceAgreement,
-        boothIds);
+    List<Booth> booths =
+        boothRepository.findAllByServiceAgreementAndIdIn(serviceAgreement, boothIds);
     List<BoothListResponse> boothSearchResponse = setBoothLang(booths, lang);
 
     log.info(
@@ -245,13 +250,13 @@ public class BoothInfoService {
     return result;
   }
 
-//  public static OpeningHours getTimeType() {
-//    LocalTime now = LocalTime.now();
-//
-//    if (now.isAfter(LocalTime.of(5, 59)) && now.isBefore(LocalTime.of(18, 0))) {
-//      return OpeningHours.DAY; // 06:00 ~ 17:59 => 낮 메뉴 반환
-//    } else {
-//      return OpeningHours.NIGHT; // 18:00 ~ 05:59 => 밤 메뉴 반환
-//    }
-//  }
+  //  public static OpeningHours getTimeType() {
+  //    LocalTime now = LocalTime.now();
+  //
+  //    if (now.isAfter(LocalTime.of(5, 59)) && now.isBefore(LocalTime.of(18, 0))) {
+  //      return OpeningHours.DAY; // 06:00 ~ 17:59 => 낮 메뉴 반환
+  //    } else {
+  //      return OpeningHours.NIGHT; // 18:00 ~ 05:59 => 밤 메뉴 반환
+  //    }
+  //  }
 }

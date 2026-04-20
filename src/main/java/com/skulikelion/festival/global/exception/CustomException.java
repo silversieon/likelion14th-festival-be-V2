@@ -1,6 +1,10 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.global.exception;
 
 import com.skulikelion.festival.global.exception.model.BaseErrorCode;
+
 import lombok.Getter;
 
 @Getter

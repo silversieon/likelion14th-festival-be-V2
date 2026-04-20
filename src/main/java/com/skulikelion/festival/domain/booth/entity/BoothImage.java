@@ -1,6 +1,10 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.entity;
 
 import jakarta.persistence.*;
+
 import lombok.*;
 
 @Entity

@@ -1,4 +1,15 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.lostitem.service;
+
+import java.util.NoSuchElementException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
 import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
 import com.skulikelion.festival.domain.lostitem.entity.LostItem;
@@ -8,14 +19,9 @@ import com.skulikelion.festival.domain.lostitem.mapper.LostItemMapper;
 import com.skulikelion.festival.domain.lostitem.repository.LostItemRepository;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.minio.service.MinioService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -61,8 +67,8 @@ public class LostItemService {
   /**
    * 검색어와 정렬 조건에 따라 분실물 목록을 조회합니다.
    *
-   * @param name     검색할 분실물 이름 (선택)
-   * @param sort     정렬 기준 (LATEST 또는 OLDEST)
+   * @param name 검색할 분실물 이름 (선택)
+   * @param sort 정렬 기준 (LATEST 또는 OLDEST)
    * @param pageable 페이지네이션 정보
    * @return 분실물 목록 페이지
    */
@@ -85,8 +91,8 @@ public class LostItemService {
       result =
           (sort == SortType.LATEST)
               ? lostItemRepository
-              .findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                  name, pageable)
+                  .findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                      name, pageable)
               : lostItemRepository
                   .findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtAsc(
                       name, pageable);
@@ -98,7 +104,7 @@ public class LostItemService {
   /**
    * 주어진 ID의 분실물 정보를 수정하고 수정된 정보를 반환합니다.
    *
-   * @param id  수정할 분실물 ID
+   * @param id 수정할 분실물 ID
    * @param dto 분실물 수정 요청 DTO
    * @return 수정된 분실물 응답 DTO
    */
@@ -128,7 +134,7 @@ public class LostItemService {
   /**
    * 분실물의 수령 여부를 설정합니다.
    *
-   * @param id       분실물 ID
+   * @param id 분실물 ID
    * @param returned 수령 여부 (true: 수령됨, false: 수령되지 않음)
    * @return 수령 여부가 변경된 분실물 응답 DTO
    */
@@ -171,7 +177,7 @@ public class LostItemService {
    * @param id 조회할 분실물 ID
    * @return 삭제되지 않은 분실물 엔티티
    * @throws NoSuchElementException 분실물이 존재하지 않는 경우
-   * @throws IllegalStateException  분실물이 삭제된 경우
+   * @throws IllegalStateException 분실물이 삭제된 경우
    */
   private LostItem getEntity(Long id) {
     LostItem lostItem =

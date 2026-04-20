@@ -1,21 +1,27 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.controller;
 
-import com.skulikelion.festival.global.common.BaseResponse;
-import com.skulikelion.festival.domain.booth.dto.request.BoothLoginRequest;
-import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
-import com.skulikelion.festival.domain.booth.entity.OpeningHours;
-import com.skulikelion.festival.domain.booth.service.BoothService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.skulikelion.festival.domain.booth.dto.request.BoothLoginRequest;
+import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
+import com.skulikelion.festival.domain.booth.entity.OpeningHours;
+import com.skulikelion.festival.domain.booth.service.BoothService;
+import com.skulikelion.festival.global.common.BaseResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,7 +51,7 @@ public class BoothController {
       description = "부스 관리자가 부스 이름과 비밀번호를 입력하여 로그인합니다. 성공 시 부스 정보가 반환됩니다. (200 OK)")
   @PostMapping("/admin/login")
   public ResponseEntity<BaseResponse<BoothResponse>> login(
-          @RequestBody @Valid BoothLoginRequest boothLoginRequest, HttpServletRequest request) {
+      @RequestBody @Valid BoothLoginRequest boothLoginRequest, HttpServletRequest request) {
     BoothResponse response = boothService.login(boothLoginRequest, request);
     return ResponseEntity.ok(BaseResponse.success("로그인 성공", response));
   }

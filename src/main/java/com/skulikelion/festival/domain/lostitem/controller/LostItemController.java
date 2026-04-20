@@ -1,18 +1,10 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.lostitem.controller;
 
-import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
-import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
-import com.skulikelion.festival.domain.lostitem.entity.SortType;
-import com.skulikelion.festival.domain.lostitem.service.LostItemService;
-import com.skulikelion.festival.global.common.BaseResponse;
-import com.skulikelion.festival.global.minio.entity.PathName;
-import com.skulikelion.festival.global.minio.service.MinioService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +14,20 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
+import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
+import com.skulikelion.festival.domain.lostitem.entity.SortType;
+import com.skulikelion.festival.domain.lostitem.service.LostItemService;
+import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.minio.entity.PathName;
+import com.skulikelion.festival.global.minio.service.MinioService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Lost Item Controller", description = "분실물 등록, 조회, 수정, 삭제 관련 API")
 @RestController
@@ -40,7 +46,7 @@ public class LostItemController {
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
           @RequestPart(value = "dto")
           @Valid
-      LostItemRequest dto,
+          LostItemRequest dto,
       @Parameter(
               description = "업로드할 이미지 파일",
               content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))

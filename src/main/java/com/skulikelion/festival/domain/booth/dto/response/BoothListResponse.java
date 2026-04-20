@@ -1,3 +1,6 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;

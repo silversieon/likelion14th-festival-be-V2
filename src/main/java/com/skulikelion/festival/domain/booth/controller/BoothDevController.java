@@ -1,22 +1,28 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.controller;
 
-import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
-import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
-import com.skulikelion.festival.domain.booth.service.BoothDevService;
-import com.skulikelion.festival.global.common.BaseResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
+import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
+import com.skulikelion.festival.domain.booth.service.BoothDevService;
+import com.skulikelion.festival.global.common.BaseResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,14 +38,14 @@ public class BoothDevController {
   @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<BaseResponse<BoothResponse>> createBooth(
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
-      @RequestPart(value = "booth")
-      @Valid
-      BoothRequest request,
+          @RequestPart(value = "booth")
+          @Valid
+          BoothRequest request,
       @Parameter(
-          description = "부스 이미지들",
-          content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-      @RequestPart(value = "images")
-      List<MultipartFile> images) {
+              description = "부스 이미지들",
+              content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
+          @RequestPart(value = "images")
+          List<MultipartFile> images) {
     BoothResponse response = boothDevService.createBooth(request, images);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(BaseResponse.success("부스 등록이 완료되었습니다.", response));

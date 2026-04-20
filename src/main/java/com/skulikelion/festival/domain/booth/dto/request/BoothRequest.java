@@ -1,10 +1,15 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.dto.request;
 
-import com.skulikelion.festival.domain.booth.entity.OpeningHours;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+
+import com.skulikelion.festival.domain.booth.entity.OpeningHours;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,8 +33,7 @@ public class BoothRequest {
   @Schema(description = "비밀번호", example = "password123!")
   private String password;
 
-  @NotNull(message = "영업 시간 항목은 필수입니다.")
-  @Schema(
+  @NotNull(message = "영업 시간 항목은 필수입니다.") @Schema(
       description = "영업 시간",
       example = "DAY",
       allowableValues = {"DAY", "NIGHT", "FULL"})

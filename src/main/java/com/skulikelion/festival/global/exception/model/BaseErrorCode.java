@@ -1,3 +1,6 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.global.exception.model;
 
 import org.springframework.http.HttpStatus;

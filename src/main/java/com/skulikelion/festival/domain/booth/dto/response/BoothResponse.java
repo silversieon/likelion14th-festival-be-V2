@@ -1,11 +1,15 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.dto.response;
 
+import java.util.List;
+
 import com.skulikelion.festival.domain.booth.entity.OpeningHours;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @Builder

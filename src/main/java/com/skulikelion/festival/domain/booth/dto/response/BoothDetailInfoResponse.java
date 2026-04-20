@@ -1,11 +1,15 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.dto.response;
 
+import java.util.List;
+
 import com.skulikelion.festival.domain.booth.entity.OpeningHours;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @Builder
@@ -47,9 +51,9 @@ public class BoothDetailInfoResponse {
               menuKR : "매운어묵탕",\
               menuPrice : 5000\
               }]\
-              
+
               언어설정 한국어 : menu와 menuPrice만 반환\
-              
+
               언어설정 외국어 : menu, menuKR, menuPrice 반환""")
   private List<InBoothMenuResponse> boothMenus;
 }

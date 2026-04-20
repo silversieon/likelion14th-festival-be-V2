@@ -1,4 +1,16 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.service;
+
+import java.util.List;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.booth.dto.request.BoothLoginRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
@@ -8,15 +20,9 @@ import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.mapper.BoothMapper;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.global.exception.CustomException;
-import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

@@ -1,17 +1,22 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.controller;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.skulikelion.festival.domain.booth.dto.response.BoothDetailInfoResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
 import com.skulikelion.festival.domain.booth.service.BoothInfoService;
 import com.skulikelion.festival.global.common.BaseResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,14 +31,14 @@ public class BoothInfoController {
   @GetMapping
   public ResponseEntity<BaseResponse<List<BoothListResponse>>> getBoothList(
       @Parameter(description = "브라우저 언어 설정 (ko, en, ch, jp)", example = "ko") @RequestParam
-      String lang,
+          String lang,
       @Parameter(description = "마지막으로 조회한 부스 식별자", example = "5") @RequestParam(required = false)
-      Long cursor,
+          Long cursor,
       @Parameter(description = "예약 서비스 사용 여부", example = "true") @RequestParam(required = false)
-      Boolean serviceAgreement) {
+          Boolean serviceAgreement) {
 
-    List<BoothListResponse> boothListResponses = boothInfoService.getBoothList(lang, cursor,
-        serviceAgreement);
+    List<BoothListResponse> boothListResponses =
+        boothInfoService.getBoothList(lang, cursor, serviceAgreement);
 
     return ResponseEntity.ok(BaseResponse.success("부스 리스트 조회가 성공적으로 완료되었습니다.", boothListResponses));
   }
@@ -47,7 +52,7 @@ public class BoothInfoController {
   public ResponseEntity<BaseResponse<BoothDetailInfoResponse>> getBoothDetail(
       @Parameter(description = "조회할 부스의 식별자", example = "1") @PathVariable Long id,
       @Parameter(description = "브라우저 언어 설정 (ko, en, ch, jp)", example = "ko") @RequestParam
-      String lang) {
+          String lang) {
     BoothDetailInfoResponse boothDetailInfoResponse = boothInfoService.getBoothById(id, lang);
 
     return ResponseEntity.ok(
@@ -59,12 +64,12 @@ public class BoothInfoController {
   public ResponseEntity<BaseResponse<List<BoothListResponse>>> searchBooths(
       @Parameter(description = "검색할 학과 이름", example = "전자") @RequestParam String facultyName,
       @Parameter(description = "브라우저 언어 설정 (ko, en, ch, jp)", example = "ko")
-      @RequestParam(defaultValue = "ko")
-      String lang,
+          @RequestParam(defaultValue = "ko")
+          String lang,
       @Parameter(description = "예약 서비스 사용 여부", example = "true") @RequestParam(required = false)
-      Boolean serviceAgreement) {
-    List<BoothListResponse> boothSearchResponse = boothInfoService.searchBooths(lang, facultyName,
-        serviceAgreement);
+          Boolean serviceAgreement) {
+    List<BoothListResponse> boothSearchResponse =
+        boothInfoService.searchBooths(lang, facultyName, serviceAgreement);
     return ResponseEntity.ok(BaseResponse.success("부스 검색이 성공적으로 완료되었습니다.", boothSearchResponse));
   }
 }

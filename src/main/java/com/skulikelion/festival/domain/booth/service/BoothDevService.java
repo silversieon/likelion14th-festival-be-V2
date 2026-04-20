@@ -1,4 +1,13 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
@@ -9,13 +18,9 @@ import com.skulikelion.festival.domain.booth.repository.*;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.minio.entity.PathName;
 import com.skulikelion.festival.global.minio.service.MinioService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

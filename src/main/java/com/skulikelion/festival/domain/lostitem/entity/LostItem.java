@@ -1,10 +1,15 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.lostitem.entity;
 
-import com.skulikelion.festival.global.common.BaseTimeEntity;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDate;
+
+import jakarta.persistence.*;
+
+import com.skulikelion.festival.global.common.BaseTimeEntity;
+
+import lombok.*;
 
 @Entity
 @Getter

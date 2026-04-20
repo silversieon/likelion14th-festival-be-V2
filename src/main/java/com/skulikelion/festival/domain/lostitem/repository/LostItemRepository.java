@@ -1,12 +1,16 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.lostitem.repository;
 
-import com.skulikelion.festival.domain.lostitem.entity.LostItem;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.skulikelion.festival.domain.lostitem.entity.LostItem;
 
 @Repository
 public interface LostItemRepository extends JpaRepository<LostItem, Long> {

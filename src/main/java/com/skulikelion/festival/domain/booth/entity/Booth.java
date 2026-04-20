@@ -1,11 +1,16 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.entity;
-
-import com.skulikelion.festival.global.common.BaseTimeEntity;
-import jakarta.persistence.*;
-import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.persistence.*;
+
+import com.skulikelion.festival.global.common.BaseTimeEntity;
+
+import lombok.*;
 
 @Entity
 @Getter

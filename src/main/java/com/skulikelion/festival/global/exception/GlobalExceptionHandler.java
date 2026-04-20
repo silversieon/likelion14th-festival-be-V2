@@ -1,14 +1,19 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.global.exception;
 
-import com.skulikelion.festival.global.common.BaseResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import java.util.stream.Collectors;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
+import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.exception.model.BaseErrorCode;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -17,9 +22,10 @@ public class GlobalExceptionHandler {
   // 커스텀 예외
   @ExceptionHandler(CustomException.class)
   public ResponseEntity<BaseResponse<?>> handleCustomException(CustomException ex) {
-    log.error("Custom 오류 발생: {}", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    BaseErrorCode errorCode = ex.getErrorCode();
+    log.warn("CustomException 발생: {} - {}", errorCode.getCode(), errorCode.getMessage());
+    return ResponseEntity.status(errorCode.getStatus())
+        .body(BaseResponse.error(errorCode.getStatus().value(), errorCode.getMessage()));
   }
 
   // Validation 실패

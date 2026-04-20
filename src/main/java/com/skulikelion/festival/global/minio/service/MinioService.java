@@ -1,19 +1,24 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.global.minio.service;
 
-import com.skulikelion.festival.global.minio.config.MinioConfig;
-import com.skulikelion.festival.global.minio.converter.MinioConverter;
-import com.skulikelion.festival.global.minio.dto.MinioResponseDTO;
-import com.skulikelion.festival.global.minio.entity.PathName;
-import io.minio.*;
-import io.minio.errors.MinioException;
-import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.UUID;
+import com.skulikelion.festival.global.minio.config.MinioConfig;
+import com.skulikelion.festival.global.minio.converter.MinioConverter;
+import com.skulikelion.festival.global.minio.dto.MinioResponseDTO;
+import com.skulikelion.festival.global.minio.entity.PathName;
+
+import io.minio.*;
+import io.minio.errors.MinioException;
+import io.minio.http.Method;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

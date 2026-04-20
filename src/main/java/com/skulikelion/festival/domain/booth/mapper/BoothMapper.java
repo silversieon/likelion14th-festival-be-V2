@@ -1,19 +1,21 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
 package com.skulikelion.festival.domain.booth.mapper;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.domain.booth.dto.response.*;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class BoothMapper {
 
-  /**
-   * Booth Entity를 BoothResponse DTO로 변환
-   */
+  /** Booth Entity를 BoothResponse DTO로 변환 */
   public BoothResponse toBoothResponse(Booth booth) {
     return BoothResponse.builder()
         .id(booth.getId())
@@ -26,9 +28,7 @@ public class BoothMapper {
         .build();
   }
 
-  /**
-   * BoothMenu Entity를 BoothMenuResponse DTO로 변환
-   */
+  /** BoothMenu Entity를 BoothMenuResponse DTO로 변환 */
   public BoothMenuResponse toBoothMenuResponse(BoothMenu boothMenu) {
     return BoothMenuResponse.builder()
         .menuKo(boothMenu.getMenuKo())
@@ -39,9 +39,7 @@ public class BoothMapper {
         .build();
   }
 
-  /**
-   * Booth Entity + booth faculty를 BothListResponse DTO로 변환
-   */
+  /** Booth Entity + booth faculty를 BothListResponse DTO로 변환 */
   public static BoothListResponse toBoothListResponse(
       Booth booth, String faculty, String location, Boolean working) {
     return BoothListResponse.builder()
@@ -55,9 +53,7 @@ public class BoothMapper {
         .build();
   }
 
-  /**
-   * Booth Entity + faculty, title, description을 BoothDetailInfoResponse DTO로 변환
-   */
+  /** Booth Entity + faculty, title, description을 BoothDetailInfoResponse DTO로 변환 */
   public static BoothDetailInfoResponse toBoothDetailInfoResponse(
       Booth booth,
       String faculty,

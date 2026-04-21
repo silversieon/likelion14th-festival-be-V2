@@ -6,6 +6,7 @@ package com.skulikelion.festival.global.exception;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -38,6 +39,12 @@ public class GlobalExceptionHandler {
             .collect(Collectors.joining(" / "));
     log.warn("Validation 오류 발생: {}", errorMessages);
     return ResponseEntity.badRequest().body(BaseResponse.error(400, errorMessages));
+  }
+
+  @ExceptionHandler(AuthorizationDeniedException.class)
+  public ResponseEntity<BaseResponse<?>> handleAuthorizationDeniedException(Exception ex) {
+    log.warn("AuthorizationDeniedException 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.status(403).body(BaseResponse.error(403, "권한 없는 요청 발생"));
   }
 
   // 예상치 못한 예외

@@ -7,5 +7,5 @@ public enum Role {
   USER,
   ADMIN,
   BOOTH_MANAGER,
-  STUDENT_COUNCIL
+  STUDENT_COUNCIL;
 }

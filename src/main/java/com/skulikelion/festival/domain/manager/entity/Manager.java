@@ -35,4 +35,12 @@ public class Manager extends BaseTimeEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   private Booth booth;
+
+  public void updateUsername(String username) {
+    this.username = username;
+  }
+
+  public void updatePassword(String encodedPassword) {
+    this.password = encodedPassword;
+  }
 }

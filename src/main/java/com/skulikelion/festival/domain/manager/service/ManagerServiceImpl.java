@@ -127,7 +127,11 @@ public class ManagerServiceImpl implements ManagerService {
 
   @Override
   @Transactional(readOnly = true)
-  public ManagerResponse getMyInfo(Manager manager) {
+  public ManagerResponse getMyInfo(String username) {
+    Manager manager =
+        managerRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
     log.info("[ManagerService] 관리자 본인 정보 조회 발생 - 관리자 아이디: {}", manager.getUsername());
     return managerMapper.toManagerResponse(manager);
   }

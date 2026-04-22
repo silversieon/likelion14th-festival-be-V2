@@ -25,6 +25,7 @@ import com.skulikelion.festival.global.config.property.AuthProperties;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.infra.redis.RefreshTokenRepository;
 import com.skulikelion.festival.global.security.jwt.JwtProvider;
+import com.skulikelion.festival.global.security.jwt.TokenType;
 import com.skulikelion.festival.global.security.jwt.internal.GeneratedRefreshTokenPayload;
 
 import lombok.RequiredArgsConstructor;
@@ -96,31 +97,36 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional(readOnly = true)
   public TokenResponse refresh(String refreshToken) {
+    jwtProvider.validateToken(refreshToken, TokenType.REFRESH_TOKEN);
+
+    String jti = jwtProvider.getJtiFromToken(refreshToken);
+    refreshTokenRepository.validateStoredRefreshToken(refreshToken, jti);
+
+    refreshTokenRepository.deleteRefreshToken(jti);
+
     String username = jwtProvider.getUsernameFromToken(refreshToken);
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-    String jti = jwtProvider.getJtiFromRefreshToken(refreshToken);
-    refreshTokenRepository.validateStoredRefreshToken(refreshToken, jti);
-    refreshTokenRepository.deleteRefreshToken(jti);
+        new UsernamePasswordAuthenticationToken(username, null, userDetails.getAuthorities());
 
-    String accessToken = jwtProvider.generateAccessToken(authentication);
+    String newAccessToken = jwtProvider.generateAccessToken(authentication);
     GeneratedRefreshTokenPayload generatedRefreshTokenPayload =
         jwtProvider.generateRefreshToken(authentication);
-    refreshTokenRepository.saveRefreshToken(
-        generatedRefreshTokenPayload.token(), generatedRefreshTokenPayload.jti());
+    String newRefreshToken = generatedRefreshTokenPayload.token();
+
+    refreshTokenRepository.saveRefreshToken(newRefreshToken, generatedRefreshTokenPayload.jti());
 
     return TokenResponse.builder()
-        .accessToken(accessToken)
-        .refreshToken(generatedRefreshTokenPayload.token())
+        .accessToken(newAccessToken)
+        .refreshToken(newRefreshToken)
         .build();
   }
 
   @Override
   public void logout(String refreshToken) {
     String username = jwtProvider.getUsernameFromToken(refreshToken);
-    String jti = jwtProvider.getJtiFromRefreshToken(refreshToken);
+    String jti = jwtProvider.getJtiFromToken(refreshToken);
     refreshTokenRepository.deleteRefreshToken(jti);
     log.info("[Auth] 사용자 로그아웃 - 아이디: {}", username);
   }

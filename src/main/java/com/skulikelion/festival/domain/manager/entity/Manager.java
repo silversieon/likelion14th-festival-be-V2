@@ -5,6 +5,7 @@ package com.skulikelion.festival.domain.manager.entity;
 
 import jakarta.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
@@ -25,8 +26,11 @@ public class Manager extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(nullable = false, unique = true)
   private String username;
 
+  @JsonIgnore
+  @Column(nullable = false)
   private String password;
 
   @Builder.Default

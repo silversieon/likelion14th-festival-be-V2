@@ -6,7 +6,9 @@ package com.skulikelion.festival.global.security.jwt;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
@@ -14,10 +16,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.global.config.property.JwtProperties;
-import com.skulikelion.festival.global.infra.redis.RefreshTokenRepository;
 import com.skulikelion.festival.global.security.jwt.internal.GeneratedRefreshTokenPayload;
 
 import io.jsonwebtoken.*;
@@ -34,7 +37,6 @@ public class JwtProvider {
 
   private static final String AUTHORIZATION_HEADER = "Authorization";
   private static final String BEARER_PREFIX = "Bearer ";
-  private final RefreshTokenRepository refreshTokenRepository;
 
   private SecretKey getSigningKey() {
     return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
@@ -44,6 +46,8 @@ public class JwtProvider {
     Instant now = Instant.now();
 
     String username = authentication.getName();
+    List<String> roles =
+        authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
     long validitySeconds = jwtProperties.getAccessTokenValidityInSeconds();
     Date issuedAt = Date.from(now);
     Date expiration = Date.from(now.plusSeconds(validitySeconds));
@@ -51,6 +55,7 @@ public class JwtProvider {
     return Jwts.builder()
         .subject(username)
         .claim("type", TokenType.ACCESS_TOKEN.name())
+        .claim("role", roles)
         .issuedAt(issuedAt)
         .expiration(expiration)
         .signWith(getSigningKey())
@@ -78,23 +83,16 @@ public class JwtProvider {
   }
 
   public String getUsernameFromToken(String token) {
-    return Jwts.parser()
-        .verifyWith(getSigningKey())
-        .build()
-        .parseSignedClaims(token)
-        .getPayload()
-        .getSubject();
+    return extractClaims(token).getSubject();
   }
 
-  public String getJtiFromRefreshToken(String refreshToken) {
-    Claims claims =
-        Jwts.parser()
-            .verifyWith(getSigningKey())
-            .build()
-            .parseSignedClaims(refreshToken)
-            .getPayload();
+  public String getJtiFromToken(String token) {
+    return extractClaims(token).getId();
+  }
 
-    return claims.getId();
+  public List<GrantedAuthority> getAuthoritiesFromToken(String token) {
+    List<String> roles = extractClaims(token).get("role", List.class);
+    return roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
   }
 
   public String extractAccessToken(HttpServletRequest request) {
@@ -149,11 +147,10 @@ public class JwtProvider {
   }
 
   private String getTokenTypeFromToken(String token) {
-    return Jwts.parser()
-        .verifyWith(getSigningKey())
-        .build()
-        .parseSignedClaims(token)
-        .getPayload()
-        .get("type", String.class);
+    return extractClaims(token).get("type", String.class);
+  }
+
+  private Claims extractClaims(String token) {
+    return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
   }
 }

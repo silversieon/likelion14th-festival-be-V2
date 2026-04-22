@@ -4,6 +4,7 @@
 package com.skulikelion.festival.global.filter;
 
 import java.io.IOException;
+import java.util.List;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,8 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,6 @@ import tools.jackson.databind.ObjectMapper;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtProvider jwtProvider;
-  private final UserDetailsService userDetailsService;
   private static final AntPathMatcher pathMatcher = new AntPathMatcher();
   private final ObjectMapper objectMapper;
 
@@ -59,7 +59,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String uri = request.getRequestURI();
-    return pathMatcher.match("/api/auth/refresh", uri) || pathMatcher.match("/api/auth/login", uri);
+    return pathMatcher.match("/api/auth/refresh", uri)
+        || pathMatcher.match("/api/auth/login", uri)
+        || pathMatcher.match("/api/auth/logout", uri)
+        || pathMatcher.match("/api/auth/register", uri);
   }
 
   /**
@@ -76,7 +79,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
 
-    if (shouldNotFilter(request)) filterChain.doFilter(request, response);
+    if (shouldNotFilter(request)) {
+      filterChain.doFilter(request, response);
+      return;
+    }
     if ("/error".equals(request.getRequestURI())) {
       filterChain.doFilter(request, response);
       return;
@@ -86,15 +92,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String accessToken = jwtProvider.extractAccessToken(request);
 
       if (accessToken != null && jwtProvider.validateToken(accessToken, TokenType.ACCESS_TOKEN)) {
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-          String username = jwtProvider.getUsernameFromToken(accessToken);
-          UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        String username = jwtProvider.getUsernameFromToken(accessToken);
+        List<GrantedAuthority> authorities = jwtProvider.getAuthoritiesFromToken(accessToken);
 
-          UsernamePasswordAuthenticationToken authentication =
-              new UsernamePasswordAuthenticationToken(
-                  userDetails, null, userDetails.getAuthorities());
-          SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(username, null, authorities);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
       }
       filterChain.doFilter(request, response);
     } catch (ExpiredJwtException e) {

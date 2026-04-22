@@ -48,7 +48,7 @@ public class AuthController {
             username: 사용자 아이디 \n
             password: 사용자 비밀번호 \n
             adminKey: 관리자 키 \n
-
+            \n
             **Returns**  \n
             회원가입 성공 여부
             """)
@@ -65,7 +65,7 @@ public class AuthController {
                     **Parameters**  \n
                     username: 사용자 아이디  \n
                     password: 사용자 비밀번호 \n
-
+                    \n
                     **Returns (쿠키에 전달)**  \n
                     ACCESS_TOKEN: JWT 액세스 토큰 \n
                     REFRESH_TOKEN: JWT 리프레시 토큰 \n

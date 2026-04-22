@@ -9,7 +9,6 @@ import com.skulikelion.festival.domain.manager.dto.request.CreateManagerRequest;
 import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerPasswordRequest;
 import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerUsernameRequest;
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
-import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 
 /**
@@ -66,7 +65,8 @@ public interface ManagerService {
   /**
    * [ 관리자 본인 정보 조회 메서드 ]
    *
-   * @return 관리자 정보
+   * @param username 사용자 아이디
+   * @return
    */
-  ManagerResponse getMyInfo(Manager manager);
+  ManagerResponse getMyInfo(String username);
 }

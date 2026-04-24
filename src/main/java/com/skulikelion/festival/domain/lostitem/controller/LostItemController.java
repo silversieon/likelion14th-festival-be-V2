@@ -15,17 +15,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skulikelion.festival.domain.lostitem.dto.request.LostItemMultipartBody;
 import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
 import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
 import com.skulikelion.festival.domain.lostitem.entity.SortType;
 import com.skulikelion.festival.domain.lostitem.service.LostItemService;
 import com.skulikelion.festival.global.common.BaseResponse;
-import com.skulikelion.festival.global.minio.entity.PathName;
-import com.skulikelion.festival.global.minio.service.MinioService;
+import com.skulikelion.festival.global.s3.enums.PathName;
+import com.skulikelion.festival.global.s3.service.S3Service;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -36,28 +38,29 @@ import lombok.RequiredArgsConstructor;
 public class LostItemController {
 
   private final LostItemService lostItemService;
-  private final MinioService minioService;
+  private final S3Service s3Service;
 
   @Operation(
       summary = "[관리자] 분실물 등록",
-      description = "분실물 이름, 이미지 URL, 습득 장소, 습득 날짜를 입력하여 분실물을 등록하는 API")
+      description = "분실물 이름, 이미지, 습득 장소, 습득 날짜를 입력하여 분실물을 등록하는 API",
+      requestBody =
+          @io.swagger.v3.oas.annotations.parameters.RequestBody(
+              content =
+                  @Content(
+                      mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                      schema = @Schema(implementation = LostItemMultipartBody.class),
+                      encoding = {
+                        @Encoding(name = "dto", contentType = MediaType.APPLICATION_JSON_VALUE)
+                      })))
   @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<BaseResponse<LostItemResponse>> createLostItem(
-      @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
-          @RequestPart(value = "dto")
-          @Valid
-          LostItemRequest dto,
-      @Parameter(
-              description = "업로드할 이미지 파일",
-              content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-          @RequestPart(value = "file")
-          MultipartFile file) {
+      @Valid @RequestPart("dto") LostItemRequest dto, @RequestPart("file") MultipartFile file) {
 
-    String imageUrl = minioService.uploadFile(file, PathName.LOSTITEM); // 이미지 업로드
+    String imageUrl = s3Service.uploadFile(PathName.LOST_ITEM, file); // 이미지 업로드
     LostItemResponse response = lostItemService.createLostItem(dto, imageUrl); // imageUrl 함께 전달
 
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(BaseResponse.success("분실물 등록 성공", response));
+        .body(BaseResponse.success(201, "분실물 등록 성공", response));
   }
 
   @Operation(summary = "[관리자] 분실물 단일 조회", description = "ID로 특정 분실물 하나를 조회하는 API")
@@ -107,7 +110,7 @@ public class LostItemController {
 
     String imageUrl = null;
     if (file != null && !file.isEmpty()) {
-      imageUrl = minioService.uploadFile(file, PathName.LOSTITEM);
+      imageUrl = s3Service.uploadFile(PathName.LOST_ITEM, file);
     }
 
     LostItemResponse response = lostItemService.update(id, dto, imageUrl);

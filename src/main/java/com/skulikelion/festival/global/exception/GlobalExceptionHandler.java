@@ -5,11 +5,14 @@ package com.skulikelion.festival.global.exception;
 
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.exception.model.BaseErrorCode;
@@ -45,6 +48,21 @@ public class GlobalExceptionHandler {
   public ResponseEntity<BaseResponse<?>> handleAuthorizationDeniedException(Exception ex) {
     log.warn("AuthorizationDeniedException 오류 발생: {}", ex.getMessage());
     return ResponseEntity.status(403).body(BaseResponse.error(403, "권한 없는 요청 발생"));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<BaseResponse<?>> handleMethodArgumentTypeMismatchException(
+      MethodArgumentTypeMismatchException ex) {
+    log.warn("MethodArgumentTypeMismatchException 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.badRequest().body(BaseResponse.error(400, "유효하지 않은 입력 요청 발생"));
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<BaseResponse<?>> handleMaxUploadSizeExceededException(
+      MaxUploadSizeExceededException ex) {
+    log.warn("MaxUploadSizeExceededException 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        .body(BaseResponse.error(413, "이미지 용량 제한을 초과했습니다."));
   }
 
   // 예상치 못한 예외

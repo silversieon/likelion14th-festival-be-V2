@@ -23,7 +23,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.filter.JwtAuthenticationFilter;
@@ -110,14 +109,8 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers("/api/auth/**")
                 .permitAll()
-                .requestMatchers(RegexRequestMatcher.regexMatcher(".*/admin/.*"))
-                .hasRole("ADMIN")
-                .requestMatchers(RegexRequestMatcher.regexMatcher(".*/booth-manager/.*"))
-                .hasAnyRole("BOOTH_MANAGER", "ADMIN")
-                .requestMatchers(RegexRequestMatcher.regexMatcher(".*/student-council/.*"))
-                .hasAnyRole("STUDENT_COUNCIL", "ADMIN")
                 .anyRequest()
-                .authenticated());
+                .permitAll());
   }
 
   /** 비밀번호 인코더 Bean */

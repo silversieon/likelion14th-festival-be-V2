@@ -3,8 +3,6 @@
  */
 package com.skulikelion.festival.domain.lostitem.service;
 
-import java.util.NoSuchElementException;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,7 +16,7 @@ import com.skulikelion.festival.domain.lostitem.exception.LostItemErrorCode;
 import com.skulikelion.festival.domain.lostitem.mapper.LostItemMapper;
 import com.skulikelion.festival.domain.lostitem.repository.LostItemRepository;
 import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.minio.service.MinioService;
+import com.skulikelion.festival.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +28,7 @@ public class LostItemService {
 
   private final LostItemRepository lostItemRepository;
   private final LostItemMapper lostItemMapper;
-  private final MinioService minioService;
+  private final S3Service s3Service;
 
   /**
    * 분실물 생성 요청을 받아 저장 후 응답 DTO로 반환합니다.
@@ -193,37 +191,20 @@ public class LostItemService {
   }
 
   /**
-   * 기존 이미지 URL에서 파일 키를 추출하여 해당 이미지를 MinIO 버킷에서 삭제합니다.
+   * 기존 이미지 URL에서 keyName을 추출하여 해당 이미지를 S3 버킷에서 삭제합니다.
    *
    * @param oldImageUrl 삭제할 이미지의 전체 URL
    */
   private void deleteOldImage(String oldImageUrl) {
     try {
-      String key = extractKeyFromUrl(oldImageUrl);
-      log.info("[이미지 삭제 시도] oldImageUrl={}, 추출된 key={}", oldImageUrl, key);
-      minioService.deleteFile(key);
-      log.info("[MinIO 삭제] 기존 파일 삭제 성공: {}", key);
-    } catch (Exception e) {
-      log.error("[MinIO 삭제 실패] 삭제 중 에러 발생", e);
-    }
-  }
+      String keyName = s3Service.extractKeyNameFromUrl(oldImageUrl);
+      log.info("[이미지 삭제 시도] oldImageUrl={}, 추출된 keyName={}", oldImageUrl, keyName);
 
-  /**
-   * MinIO 버킷 URL에서 파일 키를 추출합니다.
-   *
-   * @param imageUrl 전체 이미지 URL
-   * @return 추출된 파일 키 (예: lostitem/파일명.jpg)
-   * @throws IllegalArgumentException URL 형식이 잘못된 경우
-   */
-  private String extractKeyFromUrl(String imageUrl) {
-    String bucketBaseUrl = "https://minio.2025skufestival.site/";
-    if (imageUrl.startsWith(bucketBaseUrl)) {
-      String fullKey = imageUrl.substring(bucketBaseUrl.length());
-      int firstSlash = fullKey.indexOf("/");
-      if (firstSlash != -1) {
-        return fullKey.substring(firstSlash + 1);
-      }
+      s3Service.deleteFile(keyName);
+
+      log.info("[S3 삭제] 기존 파일 삭제 성공: {}", keyName);
+    } catch (Exception e) {
+      log.error("[S3 삭제 실패] 삭제 중 에러 발생", e);
     }
-    throw new IllegalArgumentException("URL 형식이 잘못되었습니다: " + imageUrl);
   }
 }

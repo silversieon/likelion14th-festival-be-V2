@@ -20,7 +20,7 @@ public class LostItemResponse {
   @Schema(description = "분실물 이름", example = "에어팟")
   private final String name;
 
-  @Schema(description = "이미지 URL", example = "https://minio.2025skufestival.site/~~~~")
+  @Schema(description = "이미지 URL", example = "https://example.com/image.jpg")
   private final String imageUrl;
 
   @Schema(description = "습득 장소", example = "북악관")

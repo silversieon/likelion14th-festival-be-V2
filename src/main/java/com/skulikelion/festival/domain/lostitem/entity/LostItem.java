@@ -17,7 +17,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "lostitem")
+@Table(name = "lost_item")
 public class LostItem extends BaseTimeEntity {
 
   @Id

@@ -3,14 +3,26 @@
  */
 package com.skulikelion.festival.domain.booth.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
+import com.skulikelion.festival.global.enums.Department;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
@@ -24,46 +36,62 @@ public class Booth extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "name", nullable = false, unique = true)
-  private String name;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Department department;
 
-  @Column(name = "password")
-  private String password;
+  private String name; // 삭제 예정 필드
 
-  @Column(name = "waiting_team", nullable = false)
-  private Integer waitingTeam;
+  private String thumbnailUrl;
 
-  @Column(name = "opening_hours", nullable = false)
-  private OpeningHours openingHours;
+  private String instagramUrl;
 
-  @OneToMany(mappedBy = "booth", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<BoothImage> boothImages = new ArrayList<>();
+  private LocalDateTime openTime; // 부스 영업중 표시 시작
+  private LocalDateTime orderOpenTime; // null이면 주문 서비스 미사용, 있으면 주문 버튼 표시 시작
+  private LocalDateTime closeTime;
 
-  @Column(name = "booth_thumbnail_url")
-  private String boothThumbnailUrl;
+  @Enumerated(EnumType.STRING)
+  private BoothLocation location;
 
-  @Column(name = "booth_instagram")
-  private String boothInstagram;
+  private String locationDetail;
 
-  @Column(name = "service_agreement")
-  private Boolean serviceAgreement;
-
-  @OneToMany(mappedBy = "booth", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<BoothMenu> boothMenus;
+  private String accountName;
+  private String accountNumber;
+  private String bankName;
 
   public void update(
-      String name, String password, OpeningHours openingHours, String boothInstagram) {
-    this.name = name;
-    this.password = password;
-    this.openingHours = openingHours;
-    this.boothInstagram = boothInstagram;
+      Department department,
+      String thumbnailUrl,
+      String instagramUrl,
+      LocalDateTime openTime,
+      LocalDateTime pubOpenTime,
+      LocalDateTime closeTime,
+      BoothLocation location,
+      String locationDetail,
+      String accountName,
+      String accountNumber,
+      String bankName) {
+    this.department = department;
+    this.thumbnailUrl = thumbnailUrl;
+    this.instagramUrl = instagramUrl;
+    this.openTime = openTime;
+    this.orderOpenTime = pubOpenTime;
+    this.closeTime = closeTime;
+    this.location = location;
+    this.locationDetail = locationDetail;
+    this.accountName = accountName;
+    this.accountNumber = accountNumber;
+    this.bankName = bankName;
   }
 
-  public void decreaseWaitingTeam() {
-    this.waitingTeam = Math.max(0, this.waitingTeam - 1);
+  public boolean isOrderEnabled() {
+    return orderOpenTime != null;
   }
 
-  public void addWaitingTeam() {
-    this.waitingTeam += 1;
+  public boolean isOrderAvailable(LocalDateTime now) {
+    return isOrderEnabled()
+        && closeTime != null
+        && !now.isBefore(orderOpenTime)
+        && now.isBefore(closeTime);
   }
 }

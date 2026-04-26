@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "managers")
 public class Manager extends BaseTimeEntity {
 
   @Id

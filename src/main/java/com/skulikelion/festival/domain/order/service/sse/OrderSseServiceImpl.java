@@ -110,7 +110,6 @@ public class OrderSseServiceImpl implements OrderSseService {
     for (SseEmitter emitter : emitterList) {
       try {
         emitter.send(SseEmitter.event().name(eventName).data(data));
-        log.info("[BoothSseService] 주문 이벤트 전송 성공 - 부스명: {}", booth.getName());
       } catch (IOException e) {
         orderSseEmitterRepository.remove(booth.getId(), orderStatus, emitter);
       }

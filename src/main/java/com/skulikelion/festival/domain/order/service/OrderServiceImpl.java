@@ -75,6 +75,7 @@ public class OrderServiceImpl implements OrderService {
   public OrderResponse createOrder(Long boothId, OrderCreateRequest request) {
     // 낮, 밤 메뉴 검증 필요
     // 주문 사용하는 부스인지 검증 필요
+    // 사용 언어 받아서 언어에 맞게 응답 반환 필요(이벤트는 한국어로)
     Booth booth = validateBoothExists(boothId);
 
     List<Long> boothMenuIds =
@@ -83,7 +84,7 @@ public class OrderServiceImpl implements OrderService {
     validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
 
     Map<Long, BoothMenu> boothMenuMap =
-        boothMenus.stream().collect(Collectors.toMap(BoothMenu::getMenuId, Function.identity()));
+        boothMenus.stream().collect(Collectors.toMap(BoothMenu::getId, Function.identity()));
     validateMenuPrice(request.getOrderItems(), boothMenuMap);
     validateTotalPrice(request);
 
@@ -124,9 +125,8 @@ public class OrderServiceImpl implements OrderService {
     eventPublisher.publishEvent(waitingOrderPayload);
 
     log.info(
-        "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 부스명: {}, 주문자명: {}, 총 주문 금액: {}",
+        "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 주문자명: {}, 총 주문 금액: {}",
         order.getId(),
-        booth.getName(),
         order.getCustomerName(),
         order.getTotalOrderPrice());
     return orderResponse;
@@ -365,11 +365,11 @@ public class OrderServiceImpl implements OrderService {
     orderItems.forEach(
         item -> {
           BoothMenu boothMenu = boothMenuMap.get(item.getBoothMenuId());
-          if (!boothMenu.getMenuPrice().equals(item.getMenuPrice())) {
+          if (!boothMenu.getPrice().equals(item.getMenuPrice())) {
             log.warn(
                 "[OrderService] 주문한 메뉴 가격이 실제 가격과 일치하지 않습니다 - 주문 메뉴 가격: {}, 실제 메뉴 가격: {}",
                 item.getMenuPrice(),
-                boothMenu.getMenuPrice());
+                boothMenu.getPrice());
             throw new CustomException(OrderErrorCode.MENU_PRICE_MISMATCH);
           }
         });

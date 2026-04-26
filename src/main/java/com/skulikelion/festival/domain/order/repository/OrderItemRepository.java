@@ -22,7 +22,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
           SELECT new com.skulikelion.festival.domain.order.dto.response.WaitingOrderItemResponse(
               oi.id,
                   oi.order.id,
-                  bm.menuKo,
+                  bm.nameKo,
                       oi.quantity,
                           oi.totalOrderItemPrice
               ) FROM OrderItem oi
@@ -37,7 +37,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
           SELECT new com.skulikelion.festival.domain.order.dto.response.CookingOrderItemResponse(
               oi.id,
                   oi.order.id,
-                  bm.menuKo,
+                  bm.nameKo,
                       oi.quantity,
                           oi.totalOrderItemPrice
               ) FROM OrderItem oi
@@ -52,7 +52,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     SELECT new com.skulikelion.festival.domain.order.dto.response.CompletedOrderItemResponse(
         oi.id,
         oi.order.id,
-        bm.menuKo,
+        bm.nameKo,
         oi.quantity,
         oi.totalOrderItemPrice
     ) FROM OrderItem oi
@@ -67,7 +67,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     SELECT new com.skulikelion.festival.domain.order.dto.response.CanceledOrderItemResponse(
         oi.id,
         oi.order.id,
-        bm.menuKo,
+        bm.nameKo,
         oi.quantity,
         oi.totalOrderItemPrice
     ) FROM OrderItem oi

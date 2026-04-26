@@ -64,7 +64,7 @@ public class OrderMapper {
     return OrderItemResponse.builder()
         .orderItemId(orderItem.getId())
         .orderId(orderItem.getOrder().getId())
-        .menuName(orderItem.getBoothMenu().getMenuKo())
+        .menuName(orderItem.getBoothMenu().getNameKo())
         .quantity(orderItem.getQuantity())
         .menuPrice(orderItem.getMenuPrice())
         .totalOrderItemPrice(orderItem.getTotalOrderItemPrice())
@@ -80,9 +80,9 @@ public class OrderMapper {
         .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
         .orderItems(orderItemResponses)
         .totalOrderPrice(order.getTotalOrderPrice())
-        .bankName("booth.getBankName()")
-        .accountName("booth.getAccountName()")
-        .accountNumber("booth.getAccountNumber()")
+        .bankName(booth.getBankName())
+        .accountName(booth.getAccountName())
+        .accountNumber(booth.getAccountNumber())
         .build();
   }
 
@@ -108,7 +108,7 @@ public class OrderMapper {
     return WaitingOrderItemResponse.builder()
         .orderItemId(orderItem.getId())
         .orderId(orderItem.getOrder().getId())
-        .menuName(orderItem.getBoothMenu().getMenuKo())
+        .menuName(orderItem.getBoothMenu().getNameKo())
         .quantity(orderItem.getQuantity())
         .totalOrderItemPrice(orderItem.getTotalOrderItemPrice())
         .build();

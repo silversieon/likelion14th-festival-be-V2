@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.manager.dto.response;
 
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
+import com.skulikelion.festival.global.enums.Department;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -17,12 +18,9 @@ public class ManagerResponse {
   @Schema(description = "관리자 식별자", example = "1")
   private Long managerId;
 
-  @Schema(description = "관리자 아이디", example = "lion")
-  private String username;
+  @Schema(description = "관리자 학과", example = "SKULIKELION")
+  private Department department;
 
-  @Schema(description = "관리자 역할", example = "BOOTH_MANAGER")
+  @Schema(description = "관리자 역할", example = "ADMIN")
   private Role role;
-
-  @Schema(description = "담당 부스명")
-  private String boothName;
 }

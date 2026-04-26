@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.global.enums.Department;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,10 +26,10 @@ public class CustomUserDetailsService implements UserDetailsService {
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     Manager manager =
         managerRepository
-            .findByUsername(username)
+            .findByDepartment(Department.valueOf(username))
             .orElseThrow(
                 () -> {
-                  log.info("[Auth] Security: 해당 아이디를 가진 사용자가 없습니다. - 이메일: {}", username);
+                  log.info("[Auth] Security: 해당 학과명을 가진 사용자가 없습니다. - 학과명: {}", username);
                   return new UsernameNotFoundException(username);
                 });
     return new CustomUserDetails(manager);

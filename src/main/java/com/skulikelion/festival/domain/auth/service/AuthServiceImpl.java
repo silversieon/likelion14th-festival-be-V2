@@ -22,6 +22,7 @@ import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.global.annotation.TimeTrace;
 import com.skulikelion.festival.global.config.property.AuthProperties;
+import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.infra.redis.RefreshTokenRepository;
 import com.skulikelion.festival.global.security.jwt.JwtProvider;
@@ -51,17 +52,21 @@ public class AuthServiceImpl implements AuthService {
       log.error("[Auth] 잘못된 어드민 키 입력 - adminKey: {}", request.getAdminKey());
       throw new CustomException(AuthErrorCode.INCORRECT_ADMIN_KEY);
     }
-    if (managerRepository.findByUsername(request.getUsername()).isPresent()) {
-      log.warn("[Auth] 존재하는 아이디 입력 - username: {}", request.getUsername());
-      throw new CustomException(AuthErrorCode.ALREADY_EXIST_USERNAME);
+    if (managerRepository.findByDepartment(request.getDepartment()).isPresent()) {
+      log.warn("[Auth] 존재하는 아이디 입력 - 학과명: {}", request.getDepartment().getDescription());
+      throw new CustomException(AuthErrorCode.ALREADY_EXIST_DEPARTMENT);
     }
 
     String encodedPassword = passwordEncoder.encode(request.getPassword());
     Manager manager =
-        Manager.builder().username(request.getUsername()).password(encodedPassword).build();
+        Manager.builder()
+            .department(request.getDepartment())
+            .role(request.getRole())
+            .password(encodedPassword)
+            .build();
     Manager savedManager = managerRepository.save(manager);
 
-    log.info("[Auth] 신규 사용자 회원가입 - 아이디: {}", savedManager.getUsername());
+    log.info("[Auth] 신규 사용자 회원가입 - 학과명: {}", savedManager.getDepartment().getDescription());
   }
 
   @Override
@@ -72,7 +77,8 @@ public class AuthServiceImpl implements AuthService {
   public TokenResponse login(LoginRequest request) {
     try {
       UsernamePasswordAuthenticationToken authenticationToken =
-          new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
+          new UsernamePasswordAuthenticationToken(
+              request.getDepartment().name(), request.getPassword());
       Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
       String accessToken = jwtProvider.generateAccessToken(authentication);
@@ -86,10 +92,10 @@ public class AuthServiceImpl implements AuthService {
       TokenResponse tokenResponse =
           TokenResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
 
-      log.info("[Auth] 사용자 로그인 성공 - 아이디: {}", request.getUsername());
+      log.info("[Auth] 사용자 로그인 성공 - 학과명: {}", request.getDepartment().getDescription());
       return tokenResponse;
     } catch (BadCredentialsException | UsernameNotFoundException e) {
-      log.info("[Auth] 로그인 실패 - 아이디: {}", request.getUsername());
+      log.info("[Auth] 로그인 실패 - 학과명: {}", request.getDepartment().getDescription());
       throw new CustomException(AuthErrorCode.LOGIN_FAIL);
     }
   }
@@ -104,11 +110,10 @@ public class AuthServiceImpl implements AuthService {
 
     refreshTokenRepository.deleteRefreshToken(jti);
 
-    String username = jwtProvider.getUsernameFromToken(refreshToken);
-
-    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    String departmentName = jwtProvider.getDepartmentFromToken(refreshToken);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(departmentName);
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(username, null, userDetails.getAuthorities());
+        new UsernamePasswordAuthenticationToken(departmentName, null, userDetails.getAuthorities());
 
     String newAccessToken = jwtProvider.generateAccessToken(authentication);
     GeneratedRefreshTokenPayload generatedRefreshTokenPayload =
@@ -125,9 +130,9 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public void logout(String refreshToken) {
-    String username = jwtProvider.getUsernameFromToken(refreshToken);
+    Department department = Department.valueOf(jwtProvider.getDepartmentFromToken(refreshToken));
     String jti = jwtProvider.getJtiFromToken(refreshToken);
     refreshTokenRepository.deleteRefreshToken(jti);
-    log.info("[Auth] 사용자 로그아웃 - 아이디: {}", username);
+    log.info("[Auth] 사용자 로그아웃 - 학과명: {}", department.getDescription());
   }
 }

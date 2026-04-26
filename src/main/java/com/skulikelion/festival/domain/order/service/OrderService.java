@@ -20,21 +20,25 @@ public interface OrderService {
 
   OrderResponse createOrder(Long boothId, OrderCreateRequest request);
 
-  List<WaitingOrderResponse> getWaitingOrders(String username, Long boothId);
+  List<WaitingOrderResponse> getWaitingOrders(String departmentName, Long boothId);
 
-  List<CookingOrderResponse> getCookingOrders(String username, Long boothId);
+  List<CookingOrderResponse> getCookingOrders(String departmentName, Long boothId);
 
   List<CompletedOrderResponse> getCompletedOrders(
-      String username, Long boothId, LocalDate orderDate, String keyword);
+      String departmentName, Long boothId, LocalDate orderDate, String keyword);
 
   List<CanceledOrderResponse> getCanceledOrders(
-      String username, Long boothId, LocalDate orderDate, String keyword);
+      String departmentName, Long boothId, LocalDate orderDate, String keyword);
 
-  void updateOrderStatus(String username, Long boothId, Long orderId, OrderStatus orderStatus);
+  void updateOrderStatus(
+      String departmentName, Long boothId, Long orderId, OrderStatus orderStatus);
 
   void cancelOrder(
-      String username, Long boothId, Long orderId, OrderCancelReason orderCancelReason);
+      String departmentName, Long boothId, Long orderId, OrderCancelReason orderCancelReason);
 
   void updateServedStatus(
-      String username, Long boothId, Long orderItemUnitId, OrderItemUnitUpdateRequest request);
+      String departmentName,
+      Long boothId,
+      Long orderItemUnitId,
+      OrderItemUnitUpdateRequest request);
 }

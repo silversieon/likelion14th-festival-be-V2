@@ -5,9 +5,7 @@ package com.skulikelion.festival.domain.manager.service;
 
 import java.util.List;
 
-import com.skulikelion.festival.domain.manager.dto.request.CreateManagerRequest;
 import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerPasswordRequest;
-import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerUsernameRequest;
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 
@@ -19,8 +17,6 @@ import com.skulikelion.festival.domain.manager.entity.enums.Role;
  * @author Keum Si Eon
  */
 public interface ManagerService {
-
-  ManagerResponse createManager(CreateManagerRequest request);
 
   /**
    * [ 관리자 전체 조회 메서드 ]
@@ -39,14 +35,6 @@ public interface ManagerService {
   ManagerResponse getManager(Long managerId);
 
   /**
-   * [ 관리자 아이디 수정 메서드 ]
-   *
-   * @param managerId 아이디 정보를 수정할 관리자의 식별자
-   * @return 변경된 관리자 정보
-   */
-  ManagerResponse updateManagerUsername(Long managerId, UpdateManagerUsernameRequest request);
-
-  /**
    * [ 관리자 비밀번호 수정 메서드 ]
    *
    * @param managerId 비밀번호 정보를 수정할 관리자의 식별자
@@ -60,7 +48,7 @@ public interface ManagerService {
    * @param managerId 삭제할 관리자의 식별자
    * @return
    */
-  Void deleteManager(Long managerId);
+  void deleteManager(Long managerId);
 
   /**
    * [ 관리자 본인 정보 조회 메서드 ]
@@ -68,5 +56,5 @@ public interface ManagerService {
    * @param username 사용자 아이디
    * @return
    */
-  ManagerResponse getMyInfo(String username);
+  ManagerResponse getMyInfo(String departmentName);
 }

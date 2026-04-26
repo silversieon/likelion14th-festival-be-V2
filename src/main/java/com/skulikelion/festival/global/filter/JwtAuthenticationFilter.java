@@ -62,7 +62,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     return pathMatcher.match("/api/auth/refresh", uri)
         || pathMatcher.match("/api/auth/login", uri)
         || pathMatcher.match("/api/auth/logout", uri)
-        || pathMatcher.match("/api/auth/register", uri);
+        || pathMatcher.match("/api/auth/register", uri)
+        || "/error".equals(uri);
   }
 
   /**
@@ -83,20 +84,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
       return;
     }
-    if ("/error".equals(request.getRequestURI())) {
-      filterChain.doFilter(request, response);
-      return;
-    }
 
     try {
       String accessToken = jwtProvider.extractAccessToken(request);
 
       if (accessToken != null && jwtProvider.validateToken(accessToken, TokenType.ACCESS_TOKEN)) {
-        String username = jwtProvider.getUsernameFromToken(accessToken);
+        String departmentName = jwtProvider.getDepartmentFromToken(accessToken);
         List<GrantedAuthority> authorities = jwtProvider.getAuthoritiesFromToken(accessToken);
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(username, null, authorities);
+            new UsernamePasswordAuthenticationToken(departmentName, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
       filterChain.doFilter(request, response);

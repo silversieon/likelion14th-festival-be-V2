@@ -49,6 +49,7 @@ import com.skulikelion.festival.domain.order.mapper.OrderMapper;
 import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
+import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.exception.GlobalErrorCode;
 
@@ -73,9 +74,6 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public OrderResponse createOrder(Long boothId, OrderCreateRequest request) {
-    // 낮, 밤 메뉴 검증 필요
-    // 주문 사용하는 부스인지 검증 필요
-    // 사용 언어 받아서 언어에 맞게 응답 반환 필요(이벤트는 한국어로)
     Booth booth = validateBoothExists(boothId);
 
     List<Long> boothMenuIds =
@@ -134,9 +132,9 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<WaitingOrderResponse> getWaitingOrders(String username, Long boothId) {
+  public List<WaitingOrderResponse> getWaitingOrders(String departmentName, Long boothId) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
 
     List<WaitingOrderResponse> waitingOrders = orderRepository.findWaitingOrdersByBoothId(boothId);
     List<Long> orderIds = waitingOrders.stream().map(WaitingOrderResponse::getOrderId).toList();
@@ -156,9 +154,9 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<CookingOrderResponse> getCookingOrders(String username, Long boothId) {
+  public List<CookingOrderResponse> getCookingOrders(String departmentName, Long boothId) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
 
     List<CookingOrderResponse> cookingOrders = orderRepository.findCookingOrdersByBoothId(boothId);
     List<Long> orderIds = cookingOrders.stream().map(CookingOrderResponse::getOrderId).toList();
@@ -191,9 +189,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public List<CompletedOrderResponse> getCompletedOrders(
-      String username, Long boothId, LocalDate orderDate, String keyword) {
+      String departmentName, Long boothId, LocalDate orderDate, String keyword) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
 
     List<CompletedOrderResponse> completedOrders =
         orderRepository.findCompletedOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
@@ -215,9 +213,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public List<CanceledOrderResponse> getCanceledOrders(
-      String username, Long boothId, LocalDate orderDate, String keyword) {
+      String departmentName, Long boothId, LocalDate orderDate, String keyword) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
 
     List<CanceledOrderResponse> canceledOrders =
         orderRepository.findCanceledOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
@@ -239,9 +237,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void updateOrderStatus(
-      String username, Long boothId, Long orderId, OrderStatus newOrderStatus) {
+      String departmentName, Long boothId, Long orderId, OrderStatus newOrderStatus) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
     OrderStatus previousStatus = order.getOrderStatus();
@@ -301,9 +299,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void cancelOrder(
-      String username, Long boothId, Long orderId, OrderCancelReason orderCancelReason) {
+      String departmentName, Long boothId, Long orderId, OrderCancelReason orderCancelReason) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
     order.cancelOrder(orderCancelReason);
@@ -328,9 +326,12 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void updateServedStatus(
-      String username, Long boothId, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
+      String departmentName,
+      Long boothId,
+      Long orderItemUnitId,
+      OrderItemUnitUpdateRequest request) {
     Booth booth = validateBoothExists(boothId);
-    validateBoothManager(username, booth);
+    validateBoothManager(departmentName, booth);
     validateOrderIsCooking(orderItemUnitId);
     OrderItemUnit orderItemUnit = validateOrderItemUnitExists(orderItemUnitId);
 
@@ -387,12 +388,14 @@ public class OrderServiceImpl implements OrderService {
         .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
   }
 
-  private void validateBoothManager(String username, Booth booth) {
+  private void validateBoothManager(String departmentName, Booth booth) {
+    Department department = Department.valueOf(departmentName);
     Manager currentManager =
         managerRepository
-            .findByUsername(username)
+            .findByDepartment(department)
             .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
-    if (!booth.equals(currentManager.getBooth()) && currentManager.getRole() != Role.ADMIN) {
+    if (!booth.getDepartment().equals(currentManager.getDepartment())
+        && currentManager.getRole() != Role.ADMIN) {
       throw new CustomException(OrderErrorCode.BOOTH_ACCESS_DENIED);
     }
   }

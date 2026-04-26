@@ -13,35 +13,30 @@ import org.springframework.data.repository.query.Param;
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
+import com.skulikelion.festival.global.enums.Department;
 
 public interface ManagerRepository extends JpaRepository<Manager, Long> {
-  Optional<Manager> findByUsername(String username);
+  Optional<Manager> findByDepartment(Department department);
 
   @Query(
       """
   SELECT new com.skulikelion.festival.domain.manager.dto.response.ManagerResponse(
     m.id,
-      m.username,
-        m.role,
-          b.name
-    )
-      FROM Manager m
-        LEFT JOIN m.booth b
-          WHERE m.role = :role
+      m.department,
+        m.role
+    ) FROM Manager m
+      WHERE m.role = :role
   """)
-  List<ManagerResponse> findManagersWithBoothByRole(@Param("role") Role role);
+  List<ManagerResponse> findManagersByRole(@Param("role") Role role);
 
   @Query(
       """
   SELECT new com.skulikelion.festival.domain.manager.dto.response.ManagerResponse(
     m.id,
-      m.username,
-        m.role,
-          b.name
-    )
-      FROM Manager m
-        LEFT JOIN m.booth b
+      m.department,
+        m.role
+    ) FROM Manager m
           WHERE m.id = :managerId
   """)
-  Optional<ManagerResponse> findManagerWithBoothById(@Param("managerId") Long managerId);
+  Optional<ManagerResponse> findManagerById(@Param("managerId") Long managerId);
 }

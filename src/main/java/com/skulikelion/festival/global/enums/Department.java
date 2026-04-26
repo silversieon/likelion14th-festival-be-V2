@@ -3,6 +3,12 @@
  */
 package com.skulikelion.festival.global.enums;
 
+import java.util.Arrays;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.skulikelion.festival.domain.auth.exception.AuthErrorCode;
+import com.skulikelion.festival.global.exception.CustomException;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +61,18 @@ public enum Department {
   PRESS("신문사"),
 
   // 총학생회
-  STUDENT_COUNCIL("총학생회");
+  STUDENT_COUNCIL("총학생회"),
+
+  // 멋사 운영진
+  SKULIKELION("멋사 운영진");
 
   private final String description;
+
+  @JsonCreator
+  public static Department from(String value) {
+    return Arrays.stream(Department.values())
+        .filter(d -> d.name().equals(value))
+        .findFirst()
+        .orElseThrow(() -> new CustomException(AuthErrorCode.INVALID_DEPARTMENT));
+  }
 }

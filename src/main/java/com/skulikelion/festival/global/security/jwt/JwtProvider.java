@@ -45,7 +45,8 @@ public class JwtProvider {
   public String generateAccessToken(Authentication authentication) {
     Instant now = Instant.now();
 
-    String username = authentication.getName();
+    String departmentString = authentication.getName();
+
     List<String> roles =
         authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
     long validitySeconds = jwtProperties.getAccessTokenValidityInSeconds();
@@ -53,7 +54,7 @@ public class JwtProvider {
     Date expiration = Date.from(now.plusSeconds(validitySeconds));
 
     return Jwts.builder()
-        .subject(username)
+        .subject(departmentString)
         .claim("type", TokenType.ACCESS_TOKEN.name())
         .claim("role", roles)
         .issuedAt(issuedAt)
@@ -65,14 +66,16 @@ public class JwtProvider {
   public GeneratedRefreshTokenPayload generateRefreshToken(Authentication authentication) {
     Instant now = Instant.now();
 
-    String username = authentication.getName();
+    String departmentString = authentication.getName();
+
     long validitySeconds = jwtProperties.getRefreshTokenValidityInSeconds();
     Date issuedAt = Date.from(now);
     Date expiration = Date.from(now.plusSeconds(validitySeconds));
     String jti = UUID.randomUUID().toString();
+
     String token =
         Jwts.builder()
-            .subject(username)
+            .subject(departmentString)
             .claim("type", TokenType.REFRESH_TOKEN.name())
             .issuedAt(issuedAt)
             .expiration(expiration)
@@ -82,7 +85,7 @@ public class JwtProvider {
     return new GeneratedRefreshTokenPayload(token, jti);
   }
 
-  public String getUsernameFromToken(String token) {
+  public String getDepartmentFromToken(String token) {
     return extractClaims(token).getSubject();
   }
 
@@ -123,8 +126,11 @@ public class JwtProvider {
 
   public boolean validateToken(String token, TokenType type) {
     try {
-      validateTokenType(token, type);
-      Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
+      Claims claims = extractClaims(token);
+      String tokenType = claims.get("type", String.class);
+      if (!tokenType.equals(type.name())) {
+        throw new JwtException("일치하지 않는 토큰 타입");
+      }
       return true;
     } catch (SecurityException | MalformedJwtException e) {
       log.info("[Jwt] 잘못된 JWT 서명입니다.");
@@ -138,16 +144,6 @@ public class JwtProvider {
       throw e;
     }
     return false;
-  }
-
-  private void validateTokenType(String token, TokenType tokenType) throws JwtException {
-    if (!getTokenTypeFromToken(token).equals(tokenType.name())) {
-      throw new JwtException("일치하지 않는 토큰 타입");
-    }
-  }
-
-  private String getTokenTypeFromToken(String token) {
-    return extractClaims(token).get("type", String.class);
   }
 
   private Claims extractClaims(String token) {

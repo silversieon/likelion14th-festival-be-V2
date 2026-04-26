@@ -58,8 +58,9 @@ public class OrderController {
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @GetMapping("/booths/{boothId}/orders/waiting")
   public ResponseEntity<BaseResponse<List<WaitingOrderResponse>>> getWaitingOrders(
-      @AuthenticationPrincipal String username, @PathVariable Long boothId) {
-    List<WaitingOrderResponse> waitingOrders = orderService.getWaitingOrders(username, boothId);
+      @AuthenticationPrincipal String departmentName, @PathVariable Long boothId) {
+    List<WaitingOrderResponse> waitingOrders =
+        orderService.getWaitingOrders(departmentName, boothId);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "대기 중인 주문 목록 조회에 성공했습니다.", waitingOrders));
   }
@@ -67,8 +68,9 @@ public class OrderController {
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @GetMapping("/booths/{boothId}/orders/cooking")
   public ResponseEntity<BaseResponse<List<?>>> getCookingOrders(
-      @AuthenticationPrincipal String username, @PathVariable Long boothId) {
-    List<CookingOrderResponse> cookingOrders = orderService.getCookingOrders(username, boothId);
+      @AuthenticationPrincipal String departmentName, @PathVariable Long boothId) {
+    List<CookingOrderResponse> cookingOrders =
+        orderService.getCookingOrders(departmentName, boothId);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "조리 중인 테이블별 주문 목록 조회에 성공했습니다.", cookingOrders));
   }
@@ -76,12 +78,12 @@ public class OrderController {
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @GetMapping("/booths/{boothId}/orders/completed")
   public ResponseEntity<BaseResponse<List<?>>> getCompletedOrders(
-      @AuthenticationPrincipal String username,
+      @AuthenticationPrincipal String departmentName,
       @PathVariable Long boothId,
       @RequestParam(required = false) @DateTimeFormat(pattern = "M/d") LocalDate date,
       @RequestParam(required = false) String keyword) {
     List<CompletedOrderResponse> completedOrders =
-        orderService.getCompletedOrders(username, boothId, date, keyword);
+        orderService.getCompletedOrders(departmentName, boothId, date, keyword);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "완료된 주문 목록 조회에 성공했습니다.", completedOrders));
   }
@@ -89,12 +91,12 @@ public class OrderController {
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @GetMapping("/booths/{boothId}/orders/canceled")
   public ResponseEntity<BaseResponse<List<?>>> getCanceledOrders(
-      @AuthenticationPrincipal String username,
+      @AuthenticationPrincipal String departmentName,
       @PathVariable Long boothId,
       @RequestParam(required = false) @DateTimeFormat(pattern = "M/d") LocalDate date,
       @RequestParam(required = false) String keyword) {
     List<CanceledOrderResponse> canceledOrders =
-        orderService.getCanceledOrders(username, boothId, date, keyword);
+        orderService.getCanceledOrders(departmentName, boothId, date, keyword);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "취소된 주문 목록 조회에 성공했습니다.", canceledOrders));
   }
@@ -102,33 +104,33 @@ public class OrderController {
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @PatchMapping("/booths/{boothId}/orders/{orderId}/status")
   public ResponseEntity<BaseResponse<Void>> updateOrderStatus(
-      @AuthenticationPrincipal String username,
+      @AuthenticationPrincipal String departmentName,
       @PathVariable Long boothId,
       @PathVariable Long orderId,
       @RequestParam OrderStatus orderStatus) {
-    orderService.updateOrderStatus(username, boothId, orderId, orderStatus);
+    orderService.updateOrderStatus(departmentName, boothId, orderId, orderStatus);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "주문 상태 변경에 성공했습니다.", null));
   }
 
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @PatchMapping("/booths/{boothId}/orders/{orderId}/cancel")
   public ResponseEntity<BaseResponse<Void>> cancelOrder(
-      @AuthenticationPrincipal String username,
+      @AuthenticationPrincipal String departmentName,
       @PathVariable Long orderId,
       @PathVariable Long boothId,
       @RequestParam OrderCancelReason orderCancelReason) {
-    orderService.cancelOrder(username, boothId, orderId, orderCancelReason);
+    orderService.cancelOrder(departmentName, boothId, orderId, orderCancelReason);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "주문 취소에 성공했습니다.", null));
   }
 
   @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
   @PatchMapping("/booths/{boothId}/order-item-units/{orderItemUnitId}")
   public ResponseEntity<BaseResponse<Void>> updateOrderItemUnit(
-      @AuthenticationPrincipal String username,
+      @AuthenticationPrincipal String departmentName,
       @PathVariable Long boothId,
       @PathVariable Long orderItemUnitId,
       @RequestBody OrderItemUnitUpdateRequest request) {
-    orderService.updateServedStatus(username, boothId, orderItemUnitId, request);
+    orderService.updateServedStatus(departmentName, boothId, orderItemUnitId, request);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "주문 상세 개별 상태 변경에 성공했습니다.", null));
   }

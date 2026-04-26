@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -63,6 +64,14 @@ public class GlobalExceptionHandler {
     log.warn("MaxUploadSizeExceededException 오류 발생: {}", ex.getMessage());
     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
         .body(BaseResponse.error(413, "이미지 용량 제한을 초과했습니다."));
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<BaseResponse<Object>> handleHttpMessageNotReadable(
+      HttpMessageNotReadableException e) {
+    log.warn("[Exception] 잘못된 요청 값 입력 - {}", e.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), "올바르지 않은 요청 값입니다."));
   }
 
   // 예상치 못한 예외

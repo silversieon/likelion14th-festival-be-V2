@@ -3,7 +3,7 @@
  */
 package com.skulikelion.festival.domain.booth.entity;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,18 +37,16 @@ public class Booth extends BaseTimeEntity {
   private Long id;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = false, unique = true)
   private Department department;
 
   private String name; // 삭제 예정 필드
 
   private String thumbnailUrl;
 
-  private String instagramUrl;
-
-  private LocalDateTime openTime; // 부스 영업중 표시 시작
-  private LocalDateTime orderOpenTime; // null이면 주문 서비스 미사용, 있으면 주문 버튼 표시 시작
-  private LocalDateTime closeTime;
+  private LocalTime openTime; // 부스 영업중 표시 시작
+  private LocalTime orderOpenTime; // null이면 주문 서비스 미사용, 있으면 주문 버튼 표시 시작
+  private LocalTime closeTime;
 
   @Enumerated(EnumType.STRING)
   private BoothLocation location;
@@ -62,10 +60,9 @@ public class Booth extends BaseTimeEntity {
   public void update(
       Department department,
       String thumbnailUrl,
-      String instagramUrl,
-      LocalDateTime openTime,
-      LocalDateTime pubOpenTime,
-      LocalDateTime closeTime,
+      LocalTime openTime,
+      LocalTime orderOpenTime,
+      LocalTime closeTime,
       BoothLocation location,
       String locationDetail,
       String accountName,
@@ -73,9 +70,8 @@ public class Booth extends BaseTimeEntity {
       String bankName) {
     this.department = department;
     this.thumbnailUrl = thumbnailUrl;
-    this.instagramUrl = instagramUrl;
     this.openTime = openTime;
-    this.orderOpenTime = pubOpenTime;
+    this.orderOpenTime = orderOpenTime;
     this.closeTime = closeTime;
     this.location = location;
     this.locationDetail = locationDetail;
@@ -88,10 +84,23 @@ public class Booth extends BaseTimeEntity {
     return orderOpenTime != null;
   }
 
-  public boolean isOrderAvailable(LocalDateTime now) {
+  public boolean isOrderAvailable(LocalTime now) {
     return isOrderEnabled()
         && closeTime != null
-        && !now.isBefore(orderOpenTime)
-        && now.isBefore(closeTime);
+        && isWithinOperatingTime(now, orderOpenTime, closeTime);
+  }
+
+  public boolean isOpen(LocalTime now) {
+    return openTime != null && closeTime != null && isWithinOperatingTime(now, openTime, closeTime);
+  }
+
+  private boolean isWithinOperatingTime(LocalTime now, LocalTime startTime, LocalTime endTime) {
+    if (startTime.equals(endTime)) {
+      return true;
+    }
+    if (startTime.isBefore(endTime)) {
+      return !now.isBefore(startTime) && now.isBefore(endTime);
+    }
+    return !now.isBefore(startTime) || now.isBefore(endTime);
   }
 }

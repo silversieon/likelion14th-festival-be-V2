@@ -27,23 +27,31 @@ public class OrderIdempotencyServiceImpl implements OrderIdempotencyService {
 
   @Override
   public boolean isNewRequest(String idempotencyKey) {
-    return Boolean.TRUE.equals(
-        redisTemplate
-            .opsForValue()
-            .setIfAbsent(
-                IDEMPOTENCY_PREFIX + idempotencyKey, ORDER_PROCESSING, Duration.ofMinutes(1)));
+    boolean isNew =
+        Boolean.TRUE.equals(
+            redisTemplate
+                .opsForValue()
+                .setIfAbsent(
+                    IDEMPOTENCY_PREFIX + idempotencyKey, ORDER_PROCESSING, Duration.ofMinutes(1)));
+    if (!isNew) {
+      log.info("[OrderIdempotencyService] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
+    }
+    return isNew;
   }
 
   @Override
   public <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
     String cached = redisTemplate.opsForValue().get(IDEMPOTENCY_PREFIX + idempotencyKey);
     if (ORDER_PROCESSING.equals(cached)) {
+      log.warn("[OrderIdempotencyService] 처리 중인 요청 재시도 감지 - idempotencyKey: {}", idempotencyKey);
       throw new CustomException(OrderErrorCode.ORDER_ALREADY_PROCESSING);
     }
     if (cached == null) {
+      log.warn(
+          "[OrderIdempotencyService] 만료된 idempotencyKey 조회 - idempotencyKey: {}", idempotencyKey);
       throw new CustomException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_EXPIRED);
     }
-    log.info("[OrderIdempotencyService] 캐싱된 응답을 조회했습니다. - idempotencyKey: {}", idempotencyKey);
+    log.debug("[OrderIdempotencyService] 캐싱된 응답 반환 - idempotencyKey: {}", idempotencyKey);
     return objectMapper.readValue(cached, responseType);
   }
 
@@ -55,10 +63,13 @@ public class OrderIdempotencyServiceImpl implements OrderIdempotencyService {
             IDEMPOTENCY_PREFIX + idempotencyKey,
             objectMapper.writeValueAsString(response),
             Duration.ofMinutes(10));
+    log.info("[OrderIdempotencyService] 응답 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
   }
 
   @Override
   public void deleteKey(String idempotencyKey) {
     redisTemplate.delete(IDEMPOTENCY_PREFIX + idempotencyKey);
+    log.debug(
+        "[OrderIdempotencyService] idempotencyKey 삭제 완료 - idempotencyKey: {}", idempotencyKey);
   }
 }

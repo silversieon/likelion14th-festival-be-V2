@@ -36,9 +36,6 @@ public class LostItem extends BaseTimeEntity {
   @Column(nullable = false)
   private LocalDate foundDate; // 습득 날짜
 
-  @Column(nullable = false, columnDefinition = "tinyint(1) default 0")
+  @Column(nullable = false)
   private boolean isReturned = false; // 수령 유무, true면 찾아감, false면 못찾음, default는 false
-
-  @Column(nullable = false, columnDefinition = "tinyint(1) default 0")
-  private boolean isDeleted = false; // soft delete 구현
 }

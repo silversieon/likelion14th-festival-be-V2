@@ -149,7 +149,7 @@ public class S3ServiceImpl implements S3Service {
 
   private void validateFile(MultipartFile file) {
     if (file == null || file.isEmpty()) {
-      throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
+      throw new CustomException(S3ErrorCode.FILE_NOT_FOUND);
     }
 
     if (file.getSize() > MAX_FILE_SIZE) {

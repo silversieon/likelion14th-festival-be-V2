@@ -3,7 +3,7 @@
  */
 package com.skulikelion.festival.domain.lostitem.repository;
 
-import java.util.List;
+import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,15 +15,12 @@ import com.skulikelion.festival.domain.lostitem.entity.LostItem;
 @Repository
 public interface LostItemRepository extends JpaRepository<LostItem, Long> {
 
-  Page<LostItem> findByIsDeletedFalseOrderByCreatedAtDesc(Pageable pageable);
+  Page<LostItem> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-  Page<LostItem> findByIsDeletedFalseOrderByCreatedAtAsc(Pageable pageable);
+  Page<LostItem> findByNameContainingIgnoreCaseOrderByCreatedAtDesc(String name, Pageable pageable);
 
-  Page<LostItem> findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-      String name, Pageable pageable);
+  Page<LostItem> findByFoundDateOrderByCreatedAtDesc(LocalDate foundDate, Pageable pageable);
 
-  Page<LostItem> findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtAsc(
-      String name, Pageable pageable);
-
-  List<LostItem> findByIsDeletedTrueOrderByCreatedAtDesc();
+  Page<LostItem> findByNameContainingIgnoreCaseAndFoundDateOrderByCreatedAtDesc(
+      String name, LocalDate foundDate, Pageable pageable);
 }

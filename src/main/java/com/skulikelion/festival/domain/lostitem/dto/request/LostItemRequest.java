@@ -16,16 +16,17 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@Schema(title = "LostItemRequest", description = "분실물 등록/수정 요청 DTO")
 public class LostItemRequest {
 
   @NotBlank(message = "분실물 이름을 입력하세요.")
   @Schema(description = "분실물 이름", example = "에어팟")
   private String name;
 
-  @Schema(description = "습득 장소")
   @NotBlank(message = "습득 장소를 입력하세요.")
+  @Schema(description = "습득 장소", example = "북악관")
   private String foundPlace;
 
-  @Schema(description = "습득 날짜(yyyy-MM-dd)", example = "2025-05-07")
-  @NotNull(message = "습득 날짜를 입력하세요.") private LocalDate foundDate;
+  @NotNull(message = "습득 날짜를 입력하세요.") @Schema(description = "습득 날짜", example = "2026-05-13")
+  private LocalDate foundDate;
 }

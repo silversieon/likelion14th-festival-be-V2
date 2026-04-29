@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
+import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
@@ -23,6 +24,7 @@ import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
 import com.skulikelion.festival.domain.order.dto.event.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
@@ -31,7 +33,6 @@ import com.skulikelion.festival.domain.order.dto.response.CanceledOrderItemRespo
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
-import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
@@ -49,6 +50,7 @@ import com.skulikelion.festival.domain.order.mapper.OrderMapper;
 import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
+import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.exception.GlobalErrorCode;
@@ -70,70 +72,89 @@ public class OrderServiceImpl implements OrderService {
   private final OrderEventMapper orderEventMapper;
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
+  private final OrderIdempotencyService orderIdempotencyService;
 
   @Override
   @Transactional
-  public OrderResponse createOrder(Long boothId, OrderCreateRequest request) {
-    Booth booth = validateBoothExists(boothId);
+  public OrderResponse createOrder(
+      Long boothId, String idempotencyKey, OrderCreateRequest request) {
+    if (!orderIdempotencyService.isNewRequest(idempotencyKey)) {
+      return orderIdempotencyService.getCachedResponse(idempotencyKey, OrderResponse.class);
+    }
+    try {
 
-    List<Long> boothMenuIds =
-        request.getOrderItems().stream().map(OrderItemCreateRequest::getBoothMenuId).toList();
-    List<BoothMenu> boothMenus = boothMenuRepository.findAllById(boothMenuIds);
-    validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
+      Booth booth = validateBoothExists(boothId);
+      validateBoothUsesOrder(booth);
 
-    Map<Long, BoothMenu> boothMenuMap =
-        boothMenus.stream().collect(Collectors.toMap(BoothMenu::getId, Function.identity()));
-    validateMenuPrice(request.getOrderItems(), boothMenuMap);
-    validateTotalPrice(request);
+      List<Long> boothMenuIds =
+          request.getOrderItems().stream().map(OrderItemCreateRequest::getBoothMenuId).toList();
+      List<BoothMenu> boothMenus = boothMenuRepository.findAllById(boothMenuIds);
+      validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
+      validateBoothMenusOrderable(booth, boothMenus);
 
-    Order order = orderMapper.createOrderFromOrderCreateRequest(request);
-    Order savedOrder = orderRepository.save(order);
+      Map<Long, BoothMenu> boothMenuMap =
+          boothMenus.stream().collect(Collectors.toMap(BoothMenu::getId, Function.identity()));
+      validateMenuPrice(request.getOrderItems(), boothMenuMap);
+      validateTotalPrice(request);
 
-    List<OrderItem> orderItems =
-        request.getOrderItems().stream()
-            .map(
-                orderItemCreateRequest -> {
-                  BoothMenu boothMenu = boothMenuMap.get(orderItemCreateRequest.getBoothMenuId());
-                  return orderMapper.createOrderItemFromOrderItemCreateRequest(
-                      orderItemCreateRequest, savedOrder, boothMenu);
-                })
-            .toList();
-    List<OrderItem> savedOrderItems = orderItemRepository.saveAll(orderItems);
+      Order order = orderMapper.createOrderFromOrderCreateRequest(request);
+      Order savedOrder = orderRepository.save(order);
 
-    List<OrderItemUnit> orderItemUnits =
-        savedOrderItems.stream()
-            .flatMap(
-                orderItem ->
-                    IntStream.range(0, orderItem.getQuantity())
-                        .mapToObj(i -> orderMapper.createOrderItemUnitFromOrderItem(orderItem)))
-            .toList();
+      List<OrderItem> orderItems =
+          request.getOrderItems().stream()
+              .map(
+                  orderItemCreateRequest -> {
+                    BoothMenu boothMenu = boothMenuMap.get(orderItemCreateRequest.getBoothMenuId());
+                    return orderMapper.createOrderItemFromOrderItemCreateRequest(
+                        orderItemCreateRequest, savedOrder, boothMenu);
+                  })
+              .toList();
+      List<OrderItem> savedOrderItems = orderItemRepository.saveAll(orderItems);
 
-    orderItemUnitRepository.saveAll(orderItemUnits);
+      List<OrderItemUnit> orderItemUnits =
+          savedOrderItems.stream()
+              .flatMap(
+                  orderItem ->
+                      IntStream.range(0, orderItem.getQuantity())
+                          .mapToObj(i -> orderMapper.createOrderItemUnitFromOrderItem(orderItem)))
+              .toList();
 
-    List<OrderItemResponse> orderItemResponses =
-        orderMapper.toOrderItemResponseList(savedOrderItems);
-    OrderResponse orderResponse =
-        orderMapper.toOrderResponse(savedOrder, booth, orderItemResponses);
+      orderItemUnitRepository.saveAll(orderItemUnits);
 
-    WaitingOrderResponse waitingOrderResponse =
-        orderMapper.toWaitingOrderResponse(savedOrder, savedOrderItems);
+      List<OrderItemResponse> orderItemResponses =
+          orderMapper.toOrderItemResponseList(savedOrderItems, request.getLanguage());
+      OrderResponse orderResponse =
+          orderMapper.toOrderResponse(savedOrder, booth, orderItemResponses);
 
-    WaitingOrderPayload waitingOrderPayload =
-        orderEventMapper.toWaitingOrderPayload(booth, waitingOrderResponse);
-    eventPublisher.publishEvent(waitingOrderPayload);
+      WaitingOrderResponse waitingOrderResponse =
+          orderMapper.toWaitingOrderResponse(savedOrder, savedOrderItems);
 
-    log.info(
-        "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 주문자명: {}, 총 주문 금액: {}",
-        order.getId(),
-        order.getCustomerName(),
-        order.getTotalOrderPrice());
-    return orderResponse;
+      WaitingOrderPayload waitingOrderPayload =
+          orderEventMapper.toWaitingOrderPayload(booth, waitingOrderResponse);
+      eventPublisher.publishEvent(waitingOrderPayload);
+
+      OrderIdempotencyPayload orderIdempotencyPayload =
+          orderEventMapper.toOrderIdempotencyPayload(idempotencyKey, orderResponse);
+      eventPublisher.publishEvent(orderIdempotencyPayload);
+
+      log.info(
+          "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 주문자명: {}, 총 주문 금액: {}",
+          order.getId(),
+          order.getCustomerName(),
+          order.getTotalOrderPrice());
+      return orderResponse;
+    } catch (Exception e) {
+      orderIdempotencyService.deleteKey(idempotencyKey);
+      throw e;
+    }
   }
 
   @Override
   @Transactional(readOnly = true)
-  public List<WaitingOrderResponse> getWaitingOrders(String departmentName, Long boothId) {
-    Booth booth = validateBoothExists(boothId);
+  public List<WaitingOrderResponse> getWaitingOrders(String departmentName) {
+    Booth booth = validateBoothExists(departmentName);
+    Long boothId = booth.getId();
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<WaitingOrderResponse> waitingOrders = orderRepository.findWaitingOrdersByBoothId(boothId);
@@ -154,43 +175,39 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<CookingOrderResponse> getCookingOrders(String departmentName, Long boothId) {
-    Booth booth = validateBoothExists(boothId);
+  public List<CookingOrderResponse> getCookingOrders(String departmentName) {
+    Booth booth = validateBoothExists(departmentName);
+    Long boothId = booth.getId();
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CookingOrderResponse> cookingOrders = orderRepository.findCookingOrdersByBoothId(boothId);
     List<Long> orderIds = cookingOrders.stream().map(CookingOrderResponse::getOrderId).toList();
     if (orderIds.isEmpty()) return cookingOrders;
 
-    List<CookingOrderItemResponse> cookingOrderItems =
-        orderItemRepository.findCookingOrderItemsByOrderIds(orderIds);
-    List<Long> orderItemIds =
-        cookingOrderItems.stream().map(CookingOrderItemResponse::getOrderItemId).toList();
+    List<Long> orderItemIds = orderItemRepository.findOrderItemIdsByOrderIds(orderIds);
 
     List<CookingOrderItemUnitResponse> cookingOrderItemUnits =
         orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
 
-    Map<Long, List<CookingOrderItemResponse>> cookingItemMap =
-        cookingOrderItems.stream()
-            .collect(Collectors.groupingBy(CookingOrderItemResponse::getOrderId));
     Map<Long, List<CookingOrderItemUnitResponse>> cookingItemUnitMap =
         cookingOrderItemUnits.stream()
-            .collect(Collectors.groupingBy(CookingOrderItemUnitResponse::getOrderItemId));
+            .collect(Collectors.groupingBy(CookingOrderItemUnitResponse::getOrderId));
 
-    cookingOrderItems.forEach(
-        orderItem ->
-            orderItem.addOrderItemUnits(
-                cookingItemUnitMap.getOrDefault(orderItem.getOrderItemId(), List.of())));
     cookingOrders.forEach(
-        order -> order.addOrderItems(cookingItemMap.getOrDefault(order.getOrderId(), List.of())));
+        order ->
+            order.addOrderItemUnits(
+                cookingItemUnitMap.getOrDefault(order.getOrderId(), List.of())));
     return cookingOrders;
   }
 
   @Override
   @Transactional(readOnly = true)
   public List<CompletedOrderResponse> getCompletedOrders(
-      String departmentName, Long boothId, LocalDate orderDate, String keyword) {
-    Booth booth = validateBoothExists(boothId);
+      String departmentName, LocalDate orderDate, String keyword) {
+    Booth booth = validateBoothExists(departmentName);
+    Long boothId = booth.getId();
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CompletedOrderResponse> completedOrders =
@@ -213,8 +230,10 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public List<CanceledOrderResponse> getCanceledOrders(
-      String departmentName, Long boothId, LocalDate orderDate, String keyword) {
-    Booth booth = validateBoothExists(boothId);
+      String departmentName, LocalDate orderDate, String keyword) {
+    Booth booth = validateBoothExists(departmentName);
+    Long boothId = booth.getId();
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CanceledOrderResponse> canceledOrders =
@@ -236,9 +255,9 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional
-  public void updateOrderStatus(
-      String departmentName, Long boothId, Long orderId, OrderStatus newOrderStatus) {
-    Booth booth = validateBoothExists(boothId);
+  public void updateOrderStatus(String departmentName, Long orderId, OrderStatus newOrderStatus) {
+    Booth booth = validateBoothExists(departmentName);
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
@@ -247,30 +266,16 @@ public class OrderServiceImpl implements OrderService {
     if (previousStatus != newOrderStatus) {
       switch (newOrderStatus) {
         case COOKING -> {
-          List<CookingOrderItemResponse> cookingOrderItems =
-              orderItemRepository.findCookingOrderItemsByOrderIds(List.of(order.getId()));
-
-          if (cookingOrderItems.isEmpty()) {
-            eventPublisher.publishEvent(
-                orderEventMapper.toCookingOrderPayload(
-                    booth, orderMapper.toCookingOrderResponse(order, List.of())));
-            break;
-          }
           List<Long> orderItemIds =
-              cookingOrderItems.stream().map(CookingOrderItemResponse::getOrderItemId).toList();
+              orderItemRepository.findOrderItemIdsByOrderIds(List.of(orderId));
+
           List<CookingOrderItemUnitResponse> cookingOrderItemUnits =
-              orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
+              orderItemIds.isEmpty()
+                  ? List.of()
+                  : orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
 
-          Map<Long, List<CookingOrderItemUnitResponse>> cookingItemMap =
-              cookingOrderItemUnits.stream()
-                  .collect(Collectors.groupingBy(CookingOrderItemUnitResponse::getOrderItemId));
-
-          cookingOrderItems.forEach(
-              orderItem ->
-                  orderItem.addOrderItemUnits(
-                      cookingItemMap.getOrDefault(orderItem.getOrderItemId(), List.of())));
           CookingOrderResponse cookingOrderResponse =
-              orderMapper.toCookingOrderResponse(order, cookingOrderItems);
+              orderMapper.toCookingOrderResponse(order, cookingOrderItemUnits);
 
           eventPublisher.publishEvent(
               orderEventMapper.toCookingOrderPayload(booth, cookingOrderResponse));
@@ -279,18 +284,9 @@ public class OrderServiceImpl implements OrderService {
           List<CompletedOrderItemResponse> completedOrderItems =
               orderItemRepository.findCompletedOrderItemsByOrderIds(List.of(order.getId()));
 
-          if (completedOrderItems.isEmpty()) {
-            eventPublisher.publishEvent(
-                orderEventMapper.toCompletedOrderPayload(
-                    booth, orderMapper.toCompletedOrderResponse(order, List.of())));
-            break;
-          }
-
-          CompletedOrderResponse completedOrderResponse =
-              orderMapper.toCompletedOrderResponse(order, completedOrderItems);
-
           eventPublisher.publishEvent(
-              orderEventMapper.toCompletedOrderPayload(booth, completedOrderResponse));
+              orderEventMapper.toCompletedOrderPayload(
+                  booth, orderMapper.toCompletedOrderResponse(order, completedOrderItems)));
         }
       }
     }
@@ -299,8 +295,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void cancelOrder(
-      String departmentName, Long boothId, Long orderId, OrderCancelReason orderCancelReason) {
-    Booth booth = validateBoothExists(boothId);
+      String departmentName, Long orderId, OrderCancelReason orderCancelReason) {
+    Booth booth = validateBoothExists(departmentName);
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
@@ -326,11 +323,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void updateServedStatus(
-      String departmentName,
-      Long boothId,
-      Long orderItemUnitId,
-      OrderItemUnitUpdateRequest request) {
-    Booth booth = validateBoothExists(boothId);
+      String departmentName, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
+    Booth booth = validateBoothExists(departmentName);
+    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     validateOrderIsCooking(orderItemUnitId);
     OrderItemUnit orderItemUnit = validateOrderItemUnitExists(orderItemUnitId);
@@ -341,7 +336,7 @@ public class OrderServiceImpl implements OrderService {
     if (previousServed != request.isServed()) {
       eventPublisher.publishEvent(
           orderEventMapper.toCookingOrderItemUnitPayload(
-              booth, orderMapper.toCookingOrderItemUnitResponse(orderItemUnit)));
+              booth, orderMapper.toOrderItemUnitStatusResponse(orderItemUnit)));
     }
   }
 
@@ -371,13 +366,14 @@ public class OrderServiceImpl implements OrderService {
                 "[OrderService] 주문한 메뉴 가격이 실제 가격과 일치하지 않습니다 - 주문 메뉴 가격: {}, 실제 메뉴 가격: {}",
                 item.getMenuPrice(),
                 boothMenu.getPrice());
-            throw new CustomException(OrderErrorCode.MENU_PRICE_MISMATCH);
+            throw new CustomException(OrderErrorCode.ORDER_MENU_PRICE_MISMATCH);
           }
         });
   }
 
   private void validateBoothMenusExistence(int boothMenuSize, int boothMenuIdsSize) {
     if (boothMenuSize != boothMenuIdsSize) {
+      log.info("boothMenuSize: {}, boothMenuIdsSize: {}", boothMenuSize, boothMenuIdsSize);
       throw new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND);
     }
   }
@@ -385,6 +381,12 @@ public class OrderServiceImpl implements OrderService {
   private Booth validateBoothExists(Long boothId) {
     return boothRepository
         .findById(boothId)
+        .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
+  }
+
+  private Booth validateBoothExists(String departmentName) {
+    return boothRepository
+        .findByDepartment(Department.valueOf(departmentName))
         .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
   }
 
@@ -412,7 +414,7 @@ public class OrderServiceImpl implements OrderService {
             .findOrderStatusByOrderItemUnitId(orderItemUnitId)
             .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND));
     if (status != OrderStatus.COOKING) {
-      throw new CustomException(OrderErrorCode.ORDER_STATUS_CHANGE_FAILED);
+      throw new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_STATUS_CHANGE_FAILED);
     }
   }
 
@@ -420,5 +422,31 @@ public class OrderServiceImpl implements OrderService {
     return orderItemUnitRepository
         .findById(orderItemUnitId)
         .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND));
+  }
+
+  private void validateBoothUsesOrder(Booth booth) {
+    if (!booth.isOrderEnabled()) {
+      throw new CustomException(OrderErrorCode.ORDER_NOT_USED_BOOTH);
+    }
+  }
+
+  private void validateBoothMenusOrderable(Booth booth, List<BoothMenu> boothMenus) {
+    // 해당 부스가 주문 받는 시간대인지 검증 필요
+    validateBoothMenusTimeType(boothMenus);
+    validateBoothMenusSoldOut(boothMenus);
+  }
+
+  private void validateBoothMenusSoldOut(List<BoothMenu> boothMenus) {
+    boolean hasSoldOut = boothMenus.stream().anyMatch(BoothMenu::getIsSoldOut);
+    if (hasSoldOut) {
+      throw new CustomException(OrderErrorCode.ORDER_MENU_SOLD_OUT);
+    }
+  }
+
+  private void validateBoothMenusTimeType(List<BoothMenu> boothMenus) {
+    boolean hasDayMenu = boothMenus.stream().anyMatch(menu -> menu.getTimeType() == TimeType.DAY);
+    if (hasDayMenu) {
+      throw new CustomException(OrderErrorCode.ORDER_DAY_TYPE_MENU);
+    }
   }
 }

@@ -8,13 +8,15 @@ import org.springframework.stereotype.Component;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.order.dto.event.CanceledOrderPayload;
 import com.skulikelion.festival.domain.order.dto.event.CompletedOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.CookingOrderItemUnitPayload;
 import com.skulikelion.festival.domain.order.dto.event.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
+import com.skulikelion.festival.domain.order.dto.event.OrderItemUnitStatusPayload;
 import com.skulikelion.festival.domain.order.dto.event.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
-import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
+import com.skulikelion.festival.domain.order.dto.response.OrderItemUnitStatusResponse;
+import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 
 @Component
@@ -52,11 +54,19 @@ public class OrderEventMapper {
         .build();
   }
 
-  public CookingOrderItemUnitPayload toCookingOrderItemUnitPayload(
-      Booth booth, CookingOrderItemUnitResponse cookingOrderItemUnitResponse) {
-    return CookingOrderItemUnitPayload.builder()
+  public OrderItemUnitStatusPayload toCookingOrderItemUnitPayload(
+      Booth booth, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {
+    return OrderItemUnitStatusPayload.builder()
         .booth(booth)
-        .cookingOrderItemUnitResponse(cookingOrderItemUnitResponse)
+        .orderItemUnitStatusResponse(orderItemUnitStatusResponse)
+        .build();
+  }
+
+  public OrderIdempotencyPayload toOrderIdempotencyPayload(
+      String idempotencyKey, OrderResponse orderResponse) {
+    return OrderIdempotencyPayload.builder()
+        .idempotencyKey(idempotencyKey)
+        .orderResponse(orderResponse)
         .build();
   }
 }

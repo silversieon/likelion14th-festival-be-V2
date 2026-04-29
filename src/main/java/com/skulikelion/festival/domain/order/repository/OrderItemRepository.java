@@ -76,4 +76,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 """)
   List<CanceledOrderItemResponse> findCanceledOrderItemsByOrderIds(
       @Param("orderIds") List<Long> orderIds);
+
+  @Query("SELECT oi.id FROM OrderItem oi WHERE oi.order.id IN :orderIds")
+  List<Long> findOrderItemIdsByOrderIds(@Param("orderIds") List<Long> orderIds);
 }

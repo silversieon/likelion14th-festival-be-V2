@@ -16,10 +16,10 @@ import com.skulikelion.festival.domain.order.dto.response.CanceledOrderItemRespo
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
-import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
+import com.skulikelion.festival.domain.order.dto.response.OrderItemUnitStatusResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
@@ -27,6 +27,7 @@ import com.skulikelion.festival.domain.order.entity.Order;
 import com.skulikelion.festival.domain.order.entity.OrderItem;
 import com.skulikelion.festival.domain.order.entity.OrderItemUnit;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
+import com.skulikelion.festival.global.enums.Language;
 
 @Component
 public class OrderMapper {
@@ -56,15 +57,16 @@ public class OrderMapper {
     return OrderItemUnit.builder().orderItem(orderItem).build();
   }
 
-  public List<OrderItemResponse> toOrderItemResponseList(List<OrderItem> orderItems) {
-    return orderItems.stream().map(this::toOrderItemResponse).toList();
+  public List<OrderItemResponse> toOrderItemResponseList(
+      List<OrderItem> orderItems, Language language) {
+    return orderItems.stream().map(orderItem -> toOrderItemResponse(orderItem, language)).toList();
   }
 
-  public OrderItemResponse toOrderItemResponse(OrderItem orderItem) {
+  public OrderItemResponse toOrderItemResponse(OrderItem orderItem, Language language) {
     return OrderItemResponse.builder()
         .orderItemId(orderItem.getId())
         .orderId(orderItem.getOrder().getId())
-        .menuName(orderItem.getBoothMenu().getNameKo())
+        .menuName(language.getMenuName(orderItem.getBoothMenu()))
         .quantity(orderItem.getQuantity())
         .menuPrice(orderItem.getMenuPrice())
         .totalOrderItemPrice(orderItem.getTotalOrderItemPrice())
@@ -115,14 +117,16 @@ public class OrderMapper {
   }
 
   public CookingOrderResponse toCookingOrderResponse(
-      Order order, List<CookingOrderItemResponse> orderItems) {
+      Order order, List<CookingOrderItemUnitResponse> orderItemUnits) {
     return CookingOrderResponse.builder()
         .orderId(order.getId())
+        .tableNumber(order.getTableNumber())
+        .numOfPeople(order.getNumOfPeople())
         .customerName(order.getCustomerName())
         .customerPhoneNumber(order.getCustomerPhoneNumber())
         .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
         .totalOrderPrice(order.getTotalOrderPrice())
-        .orderItems(orderItems)
+        .orderItemUnits(orderItemUnits)
         .build();
   }
 
@@ -161,10 +165,10 @@ public class OrderMapper {
         .build();
   }
 
-  public CookingOrderItemUnitResponse toCookingOrderItemUnitResponse(OrderItemUnit orderItemUnit) {
-    return CookingOrderItemUnitResponse.builder()
+  public OrderItemUnitStatusResponse toOrderItemUnitStatusResponse(OrderItemUnit orderItemUnit) {
+    return OrderItemUnitStatusResponse.builder()
         .orderItemUnitId(orderItemUnit.getId())
-        .orderItemId(orderItemUnit.getOrderItem().getId())
+        .orderId(orderItemUnit.getOrderItem().getOrder().getId())
         .served(orderItemUnit.isServed())
         .build();
   }

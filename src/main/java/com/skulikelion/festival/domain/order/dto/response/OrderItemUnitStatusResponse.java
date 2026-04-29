@@ -13,20 +13,14 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "CookingOrderItemUnitResponse: 조리 중인 주문 상세 개별 응답 DTO")
-public class CookingOrderItemUnitResponse {
+@Schema(title = "OrderItemUnitStatusResponse: 주문 상세 개별 상태 응답 DTO")
+public class OrderItemUnitStatusResponse {
 
   @Schema(description = "주문 상세 개별 식별자", example = "1")
   private Long orderItemUnitId;
 
   @Schema(description = "주문 식별자", example = "1")
   private Long orderId;
-
-  @Schema(description = "메뉴명", example = "해물야끼우동")
-  private String menuName;
-
-  @Schema(description = "주문한 메뉴의 개별 가격", example = "11000")
-  private Integer menuPrice;
 
   @JsonProperty("isServed")
   @Schema(description = "완료(또는 서빙) 여부", example = "true")

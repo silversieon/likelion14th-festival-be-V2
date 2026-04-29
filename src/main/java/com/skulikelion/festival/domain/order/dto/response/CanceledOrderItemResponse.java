@@ -11,7 +11,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "CompletedOrderItemResponse: 취소된 주문 상세 응답 DTO")
+@Schema(title = "CanceledOrderItemResponse: 취소된 주문 상세 응답 DTO")
 public class CanceledOrderItemResponse {
 
   @Schema(description = "주문 상세 식별자", example = "1")

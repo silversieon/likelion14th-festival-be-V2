@@ -3,6 +3,7 @@
  */
 package com.skulikelion.festival.domain.booth.service;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skulikelion.festival.domain.booth.dto.request.BoothOperationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
@@ -20,11 +22,15 @@ import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
+import com.skulikelion.festival.domain.booth.entity.BoothMenu;
+import com.skulikelion.festival.domain.booth.entity.BoothOperation;
 import com.skulikelion.festival.domain.booth.entity.BoothTranslation;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.mapper.BoothMapper;
 import com.skulikelion.festival.domain.booth.repository.BoothDetailImageRepository;
+import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
+import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothTranslationRepository;
 import com.skulikelion.festival.global.enums.Language;
@@ -45,6 +51,8 @@ public class BoothServiceImpl implements BoothService {
   private final BoothRepository boothRepository;
   private final BoothTranslationRepository boothTranslationRepository;
   private final BoothDetailImageRepository boothDetailImageRepository;
+  private final BoothOperationRepository boothOperationRepository;
+  private final BoothMenuRepository boothMenuRepository;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
 
@@ -61,24 +69,22 @@ public class BoothServiceImpl implements BoothService {
     }
     // 요청값 사전 검증
     validateTranslations(request.getTranslations());
+    validateOperations(request.getOperations());
     validateDetailImageCount(detailImages);
-
-    // 시간 문자열 변환
-    LocalTime openTime = boothMapper.parseTime(request.getOpenTime());
-    LocalTime orderOpenTime = boothMapper.parseTime(request.getOrderOpenTime());
-    LocalTime closeTime = boothMapper.parseTime(request.getCloseTime());
-    log.info(
-        "[BoothService] 부스 운영 시간 변환 완료 - openTime: {}, orderOpenTime: {}, closeTime: {}",
-        openTime,
-        orderOpenTime,
-        closeTime);
 
     // 썸네일 업로드 및 부스 저장
     String thumbnailUrl = uploadImage(PathName.BOOTH_THUMBNAIL, thumbnail);
     log.info("[BoothService] 부스 썸네일 처리 완료 - thumbnailUrl: {}", thumbnailUrl);
-    Booth booth =
-        boothRepository.save(
-            boothMapper.toBooth(request, thumbnailUrl, openTime, orderOpenTime, closeTime));
+    Booth booth = boothRepository.save(boothMapper.toBooth(request, thumbnailUrl));
+
+    // 운영 정보 저장
+    List<BoothOperation> operations =
+        request.getOperations().stream()
+            .map(operation -> boothMapper.toBoothOperation(booth, operation))
+            .toList();
+    boothOperationRepository.saveAll(operations);
+    log.info(
+        "[BoothService] 부스 운영 정보 저장 완료 - 부스 식별자: {}, 개수: {}", booth.getId(), operations.size());
 
     // 번역 정보 저장
     List<BoothTranslation> translations =
@@ -104,7 +110,8 @@ public class BoothServiceImpl implements BoothService {
             .orElse(translations.getFirst());
 
     log.info("[BoothService] 부스 생성 발생 - 부스 식별자: {}, 학과: {}", booth.getId(), booth.getDepartment());
-    return boothMapper.toBoothResponse(booth, responseTranslation, savedDetailImages);
+    return boothMapper.toBoothResponse(
+        booth, responseTranslation, savedDetailImages, operations, List.of());
   }
 
   @Override
@@ -125,18 +132,8 @@ public class BoothServiceImpl implements BoothService {
     }
     // 요청값 사전 검증
     validateTranslations(request.getTranslations());
+    validateOperations(request.getOperations());
     validateDetailImageCount(detailImages);
-
-    // 시간 문자열 변환
-    LocalTime openTime = boothMapper.parseTime(request.getOpenTime());
-    LocalTime orderOpenTime = boothMapper.parseTime(request.getOrderOpenTime());
-    LocalTime closeTime = boothMapper.parseTime(request.getCloseTime());
-    log.info(
-        "[BoothService] 부스 운영 시간 변환 완료 - 부스 식별자: {}, openTime: {}, orderOpenTime: {}, closeTime: {}",
-        boothId,
-        openTime,
-        orderOpenTime,
-        closeTime);
 
     // 썸네일 전체 교체
     String oldThumbnailUrl = booth.getThumbnailUrl();
@@ -152,14 +149,22 @@ public class BoothServiceImpl implements BoothService {
     booth.update(
         request.getDepartment(),
         thumbnailUrl,
-        openTime,
-        orderOpenTime,
-        closeTime,
+        request.getOrderEnabled(),
         request.getLocation(),
         request.getLocationDetail(),
         request.getAccountName(),
         request.getAccountNumber(),
         request.getBankName());
+
+    // 운영 정보 전체 교체
+    boothOperationRepository.deleteByBoothId(boothId);
+    boothOperationRepository.flush();
+    List<BoothOperation> operations =
+        request.getOperations().stream()
+            .map(operation -> boothMapper.toBoothOperation(booth, operation))
+            .toList();
+    boothOperationRepository.saveAll(operations);
+    log.info("[BoothService] 부스 운영 정보 전체 교체 완료 - 부스 식별자: {}, 개수: {}", boothId, operations.size());
 
     // 번역 정보 전체 교체
     boothTranslationRepository.deleteByBoothId(boothId);
@@ -192,7 +197,9 @@ public class BoothServiceImpl implements BoothService {
             .orElse(translations.getFirst());
 
     log.info("[BoothService] 부스 수정 발생 - 부스 식별자: {}, 학과: {}", boothId, booth.getDepartment());
-    return boothMapper.toBoothResponse(booth, responseTranslation, responseDetailImages);
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByDisplayOrderAsc(boothId);
+    return boothMapper.toBoothResponse(
+        booth, responseTranslation, responseDetailImages, operations, menus);
   }
 
   @Override
@@ -210,6 +217,7 @@ public class BoothServiceImpl implements BoothService {
     // 부스 연관 데이터 삭제
     boothDetailImageRepository.deleteByBoothId(boothId);
     boothTranslationRepository.deleteByBoothId(boothId);
+    boothOperationRepository.deleteByBoothId(boothId);
     boothRepository.delete(booth);
     log.info("[BoothService] 부스 연관 데이터 삭제 완료 - 부스 식별자: {}", boothId);
 
@@ -218,7 +226,13 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<BoothListResponse> getBoothsByLocation(BoothLocation location) {
+  public List<BoothListResponse> getBooths(BoothLocation location) {
+    if (location == null) {
+      List<BoothListResponse> responses = boothRepository.findBoothsByLanguage(Language.KO);
+      log.info("[BoothService] 부스 전체 조회 발생 - 개수: {}", responses.size());
+      return responses;
+    }
+
     List<BoothListResponse> responses =
         boothRepository.findBoothsByLocationAndLanguage(location, Language.KO);
     log.info("[BoothService] 위치별 부스 조회 발생 - 위치: {}, 개수: {}", location, responses.size());
@@ -256,12 +270,17 @@ public class BoothServiceImpl implements BoothService {
     // 상세 이미지 순서 조회
     List<BoothDetailImage> detailImages =
         boothDetailImageRepository.findByBoothIdOrderByIdAsc(boothId);
+    List<BoothOperation> operations =
+        boothOperationRepository.findByBoothIdOrderByOperationDateAsc(boothId);
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByDisplayOrderAsc(boothId);
     log.info(
-        "[BoothService] 부스 단건 조회 발생 - 부스 식별자: {}, 언어: {}, 상세 이미지 개수: {}",
+        "[BoothService] 부스 단건 조회 발생 - 부스 식별자: {}, 언어: {}, 상세 이미지 개수: {}, 운영 정보 개수: {}, 메뉴 개수: {}",
         boothId,
         language,
-        detailImages.size());
-    return boothMapper.toBoothResponse(booth, translation, detailImages);
+        detailImages.size(),
+        operations.size(),
+        menus.size());
+    return boothMapper.toBoothResponse(booth, translation, detailImages, operations, menus);
   }
 
   @Override
@@ -348,6 +367,54 @@ public class BoothServiceImpl implements BoothService {
       throw new CustomException(BoothErrorCode.BOOTH_TRANSLATION_REQUIRED);
     }
     log.info("[BoothService] 번역 정보 검증 완료 - 요청 언어: {}", requestLanguages);
+  }
+
+  private void validateOperations(List<BoothOperationRequest> operations) {
+    if (operations == null || operations.size() != 3) {
+      log.warn(
+          "[BoothService] 운영 정보 검증 실패 - 요청 개수: {}", operations == null ? 0 : operations.size());
+      throw new CustomException(BoothErrorCode.BOOTH_OPERATION_REQUIRED);
+    }
+
+    Set<LocalDate> operationDates =
+        operations.stream()
+            .map(operation -> boothMapper.parseDate(operation.getOperationDate()))
+            .collect(Collectors.toSet());
+    if (operationDates.size() != operations.size()) {
+      log.warn("[BoothService] 운영 정보 검증 실패 - 중복 날짜 포함: {}", operationDates);
+      throw new CustomException(BoothErrorCode.BOOTH_OPERATION_DUPLICATED);
+    }
+
+    operations.forEach(this::validateOperationTime);
+    log.info("[BoothService] 운영 정보 검증 완료 - 운영 날짜: {}", operationDates);
+  }
+
+  private void validateOperationTime(BoothOperationRequest operation) {
+    LocalTime dayOpenTime = boothMapper.parseTime(operation.getDayOpenTime());
+    LocalTime nightOpenTime = boothMapper.parseTime(operation.getNightOpenTime());
+    LocalTime closeTime = boothMapper.parseTime(operation.getCloseTime());
+
+    if (operation.getTimeType() == null || closeTime == null) {
+      throw new CustomException(BoothErrorCode.BOOTH_OPERATION_TIME_REQUIRED);
+    }
+
+    switch (operation.getTimeType()) {
+      case DAY -> {
+        if (dayOpenTime == null) {
+          throw new CustomException(BoothErrorCode.BOOTH_OPERATION_TIME_REQUIRED);
+        }
+      }
+      case NIGHT -> {
+        if (nightOpenTime == null) {
+          throw new CustomException(BoothErrorCode.BOOTH_OPERATION_TIME_REQUIRED);
+        }
+      }
+      case ALL -> {
+        if (dayOpenTime == null || nightOpenTime == null) {
+          throw new CustomException(BoothErrorCode.BOOTH_OPERATION_TIME_REQUIRED);
+        }
+      }
+    }
   }
 
   private void deleteImageQuietly(String imageUrl) {

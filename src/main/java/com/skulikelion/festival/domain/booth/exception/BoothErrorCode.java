@@ -18,6 +18,11 @@ public enum BoothErrorCode implements BaseErrorCode {
   INVALID_TIME_FORMAT("BOOTH_4002", "시간 형식은 HH:mm 이어야 합니다.", HttpStatus.BAD_REQUEST),
   BOOTH_TRANSLATION_REQUIRED("BOOTH_4003", "모든 언어의 부스 번역 정보를 입력해주세요.", HttpStatus.BAD_REQUEST),
   BOOTH_TRANSLATION_DUPLICATED("BOOTH_4004", "중복된 언어의 부스 번역 정보가 있습니다.", HttpStatus.BAD_REQUEST),
+  INVALID_OPERATION_DATE_FORMAT(
+      "BOOTH_4005", "운영 날짜 형식은 yyyy-MM-dd 이어야 합니다.", HttpStatus.BAD_REQUEST),
+  BOOTH_OPERATION_REQUIRED("BOOTH_4006", "부스 운영 정보는 3일치로 입력해주세요.", HttpStatus.BAD_REQUEST),
+  BOOTH_OPERATION_DUPLICATED("BOOTH_4007", "중복된 날짜의 부스 운영 정보가 있습니다.", HttpStatus.BAD_REQUEST),
+  BOOTH_OPERATION_TIME_REQUIRED("BOOTH_4008", "운영 타입에 맞는 운영 시간을 입력해주세요.", HttpStatus.BAD_REQUEST),
 
   BOOTH_NOT_FOUND("BOOTH_4041", "부스 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   BOOTH_TRANSLATION_NOT_FOUND("BOOTH_4042", "부스 번역 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),

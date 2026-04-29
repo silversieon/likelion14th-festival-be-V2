@@ -50,12 +50,12 @@ public interface BoothService {
   void deleteBooth(Long boothId);
 
   /**
-   * [ 위치별 부스 조회 메서드 ]
+   * [ 부스 목록 조회 메서드 ]
    *
    * @param location 조회할 부스 위치
-   * @return 해당 위치의 부스 정보 리스트
+   * @return 부스 정보 리스트
    */
-  List<BoothListResponse> getBoothsByLocation(BoothLocation location);
+  List<BoothListResponse> getBooths(BoothLocation location);
 
   /**
    * [ 부스 검색 메서드 ]

@@ -3,6 +3,8 @@
  */
 package com.skulikelion.festival.domain.booth.dto.response;
 
+import com.skulikelion.festival.domain.booth.enums.BoothLocation;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,12 +24,12 @@ public class BoothListResponse {
   @Schema(description = "썸네일 이미지 URL")
   private String thumbnailUrl;
 
+  @Schema(description = "부스 위치")
+  private BoothLocation location;
+
   @Schema(description = "부스 상세 위치")
   private String locationDetail;
 
   @Schema(description = "학과명")
   private String departmentName;
-
-  @Schema(description = "부스명")
-  private String boothName;
 }

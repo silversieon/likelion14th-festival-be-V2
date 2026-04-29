@@ -5,6 +5,7 @@ package com.skulikelion.festival.domain.booth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.skulikelion.festival.global.enums.Language;
 
@@ -27,6 +28,7 @@ public class BoothTranslationRequest {
   @Schema(description = "번역된 부스명", example = "소프트웨어학과 부스")
   private String boothName;
 
-  @Schema(description = "부스 설명", example = "소프트웨어학과 부스입니다.")
+  @Size(max = 150, message = "부스 설명은 150자 이하로 입력해주세요.")
+  @Schema(description = "부스 설명", example = "소프트웨어학과 부스입니다.", maxLength = 150)
   private String description;
 }

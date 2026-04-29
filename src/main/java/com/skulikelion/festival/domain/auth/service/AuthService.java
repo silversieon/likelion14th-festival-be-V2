@@ -26,7 +26,7 @@ public interface AuthService {
   /**
    * [ 사용자 로그인 메서드 ]
    *
-   * @param request 로그인 요청을 위한 아이디, 비밀번호를 담은 요청 객체
+   * @param request 로그인 요청을 위한 학과명, 비밀번호를 담은 요청 객체
    * @return accessToken, refreshToken을 담은 TokenResponse 객체
    */
   TokenResponse login(LoginRequest request);

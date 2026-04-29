@@ -52,15 +52,16 @@ public class AuthServiceImpl implements AuthService {
       log.error("[Auth] 잘못된 어드민 키 입력 - adminKey: {}", request.getAdminKey());
       throw new CustomException(AuthErrorCode.INCORRECT_ADMIN_KEY);
     }
-    if (managerRepository.findByDepartment(request.getDepartment()).isPresent()) {
-      log.warn("[Auth] 존재하는 아이디 입력 - 학과명: {}", request.getDepartment().getDescription());
+    Department department = validateDepartmentName(request.getDepartmentName());
+    if (managerRepository.findByDepartment(department).isPresent()) {
+      log.warn("[Auth] 존재하는 아이디 입력 - 학과명: {}", department.getDescription());
       throw new CustomException(AuthErrorCode.ALREADY_EXIST_DEPARTMENT);
     }
 
     String encodedPassword = passwordEncoder.encode(request.getPassword());
     Manager manager =
         Manager.builder()
-            .department(request.getDepartment())
+            .department(department)
             .role(request.getRole())
             .password(encodedPassword)
             .build();
@@ -73,12 +74,12 @@ public class AuthServiceImpl implements AuthService {
   @Transactional(readOnly = true)
   @TimeTrace(
       methodName = "로그인",
-      env = {"local"})
+      env = {"local", "dev"})
   public TokenResponse login(LoginRequest request) {
     try {
+      Department department = validateDepartmentName(request.getDepartmentName());
       UsernamePasswordAuthenticationToken authenticationToken =
-          new UsernamePasswordAuthenticationToken(
-              request.getDepartment().name(), request.getPassword());
+          new UsernamePasswordAuthenticationToken(department.name(), request.getPassword());
       Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
       String accessToken = jwtProvider.generateAccessToken(authentication);
@@ -92,10 +93,10 @@ public class AuthServiceImpl implements AuthService {
       TokenResponse tokenResponse =
           TokenResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
 
-      log.info("[Auth] 사용자 로그인 성공 - 학과명: {}", request.getDepartment().getDescription());
+      log.info("[AuthService] 사용자 로그인 성공 - 학과명: {}", department.getDescription());
       return tokenResponse;
     } catch (BadCredentialsException | UsernameNotFoundException e) {
-      log.info("[Auth] 로그인 실패 - 학과명: {}", request.getDepartment().getDescription());
+      log.info("[AuthService] 로그인 실패 - 입력한 학과명: {}", request.getDepartmentName());
       throw new CustomException(AuthErrorCode.LOGIN_FAIL);
     }
   }
@@ -133,6 +134,15 @@ public class AuthServiceImpl implements AuthService {
     Department department = Department.valueOf(jwtProvider.getDepartmentFromToken(refreshToken));
     String jti = jwtProvider.getJtiFromToken(refreshToken);
     refreshTokenRepository.deleteRefreshToken(jti);
-    log.info("[Auth] 사용자 로그아웃 - 학과명: {}", department.getDescription());
+    log.info("[AuthService] 사용자 로그아웃 - 학과명: {}", department.getDescription());
+  }
+
+  private Department validateDepartmentName(String departmentName) {
+    try {
+      return Department.valueOf(departmentName);
+    } catch (IllegalArgumentException e) {
+      log.warn("[AuthService] 입력한 학과명 : {}", departmentName);
+      throw new CustomException(AuthErrorCode.INVALID_DEPARTMENT);
+    }
   }
 }

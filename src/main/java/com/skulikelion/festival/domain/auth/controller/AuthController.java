@@ -29,6 +29,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 멋쟁이사자처럼 서경대학교 축제 페이지 인증 관련 Controller 입니다.
+ *
+ * @since 2026.04.29
+ * @see AuthService
+ * @author Keum Si Eon
+ * @version latest: 1
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -45,7 +53,7 @@ public class AuthController {
       description =
           """
             **Parameters**  \n
-            username: 사용자 아이디 \n
+            departmentName: 사용자 아이디 \n
             password: 사용자 비밀번호 \n
             adminKey: 관리자 키 \n
             \n
@@ -63,7 +71,7 @@ public class AuthController {
       description =
           """
                     **Parameters**  \n
-                    username: 사용자 아이디  \n
+                    departmentName: 사용자 아이디  \n
                     password: 사용자 비밀번호 \n
                     \n
                     **Returns (쿠키에 전달)**  \n

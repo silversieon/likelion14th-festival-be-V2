@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
-import com.skulikelion.festival.global.enums.Department;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -20,8 +19,9 @@ import lombok.Getter;
 @Schema(title = "SignUpRequest: 회원가입 요청 DTO")
 public class SignUpRequest {
 
-  @NotNull @Schema(description = "사용자 학과", example = "SKULIKELION")
-  private Department department;
+  @NotBlank
+  @Schema(description = "사용자 학과", example = "SKULIKELION")
+  private String departmentName;
 
   @NotBlank
   @Schema(description = "사용자 비밀번호", example = "lion1234!")

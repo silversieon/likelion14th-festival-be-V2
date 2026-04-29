@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.order.service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -16,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
+import com.skulikelion.festival.domain.booth.entity.BoothOperation;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
+import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
@@ -73,6 +76,7 @@ public class OrderServiceImpl implements OrderService {
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
   private final OrderIdempotencyService orderIdempotencyService;
+  private final BoothOperationRepository boothOperationRepository;
 
   @Override
   @Transactional
@@ -85,12 +89,13 @@ public class OrderServiceImpl implements OrderService {
 
       Booth booth = validateBoothExists(boothId);
       validateBoothUsesOrder(booth);
+      BoothOperation boothOperation = validateBoothOrderTime(booth);
 
       List<Long> boothMenuIds =
           request.getOrderItems().stream().map(OrderItemCreateRequest::getBoothMenuId).toList();
       List<BoothMenu> boothMenus = boothMenuRepository.findAllById(boothMenuIds);
       validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
-      validateBoothMenusOrderable(booth, boothMenus);
+      validateBoothMenusOrderable(boothMenus, boothOperation);
 
       Map<Long, BoothMenu> boothMenuMap =
           boothMenus.stream().collect(Collectors.toMap(BoothMenu::getId, Function.identity()));
@@ -138,8 +143,9 @@ public class OrderServiceImpl implements OrderService {
       eventPublisher.publishEvent(orderIdempotencyPayload);
 
       log.info(
-          "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 주문자명: {}, 총 주문 금액: {}",
+          "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 학과명: {}, 주문자명: {}, 총 주문 금액: {}",
           order.getId(),
+          booth.getDepartment().getDescription(),
           order.getCustomerName(),
           order.getTotalOrderPrice());
       return orderResponse;
@@ -170,6 +176,8 @@ public class OrderServiceImpl implements OrderService {
     waitingOrders.forEach(
         order -> order.addOrderItems(waitingItemMap.getOrDefault(order.getOrderId(), List.of())));
 
+    log.debug(
+        "[OrderService] 대기 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, waitingOrders.size());
     return waitingOrders;
   }
 
@@ -198,6 +206,9 @@ public class OrderServiceImpl implements OrderService {
         order ->
             order.addOrderItemUnits(
                 cookingItemUnitMap.getOrDefault(order.getOrderId(), List.of())));
+
+    log.debug(
+        "[OrderService] 조리 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, cookingOrders.size());
     return cookingOrders;
   }
 
@@ -224,6 +235,8 @@ public class OrderServiceImpl implements OrderService {
     completedOrders.forEach(
         order -> order.addOrderItems(completedItemMap.getOrDefault(order.getOrderId(), List.of())));
 
+    log.debug(
+        "[OrderService] 완료 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, completedOrders.size());
     return completedOrders;
   }
 
@@ -250,6 +263,8 @@ public class OrderServiceImpl implements OrderService {
     canceledOrders.forEach(
         order -> order.addOrderItems(canceledItemMap.getOrDefault(order.getOrderId(), List.of())));
 
+    log.debug(
+        "[OrderService] 취소 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, canceledOrders.size());
     return canceledOrders;
   }
 
@@ -263,31 +278,42 @@ public class OrderServiceImpl implements OrderService {
 
     OrderStatus previousStatus = order.getOrderStatus();
     order.changeOrderStatus(newOrderStatus);
-    if (previousStatus != newOrderStatus) {
-      switch (newOrderStatus) {
-        case COOKING -> {
-          List<Long> orderItemIds =
-              orderItemRepository.findOrderItemIdsByOrderIds(List.of(orderId));
+    if (previousStatus == newOrderStatus) {
+      log.debug(
+          "[OrderService] 주문 상태 변경 요청이 현재 상태와 동일 - 주문 식별자: {}, 상태: {}", orderId, newOrderStatus);
+      return;
+    }
 
-          List<CookingOrderItemUnitResponse> cookingOrderItemUnits =
-              orderItemIds.isEmpty()
-                  ? List.of()
-                  : orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
+    log.info(
+        "[OrderService] 주문 상태 변경 - 학과명: {}, 주문 식별자: {}, 변경 전: {}, 변경 후: {}",
+        departmentName,
+        orderId,
+        previousStatus,
+        newOrderStatus);
+    switch (newOrderStatus) {
+      case COOKING -> {
+        List<Long> orderItemIds = orderItemRepository.findOrderItemIdsByOrderIds(List.of(orderId));
 
-          CookingOrderResponse cookingOrderResponse =
-              orderMapper.toCookingOrderResponse(order, cookingOrderItemUnits);
+        List<CookingOrderItemUnitResponse> cookingOrderItemUnits =
+            orderItemIds.isEmpty()
+                ? List.of()
+                : orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
 
-          eventPublisher.publishEvent(
-              orderEventMapper.toCookingOrderPayload(booth, cookingOrderResponse));
-        }
-        case COMPLETED -> {
-          List<CompletedOrderItemResponse> completedOrderItems =
-              orderItemRepository.findCompletedOrderItemsByOrderIds(List.of(order.getId()));
+        CookingOrderResponse cookingOrderResponse =
+            orderMapper.toCookingOrderResponse(order, cookingOrderItemUnits);
 
-          eventPublisher.publishEvent(
-              orderEventMapper.toCompletedOrderPayload(
-                  booth, orderMapper.toCompletedOrderResponse(order, completedOrderItems)));
-        }
+        eventPublisher.publishEvent(
+            orderEventMapper.toCookingOrderPayload(booth, cookingOrderResponse));
+        log.debug("[OrderService] 조리 중 이벤트 발행 - 주문 식별자: {}", orderId);
+      }
+      case COMPLETED -> {
+        List<CompletedOrderItemResponse> completedOrderItems =
+            orderItemRepository.findCompletedOrderItemsByOrderIds(List.of(order.getId()));
+
+        eventPublisher.publishEvent(
+            orderEventMapper.toCompletedOrderPayload(
+                booth, orderMapper.toCompletedOrderResponse(order, completedOrderItems)));
+        log.debug("[OrderService] 완료 이벤트 발행 - 주문 식별자: {}", orderId);
       }
     }
   }
@@ -302,6 +328,11 @@ public class OrderServiceImpl implements OrderService {
     Order order = validateOrderExists(orderId);
 
     order.cancelOrder(orderCancelReason);
+    log.info(
+        "[OrderService] 주문 취소 - 학과명: {}, 주문 식별자: {}, 취소 사유: {}",
+        departmentName,
+        orderId,
+        orderCancelReason);
 
     List<CanceledOrderItemResponse> canceledOrderItems =
         orderItemRepository.findCanceledOrderItemsByOrderIds(List.of(order.getId()));
@@ -310,6 +341,7 @@ public class OrderServiceImpl implements OrderService {
       eventPublisher.publishEvent(
           orderEventMapper.toCanceledOrderPayload(
               booth, orderMapper.toCanceledOrderResponse(order, List.of(), orderCancelReason)));
+      log.debug("[OrderService] 취소 이벤트 발행 (주문 항목 없음) - 주문 식별자: {}", orderId);
       return;
     }
 
@@ -318,6 +350,8 @@ public class OrderServiceImpl implements OrderService {
 
     eventPublisher.publishEvent(
         orderEventMapper.toCanceledOrderPayload(booth, canceledOrderResponse));
+    log.debug(
+        "[OrderService] 취소 이벤트 발행 - 주문 식별자: {}, 취소 항목 수: {}", orderId, canceledOrderItems.size());
   }
 
   @Override
@@ -333,11 +367,23 @@ public class OrderServiceImpl implements OrderService {
     boolean previousServed = orderItemUnit.isServed();
     orderItemUnit.updateServedStatus(request.isServed());
 
-    if (previousServed != request.isServed()) {
-      eventPublisher.publishEvent(
-          orderEventMapper.toCookingOrderItemUnitPayload(
-              booth, orderMapper.toOrderItemUnitStatusResponse(orderItemUnit)));
+    if (previousServed == request.isServed()) {
+      log.debug(
+          "[OrderService] 서빙 상태 변경 요청이 현재 상태와 동일 - 주문 항목 단위 식별자: {}, 상태: {}",
+          orderItemUnitId,
+          request.isServed());
+      return;
     }
+
+    log.info(
+        "[OrderService] 서빙 상태 변경 - 학과명: {}, 주문 항목 단위 식별자: {}, 변경 후: {}",
+        departmentName,
+        orderItemUnitId,
+        request.isServed());
+    eventPublisher.publishEvent(
+        orderEventMapper.toCookingOrderItemUnitPayload(
+            booth, orderMapper.toOrderItemUnitStatusResponse(orderItemUnit)));
+    log.debug("[OrderService] 서빙 상태 변경 이벤트 발행 - 주문 항목 단위 식별자: {}", orderItemUnitId);
   }
 
   private void validateTotalPrice(OrderCreateRequest request) {
@@ -346,12 +392,21 @@ public class OrderServiceImpl implements OrderService {
             .mapToInt(
                 item -> {
                   if (item.getMenuPrice() * item.getQuantity() != item.getTotalOrderItemPrice()) {
+                    log.warn(
+                        "[OrderService] 주문 항목 총 가격 불일치 - 메뉴 가격: {}, 수량: {}, 요청 총 가격: {}",
+                        item.getMenuPrice(),
+                        item.getQuantity(),
+                        item.getTotalOrderItemPrice());
                     throw new CustomException(OrderErrorCode.ORDER_ITEM_TOTAL_PRICE_MISMATCH);
                   }
                   return item.getTotalOrderItemPrice();
                 })
             .sum();
     if (request.getTotalOrderPrice() != sum) {
+      log.warn(
+          "[OrderService] 주문 총 가격 불일치 - 요청 총 가격: {}, 계산된 총 가격: {}",
+          request.getTotalOrderPrice(),
+          sum);
       throw new CustomException(OrderErrorCode.ORDER_TOTAL_PRICE_MISMATCH);
     }
   }
@@ -373,7 +428,10 @@ public class OrderServiceImpl implements OrderService {
 
   private void validateBoothMenusExistence(int boothMenuSize, int boothMenuIdsSize) {
     if (boothMenuSize != boothMenuIdsSize) {
-      log.info("boothMenuSize: {}, boothMenuIdsSize: {}", boothMenuSize, boothMenuIdsSize);
+      log.warn(
+          "[OrderService] 존재하지 않는 부스 메뉴 포함 - 요청 메뉴 수: {}, 실제 메뉴 수: {}",
+          boothMenuIdsSize,
+          boothMenuSize);
       throw new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND);
     }
   }
@@ -381,13 +439,21 @@ public class OrderServiceImpl implements OrderService {
   private Booth validateBoothExists(Long boothId) {
     return boothRepository
         .findById(boothId)
-        .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 부스 식별자: {}", boothId);
+              return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
+            });
   }
 
   private Booth validateBoothExists(String departmentName) {
     return boothRepository
         .findByDepartment(Department.valueOf(departmentName))
-        .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
+            });
   }
 
   private void validateBoothManager(String departmentName, Booth booth) {
@@ -395,9 +461,17 @@ public class OrderServiceImpl implements OrderService {
     Manager currentManager =
         managerRepository
             .findByDepartment(department)
-            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
+            .orElseThrow(
+                () -> {
+                  log.warn("[OrderService] 매니저를 찾을 수 없습니다 - 학과명: {}", departmentName);
+                  return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
+                });
     if (!booth.getDepartment().equals(currentManager.getDepartment())
         && currentManager.getRole() != Role.ADMIN) {
+      log.warn(
+          "[OrderService] 부스 접근 권한 없음 - 학과명: {}, 매니저 역할: {}",
+          departmentName,
+          currentManager.getRole());
       throw new CustomException(OrderErrorCode.BOOTH_ACCESS_DENIED);
     }
   }
@@ -405,15 +479,28 @@ public class OrderServiceImpl implements OrderService {
   private Order validateOrderExists(Long orderId) {
     return orderRepository
         .findById(orderId)
-        .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_NOT_FOUND));
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderService] 주문을 찾을 수 없습니다 - 주문 식별자: {}", orderId);
+              return new CustomException(OrderErrorCode.ORDER_NOT_FOUND);
+            });
   }
 
   private void validateOrderIsCooking(Long orderItemUnitId) {
     OrderStatus status =
         orderItemUnitRepository
             .findOrderStatusByOrderItemUnitId(orderItemUnitId)
-            .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND));
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[OrderService] 주문 항목 단위를 찾을 수 없습니다 - 주문 항목 단위 식별자: {}", orderItemUnitId);
+                  return new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND);
+                });
     if (status != OrderStatus.COOKING) {
+      log.warn(
+          "[OrderService] 조리 중이 아닌 주문 항목 단위 상태 변경 시도 - 주문 항목 단위 식별자: {}, 현재 상태: {}",
+          orderItemUnitId,
+          status);
       throw new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_STATUS_CHANGE_FAILED);
     }
   }
@@ -421,32 +508,62 @@ public class OrderServiceImpl implements OrderService {
   private OrderItemUnit validateOrderItemUnitExists(Long orderItemUnitId) {
     return orderItemUnitRepository
         .findById(orderItemUnitId)
-        .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND));
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderService] 주문 항목 단위를 찾을 수 없습니다 - 주문 항목 단위 식별자: {}", orderItemUnitId);
+              return new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND);
+            });
   }
 
   private void validateBoothUsesOrder(Booth booth) {
     if (!booth.isOrderEnabled()) {
+      log.warn("[OrderService] 주문 미사용 부스에 주문 요청 - 학과명: {}", booth.getDepartment().getDescription());
       throw new CustomException(OrderErrorCode.ORDER_NOT_USED_BOOTH);
     }
   }
 
-  private void validateBoothMenusOrderable(Booth booth, List<BoothMenu> boothMenus) {
-    // 해당 부스가 주문 받는 시간대인지 검증 필요
-    validateBoothMenusTimeType(boothMenus);
+  private BoothOperation validateBoothOrderTime(Booth booth) {
+    BoothOperation operation =
+        boothOperationRepository
+            .findByBoothIdAndOperationDate(booth.getId(), LocalDate.now())
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[OrderService] 오늘 부스 운영 정보를 찾을 수 없습니다 - 학과명: {}",
+                      booth.getDepartment().getDescription());
+                  return new CustomException(OrderErrorCode.ORDER_TIME_BOOTH_NOT_FOUND);
+                });
+    if (!operation.isOpenAt(LocalTime.now())) {
+      log.warn("[OrderService] 주문 가능 시간 외 주문 요청 - 학과명: {}", booth.getDepartment().getDescription());
+      throw new CustomException(OrderErrorCode.NOT_TIME_TO_ORDER);
+    }
+    return operation;
+  }
+
+  private void validateBoothMenusOrderable(
+      List<BoothMenu> boothMenus, BoothOperation boothOperation) {
+    validateBoothMenuTimeType(boothMenus, boothOperation);
     validateBoothMenusSoldOut(boothMenus);
   }
 
   private void validateBoothMenusSoldOut(List<BoothMenu> boothMenus) {
     boolean hasSoldOut = boothMenus.stream().anyMatch(BoothMenu::getIsSoldOut);
     if (hasSoldOut) {
+      log.warn("[OrderService] 품절 메뉴 포함 주문 요청");
       throw new CustomException(OrderErrorCode.ORDER_MENU_SOLD_OUT);
     }
   }
 
-  private void validateBoothMenusTimeType(List<BoothMenu> boothMenus) {
-    boolean hasDayMenu = boothMenus.stream().anyMatch(menu -> menu.getTimeType() == TimeType.DAY);
-    if (hasDayMenu) {
-      throw new CustomException(OrderErrorCode.ORDER_DAY_TYPE_MENU);
+  private void validateBoothMenuTimeType(List<BoothMenu> boothMenus, BoothOperation operation) {
+    TimeType currentTimeType = operation.getCurrentOrderTimeType(LocalTime.now());
+    List<TimeType> allowedTypes = TimeType.forQuery(currentTimeType);
+
+    boolean hasInvalidMenu =
+        boothMenus.stream().anyMatch(menu -> !allowedTypes.contains(menu.getTimeType()));
+
+    if (hasInvalidMenu) {
+      log.warn("[OrderService] 현재 시간대에 주문 불가한 메뉴 포함 - 현재 시간 타입: {}", currentTimeType);
+      throw new CustomException(OrderErrorCode.ORDER_MENU_TIME_TYPE_NOT_AVAILABLE);
     }
   }
 }

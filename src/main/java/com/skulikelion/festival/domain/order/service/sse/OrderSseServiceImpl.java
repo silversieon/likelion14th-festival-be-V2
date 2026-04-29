@@ -49,15 +49,35 @@ public class OrderSseServiceImpl implements OrderSseService {
     SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
 
     emitter.onCompletion(
-        () -> orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter));
-    emitter.onTimeout(() -> orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter));
-    emitter.onError(e -> orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter));
+        () -> {
+          log.info(
+              "[OrderSseService] SSE 연결 종료 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
+          orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
+        });
+    emitter.onTimeout(
+        () -> {
+          log.info(
+              "[OrderSseService] SSE 타임아웃 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
+          orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
+        });
+    emitter.onError(
+        e -> {
+          log.warn(
+              "[OrderSseService] SSE 에러 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
+          orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
+        });
 
     orderSseEmitterRepository.save(boothId, sseSubscribeType, emitter);
 
     try {
       emitter.send(SseEmitter.event().name("connect").data("connected order subscribe"));
+      log.debug(
+          "[OrderSseService] SSE 구독 성공 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
     } catch (IOException e) {
+      log.warn(
+          "[OrderSseService] SSE 초기 연결 이벤트 전송 실패 - 학과명: {}, 구독 타입: {}",
+          departmentName,
+          sseSubscribeType);
       orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
     }
 
@@ -91,7 +111,16 @@ public class OrderSseServiceImpl implements OrderSseService {
                                                       new CustomException(
                                                           OrderErrorCode
                                                               .INVALID_SUBSCRIBE_TYPE_CONVERSION)))));
+                          log.debug(
+                              "[OrderSseService] 주문 상태 변경 알림 전송 성공 - 학과명: {}, 변경된 상태: {}, 수신 구독 타입: {}",
+                              booth.getDepartment().getDescription(),
+                              currentSubscribeType,
+                              subscribedType);
                         } catch (IOException e) {
+                          log.warn(
+                              "[OrderSseService] 주문 상태 변경 알림 전송 실패 - 학과명: {}, 수신 구독 타입: {}",
+                              booth.getDepartment().getDescription(),
+                              subscribedType);
                           orderSseEmitterRepository.remove(booth.getId(), subscribedType, emitter);
                         }
                       });
@@ -133,7 +162,15 @@ public class OrderSseServiceImpl implements OrderSseService {
     for (SseEmitter emitter : emitterList) {
       try {
         emitter.send(SseEmitter.event().name(eventName).data(data));
+        log.debug(
+            "[OrderSseService] 주문 이벤트 전송 성공 - 학과명: {}, 이벤트: {}",
+            booth.getDepartment().getDescription(),
+            eventName);
       } catch (IOException e) {
+        log.warn(
+            "[OrderSseService] 주문 이벤트 전송 실패 - 학과명: {}, 이벤트: {}",
+            booth.getDepartment().getDescription(),
+            eventName);
         orderSseEmitterRepository.remove(booth.getId(), sseSubscribeType, emitter);
       }
     }
@@ -142,7 +179,11 @@ public class OrderSseServiceImpl implements OrderSseService {
   private Booth validateBoothExists(String departmentName) {
     return boothRepository
         .findByDepartment(Department.valueOf(departmentName))
-        .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_NOT_FOUND));
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderSseService] 해당 학과의 부스를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
+            });
   }
 
   private void validateBoothManager(String departmentName, Booth booth) {
@@ -150,9 +191,17 @@ public class OrderSseServiceImpl implements OrderSseService {
     Manager currentManager =
         managerRepository
             .findByDepartment(department)
-            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
+            .orElseThrow(
+                () -> {
+                  log.warn("[OrderSseService] 해당 학과의 매니저를 찾을 수 없습니다 - 학과명: {}", departmentName);
+                  return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
+                });
     if (!booth.getDepartment().equals(currentManager.getDepartment())
         && currentManager.getRole() != Role.ADMIN) {
+      log.warn(
+          "[OrderSseService] 부스 접근 권한 없음 - 학과명: {}, 매니저 역할: {}",
+          departmentName,
+          currentManager.getRole());
       throw new CustomException(OrderErrorCode.BOOTH_ACCESS_DENIED);
     }
   }

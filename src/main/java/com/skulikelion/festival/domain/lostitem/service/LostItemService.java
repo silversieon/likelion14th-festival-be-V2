@@ -3,208 +3,69 @@
  */
 package com.skulikelion.festival.domain.lostitem.service;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
+import com.skulikelion.festival.domain.lostitem.dto.response.LostItemPageResponse;
 import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
-import com.skulikelion.festival.domain.lostitem.entity.LostItem;
-import com.skulikelion.festival.domain.lostitem.entity.SortType;
-import com.skulikelion.festival.domain.lostitem.exception.LostItemErrorCode;
-import com.skulikelion.festival.domain.lostitem.mapper.LostItemMapper;
-import com.skulikelion.festival.domain.lostitem.repository.LostItemRepository;
-import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.s3.service.S3Service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class LostItemService {
-
-  private final LostItemRepository lostItemRepository;
-  private final LostItemMapper lostItemMapper;
-  private final S3Service s3Service;
+public interface LostItemService {
 
   /**
-   * 분실물 생성 요청을 받아 저장 후 응답 DTO로 반환합니다.
+   * [ 분실물 전체 조회 메서드 ]
    *
-   * @param dto 분실물 생성 요청 DTO
-   * @return 생성된 분실물 응답 DTO
+   * @param name 분실물 이름 검색어
+   * @param foundDate 습득 날짜 필터
+   * @param page 페이지 번호
+   * @param size 페이지당 게시물 수
+   * @return 분실물 페이지 응답
    */
-  @Transactional
-  public LostItemResponse createLostItem(LostItemRequest dto, String imageUrl) {
-    LostItem saved = lostItemRepository.save(lostItemMapper.toEntity(dto, imageUrl));
-
-    log.info(
-        "[분실물 생성 POST: /api/lost-items] 분실물 이름={},이미지 url={}, 위치={}, 날짜={}",
-        saved.getName(),
-        saved.getImageUrl(),
-        saved.getFoundPlace(),
-        saved.getFoundDate());
-
-    return lostItemMapper.toDto(saved);
-  }
+  LostItemPageResponse getLostItems(String name, LocalDate foundDate, int page, int size);
 
   /**
-   * 주어진 ID에 해당하는 분실물 정보를 조회합니다.
+   * [ 분실물 단건 조회 메서드 ]
    *
-   * @param id 조회할 분실물 ID
-   * @return 조회된 분실물 응답 DTO
+   * @param lostItemId 조회할 분실물의 식별자
+   * @return 분실물 단건 응답
    */
-  @Transactional(readOnly = true)
-  public LostItemResponse findOne(Long id) {
-    LostItem lostItem = getEntity(id);
-    return lostItemMapper.toDto(lostItem);
-  }
+  LostItemResponse getLostItem(Long lostItemId);
 
   /**
-   * 검색어와 정렬 조건에 따라 분실물 목록을 조회합니다.
+   * [ 분실물 등록 메서드 ]
    *
-   * @param name 검색할 분실물 이름 (선택)
-   * @param sort 정렬 기준 (LATEST 또는 OLDEST)
-   * @param pageable 페이지네이션 정보
-   * @return 분실물 목록 페이지
+   * @param request 분실물 등록 요청 정보
+   * @param images 분실물 이미지 리스트, 최소 1장 최대 4장
+   * @return 등록된 분실물 응답
    */
-  @Transactional(readOnly = true)
-  public Page<LostItemResponse> findAll(String name, SortType sort, Pageable pageable) {
-    log.info(
-        "[분실물 목록 조회 GET: /api/lost-items] 검색어: {}, 정렬: {}, 페이지 번호: {}, 페이지 크기: {}",
-        name,
-        sort,
-        pageable.getPageNumber(),
-        pageable.getPageSize());
-    Page<LostItem> result;
-
-    if (name == null || name.isBlank()) {
-      result =
-          (sort == SortType.LATEST)
-              ? lostItemRepository.findByIsDeletedFalseOrderByCreatedAtDesc(pageable)
-              : lostItemRepository.findByIsDeletedFalseOrderByCreatedAtAsc(pageable);
-    } else {
-      result =
-          (sort == SortType.LATEST)
-              ? lostItemRepository
-                  .findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                      name, pageable)
-              : lostItemRepository
-                  .findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByCreatedAtAsc(
-                      name, pageable);
-    }
-
-    return result.map(lostItemMapper::toDto);
-  }
+  LostItemResponse createLostItem(LostItemRequest request, List<MultipartFile> images);
 
   /**
-   * 주어진 ID의 분실물 정보를 수정하고 수정된 정보를 반환합니다.
+   * [ 분실물 수정 메서드 ]
    *
-   * @param id 수정할 분실물 ID
-   * @param dto 분실물 수정 요청 DTO
-   * @return 수정된 분실물 응답 DTO
+   * @param lostItemId 수정할 분실물의 식별자
+   * @param request 분실물 수정 요청 정보, 기존 값 포함
+   * @param images 분실물 이미지 리스트, 선택값. 전달 시 기존 이미지 전체 교체
+   * @return 수정된 분실물 응답
    */
-  @Transactional
-  public LostItemResponse update(Long id, LostItemRequest dto, String imageUrl) {
-    LostItem lostItem = getEntity(id);
-
-    String oldImageUrl = lostItem.getImageUrl();
-
-    lostItemMapper.merge(lostItem, dto, imageUrl);
-
-    if (imageUrl != null && oldImageUrl != null && !oldImageUrl.isBlank()) {
-      deleteOldImage(oldImageUrl);
-    }
-
-    log.info(
-        "[분실물 수정] ID={}, 이름={}, 위치={}, 날짜={}, 새이미지={}",
-        id,
-        lostItem.getName(),
-        lostItem.getFoundPlace(),
-        lostItem.getFoundDate(),
-        lostItem.getImageUrl());
-
-    return lostItemMapper.toDto(lostItem);
-  }
+  LostItemResponse updateLostItem(
+      Long lostItemId, LostItemRequest request, List<MultipartFile> images);
 
   /**
-   * 분실물의 수령 여부를 설정합니다.
+   * [ 분실물 삭제 메서드 ]
    *
-   * @param id 분실물 ID
-   * @param returned 수령 여부 (true: 수령됨, false: 수령되지 않음)
-   * @return 수령 여부가 변경된 분실물 응답 DTO
+   * @param lostItemId 삭제할 분실물의 식별자
    */
-  @Transactional
-  public LostItemResponse setReturned(Long id, boolean returned) {
-    LostItem lostItem = getEntity(id);
-
-    if (returned && lostItem.isReturned()) {
-      throw new CustomException(LostItemErrorCode.ITEM_ALREADY_RETURNED);
-    }
-
-    lostItem.setReturned(returned);
-    lostItemRepository.save(lostItem);
-
-    log.info("[수령 상태 변경 PATCH: /api/lost-items/{}] 수령 여부: {}", id, returned);
-
-    return lostItemMapper.toDto(lostItem);
-  }
+  void deleteLostItem(Long lostItemId);
 
   /**
-   * 분실물을 삭제 처리합니다 (Soft Delete).
+   * [ 분실물 수령 상태 변경 메서드 ]
    *
-   * @param id 삭제할 분실물 ID
+   * @param lostItemId 상태를 변경할 분실물의 식별자
+   * @param returned 수령 여부 (true: 수령 처리, false: 미수령 처리)
+   * @return 상태가 변경된 분실물 응답
    */
-  @Transactional
-  public void deleteById(Long id) {
-    LostItem lostItem = getEntity(id);
-
-    String oldImageUrl = lostItem.getImageUrl();
-    if (oldImageUrl != null && !oldImageUrl.isBlank()) {
-      deleteOldImage(oldImageUrl);
-    }
-    log.info("[분실물 삭제 DELETE: /api/lost-items/{}]", id);
-    lostItem.setDeleted(true);
-  }
-
-  /**
-   * 주어진 ID에 해당하는 삭제되지 않은 분실물을 조회합니다.
-   *
-   * @param id 조회할 분실물 ID
-   * @return 삭제되지 않은 분실물 엔티티
-   * @throws NoSuchElementException 분실물이 존재하지 않는 경우
-   * @throws IllegalStateException 분실물이 삭제된 경우
-   */
-  private LostItem getEntity(Long id) {
-    LostItem lostItem =
-        lostItemRepository
-            .findById(id)
-            .orElseThrow(() -> new CustomException(LostItemErrorCode.ITEM_NOT_FOUND));
-
-    if (lostItem.isDeleted()) {
-      throw new CustomException(LostItemErrorCode.ITEM_ALREADY_DELETED);
-    }
-    log.info("[분실물 조회 내부 메서드] ID: {}", id);
-    return lostItem;
-  }
-
-  /**
-   * 기존 이미지 URL에서 keyName을 추출하여 해당 이미지를 S3 버킷에서 삭제합니다.
-   *
-   * @param oldImageUrl 삭제할 이미지의 전체 URL
-   */
-  private void deleteOldImage(String oldImageUrl) {
-    try {
-      String keyName = s3Service.extractKeyNameFromUrl(oldImageUrl);
-      log.info("[이미지 삭제 시도] oldImageUrl={}, 추출된 keyName={}", oldImageUrl, keyName);
-
-      s3Service.deleteFile(keyName);
-
-      log.info("[S3 삭제] 기존 파일 삭제 성공: {}", keyName);
-    } catch (Exception e) {
-      log.error("[S3 삭제 실패] 삭제 중 에러 발생", e);
-    }
-  }
+  LostItemResponse updateLostItemStatus(Long lostItemId, boolean returned);
 }

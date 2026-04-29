@@ -3,52 +3,55 @@
  */
 package com.skulikelion.festival.domain.lostitem.mapper;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.domain.lostitem.dto.request.LostItemRequest;
+import com.skulikelion.festival.domain.lostitem.dto.response.LostItemListResponse;
+import com.skulikelion.festival.domain.lostitem.dto.response.LostItemPageResponse;
 import com.skulikelion.festival.domain.lostitem.dto.response.LostItemResponse;
 import com.skulikelion.festival.domain.lostitem.entity.LostItem;
 
 @Component
 public class LostItemMapper {
 
-  private LostItemMapper() {}
-
-  public LostItemResponse toDto(LostItem lostItem) {
+  public LostItemResponse toResponse(LostItem lostItem, List<String> imageUrls) {
     return LostItemResponse.builder()
+        .id(lostItem.getId())
+        .name(lostItem.getName())
+        .imageUrls(imageUrls)
+        .foundPlace(lostItem.getFoundPlace())
+        .foundDate(lostItem.getFoundDate())
+        .dayOfWeek(getDay(lostItem.getFoundDate()))
+        .isReturned(lostItem.isReturned())
+        .build();
+  }
+
+  public LostItemListResponse toListResponse(LostItem lostItem) {
+    return LostItemListResponse.builder()
         .id(lostItem.getId())
         .name(lostItem.getName())
         .imageUrl(lostItem.getImageUrl())
         .foundPlace(lostItem.getFoundPlace())
         .foundDate(lostItem.getFoundDate())
-        .isReturned(lostItem.isReturned())
-        .createdAt(lostItem.getCreatedAt())
+        .dayOfWeek(getDay(lostItem.getFoundDate()))
         .build();
   }
 
-  public LostItem toEntity(LostItemRequest dto, String imageUrl) {
-    return LostItem.builder()
-        .name(dto.getName())
-        .foundPlace(dto.getFoundPlace())
-        .foundDate(dto.getFoundDate())
-        .imageUrl(imageUrl)
-        .isReturned(false)
-        .isDeleted(false)
+  public LostItemPageResponse toPageResponse(Page<LostItem> page) {
+    return LostItemPageResponse.builder()
+        .content(page.getContent().stream().map(this::toListResponse).toList())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .pageNum(page.getNumber() + 1)
+        .pageSize(page.getSize())
+        .last(page.isLast())
         .build();
   }
 
-  public void merge(LostItem lostItem, LostItemRequest dto, String imageUrl) {
-    if (dto.getName() != null) {
-      lostItem.setName(dto.getName());
-    }
-    if (dto.getFoundPlace() != null) {
-      lostItem.setFoundPlace(dto.getFoundPlace());
-    }
-    if (dto.getFoundDate() != null) {
-      lostItem.setFoundDate(dto.getFoundDate());
-    }
-    if (imageUrl != null) {
-      lostItem.setImageUrl(imageUrl);
-    }
+  private String getDay(LocalDate date) {
+    return date.getDayOfWeek().toString();
   }
 }

@@ -43,7 +43,7 @@ public class BoothController {
       description =
           """
           **Parameters**  \n
-          request: 부스 생성 정보, 번역 정보 \n
+          request: 부스 생성 정보, 운영 정보 3개, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n
@@ -57,6 +57,7 @@ public class BoothController {
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
+          menus: 낮/밤 메뉴 리스트 \n
           """,
       requestBody =
           @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -83,7 +84,7 @@ public class BoothController {
           """
           **Parameters**  \n
           boothId: 수정할 부스 식별자 \n
-          request: 부스 수정 정보, 번역 정보 \n
+          request: 부스 수정 정보, 운영 정보 3개, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n
@@ -97,6 +98,7 @@ public class BoothController {
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
+          menus: 낮/밤 메뉴 리스트 \n
           """,
       requestBody =
           @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -136,24 +138,24 @@ public class BoothController {
   }
 
   @Operation(
-      summary = "[ 사용자 | 토큰 X | 위치별 부스 조회 ]",
+      summary = "[ 사용자 | 토큰 X | 부스 전체/위치별 조회 ]",
       description =
           """
           **Parameters**  \n
-          location: 조회할 부스 위치 \n
+          location: 조회할 부스 위치, 미입력 시 전체 조회 \n
           \n
           **Returns**  \n
           boothId: 부스 식별자 \n
           thumbnailUrl: 부스 썸네일 이미지 URL \n
+          location: 부스 위치 \n
           locationDetail: 부스 상세 위치 \n
           departmentName: 학과명 \n
-          boothName: 부스명 \n
           """)
   @GetMapping("/booths")
-  public ResponseEntity<BaseResponse<List<BoothListResponse>>> getBoothsByLocation(
-      @RequestParam BoothLocation location) {
-    List<BoothListResponse> responses = boothService.getBoothsByLocation(location);
-    return ResponseEntity.status(200).body(BaseResponse.success(200, "위치별 부스 조회 성공", responses));
+  public ResponseEntity<BaseResponse<List<BoothListResponse>>> getBooths(
+      @RequestParam(required = false) BoothLocation location) {
+    List<BoothListResponse> responses = boothService.getBooths(location);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 목록 조회 성공", responses));
   }
 
   @Operation(
@@ -166,9 +168,9 @@ public class BoothController {
           **Returns**  \n
           boothId: 부스 식별자 \n
           thumbnailUrl: 부스 썸네일 이미지 URL \n
+          location: 부스 위치 \n
           locationDetail: 부스 상세 위치 \n
           departmentName: 학과명 \n
-          boothName: 부스명 \n
           """)
   @GetMapping("/booths/search")
   public ResponseEntity<BaseResponse<List<BoothListResponse>>> searchBooths(
@@ -195,6 +197,7 @@ public class BoothController {
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
+          menus: 낮/밤 메뉴 리스트 \n
           """)
   @GetMapping("/booths/{boothId}")
   public ResponseEntity<BaseResponse<BoothResponse>> getBooth(

@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.booth.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 
 import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
@@ -49,7 +50,8 @@ public class BoothMenu extends BaseTimeEntity {
   @Column(nullable = false)
   private Boolean isSoldOut = false;
 
-  @Column(columnDefinition = "TEXT")
+  @Size(max = 150)
+  @Column(length = 150)
   private String descriptionKo;
 
   @Enumerated(EnumType.STRING)

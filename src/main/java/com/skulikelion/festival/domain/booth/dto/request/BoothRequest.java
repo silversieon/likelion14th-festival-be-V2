@@ -24,14 +24,8 @@ public class BoothRequest {
   @NotNull(message = "학과를 입력해주세요.") @Schema(description = "학과", example = "SOFTWARE")
   private Department department;
 
-  @Schema(description = "부스 영업 시작 시각(HH:mm)", example = "18:00")
-  private String openTime;
-
-  @Schema(description = "주문 가능 시작 시각(HH:mm)", example = "18:30")
-  private String orderOpenTime;
-
-  @Schema(description = "부스 영업 종료 시각(HH:mm)", example = "02:00")
-  private String closeTime;
+  @Schema(description = "주문 서비스 사용 여부", example = "true")
+  private Boolean orderEnabled;
 
   @Schema(description = "부스 위치", example = "YUDAM")
   private BoothLocation location;
@@ -49,7 +43,12 @@ public class BoothRequest {
   private String bankName;
 
   @Valid
+  @NotEmpty(message = "부스 운영 정보를 입력해주세요.")
+  @Schema(description = "부스 운영 정보, 정확히 3개")
+  private List<BoothOperationRequest> operations;
+
+  @Valid
   @NotEmpty(message = "부스 번역 정보를 입력해주세요.")
-  @Schema(description = "부스 번역 정보")
+  @Schema(description = "부스 번역 정보, KO/EN/ZH 모두 필수")
   private List<BoothTranslationRequest> translations;
 }

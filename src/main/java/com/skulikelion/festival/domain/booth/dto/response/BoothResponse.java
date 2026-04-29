@@ -35,9 +35,12 @@ public class BoothResponse {
   @Schema(description = "부스명")
   private String boothName;
 
-  @Schema(description = "부스 설명")
+  @Schema(description = "부스 설명", maxLength = 150)
   private String description;
 
   @Schema(description = "상세 이미지 목록")
   private List<BoothDetailImageResponse> detailImages;
+
+  @Schema(description = "낮/밤 메뉴 목록")
+  private BoothMenuSummaryGroupResponse menus;
 }

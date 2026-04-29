@@ -3,6 +3,7 @@
  */
 package com.skulikelion.festival.domain.order.entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
@@ -59,6 +60,12 @@ public class Order extends BaseTimeEntity {
       throw new CustomException(OrderErrorCode.ORDER_STATUS_CHANGE_FAILED);
     if (!this.orderStatus.canChangeTo(newOrderStatus)) {
       throw new CustomException(OrderErrorCode.ORDER_STATUS_CHANGE_FAILED);
+    }
+    if (this.orderStatus == OrderStatus.COMPLETED || this.orderStatus == OrderStatus.CANCELED) {
+      LocalDate now = LocalDate.now();
+      if (this.getCreatedAt().toLocalDate().isBefore(now)) {
+        throw new CustomException(OrderErrorCode.ORDER_REVERT_NOT_ALLOWED);
+      }
     }
     this.orderStatus = newOrderStatus;
     if (newOrderStatus == OrderStatus.COMPLETED) this.completedAt = LocalDateTime.now();

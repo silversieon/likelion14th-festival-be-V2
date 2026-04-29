@@ -15,7 +15,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "FinishedOrderResponse: 완료된 주문 응답 DTO")
+@Schema(title = "CompletedOrderResponse: 완료된 주문 응답 DTO")
 public class CompletedOrderResponse {
 
   @Schema(description = "주문 식별자", example = "1")
@@ -42,7 +42,7 @@ public class CompletedOrderResponse {
   @Schema(description = "주문 시각", example = "18:30")
   private String orderTime;
 
-  @Schema(description = "완료된 시각", example = "19:00")
+  @Schema(description = "완료 시각", example = "19:00")
   private String completeTime;
 
   @Schema(description = "주문한 메뉴 목록")

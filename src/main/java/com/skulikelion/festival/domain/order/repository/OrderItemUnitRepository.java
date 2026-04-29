@@ -30,9 +30,14 @@ public interface OrderItemUnitRepository extends JpaRepository<OrderItemUnit, Lo
       """
             SELECT new com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitResponse(
                 oiu.id,
-                             oiu.orderItem.id,
-                                        oiu.isServed
+                  o.id,
+                    bm.nameKo,
+                      bm.price,
+                        oiu.isServed
                 ) FROM OrderItemUnit oiu
+                            JOIN oiu.orderItem oi
+                                        JOIN oi.boothMenu bm
+                                        JOIN oi.order o
                         WHERE oiu.orderItem.id IN :orderItemIds
             """)
   List<CookingOrderItemUnitResponse> findCookingOrderItemUnitsByOrderItemIds(

@@ -46,7 +46,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             o.customerName,
               o.customerPhoneNumber,
                 o.createdAt,
-                  o.totalOrderPrice
+                  o.totalOrderPrice,
+                    o.modifiedAt
           ) FROM OrderItem oi
         JOIN oi.order o
           JOIN oi.boothMenu bm

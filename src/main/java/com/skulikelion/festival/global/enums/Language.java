@@ -3,6 +3,8 @@
  */
 package com.skulikelion.festival.global.enums;
 
+import com.skulikelion.festival.domain.booth.entity.BoothMenu;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,4 +18,12 @@ public enum Language {
   ZH("중국어");
 
   private final String description;
+
+  public String getMenuName(BoothMenu menu) {
+    return switch (this) {
+      case KO -> menu.getNameKo();
+      case EN -> menu.getNameEn();
+      case ZH -> menu.getNameZh();
+    };
+  }
 }

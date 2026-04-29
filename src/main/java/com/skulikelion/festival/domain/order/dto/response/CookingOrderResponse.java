@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,8 +41,10 @@ public class CookingOrderResponse {
   @Schema(description = "주문 총 가격", example = "56000")
   private Integer totalOrderPrice;
 
-  @Schema(description = "주문한 메뉴 상세 목록")
-  private List<CookingOrderItemResponse> orderItems;
+  @Schema(description = "주문한 메뉴 상세 개별 목록")
+  private List<CookingOrderItemUnitResponse> orderItemUnits;
+
+  @JsonIgnore private LocalDateTime modifiedAt;
 
   public CookingOrderResponse(
       Long orderId,
@@ -49,7 +53,8 @@ public class CookingOrderResponse {
       String customerName,
       String customerPhoneNumber,
       LocalDateTime orderTime,
-      Integer totalOrderPrice) {
+      Integer totalOrderPrice,
+      LocalDateTime modifiedAt) {
     this.orderId = orderId;
     this.tableNumber = tableNumber;
     this.numOfPeople = numOfPeople;
@@ -57,9 +62,10 @@ public class CookingOrderResponse {
     this.customerPhoneNumber = customerPhoneNumber;
     this.orderTime = orderTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     this.totalOrderPrice = totalOrderPrice;
+    this.modifiedAt = modifiedAt;
   }
 
-  public void addOrderItems(List<CookingOrderItemResponse> orderItems) {
-    this.orderItems = orderItems;
+  public void addOrderItemUnits(List<CookingOrderItemUnitResponse> orderItemUnits) {
+    this.orderItemUnits = orderItemUnits;
   }
 }

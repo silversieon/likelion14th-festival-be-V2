@@ -118,15 +118,15 @@ jobs:
             
             # ── 헬스체크 (최대 120초) ──────────────────────────────────
             echo "⏳ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 중..."
-            for i in $(seq 1 24); do
+            for i in $(seq 1 36); do
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${NEXT_PORT}/actuator/health || echo "000")
               if [ "$STATUS" = "200" ]; then
                 echo "✅ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 통과 (${i}회차)"
                 break
               fi
-              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 120s) status=$STATUS"
+              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 360s) status=$STATUS"
               sleep 5
-              if [ "$i" = "24" ]; then
+              if [ "$i" = "36" ]; then
                 echo "❌ [DEV] 헬스체크 실패 → 롤백 (festival-dev-${NEXT_COLOR} 중단)"
                 docker compose -f docker-compose.yml -f $NEXT_COMPOSE stop festival-dev-${NEXT_COLOR} || true
                 exit 1

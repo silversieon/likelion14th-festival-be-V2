@@ -116,17 +116,17 @@ jobs:
             docker compose -f docker-compose.yml -f $NEXT_COMPOSE pull festival-dev-${NEXT_COLOR}
             docker compose -f docker-compose.yml -f $NEXT_COMPOSE up -d --no-deps festival-dev-${NEXT_COLOR}
             
-            # ── 헬스체크 (최대 240초) ──────────────────────────────────
+            # ── 헬스체크 (최대 300초) ──────────────────────────────────
             echo "⏳ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 중..."
-            for i in $(seq 1 48); do
+            for i in $(seq 1 60); do
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${NEXT_PORT}/actuator/health || echo "000")
               if [ "$STATUS" = "200" ]; then
                 echo "✅ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 통과 (${i}회차)"
                 break
               fi
-              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 240s) status=$STATUS"
+              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 300s) status=$STATUS"
               sleep 5
-              if [ "$i" = "48" ]; then
+              if [ "$i" = "60" ]; then
                 echo "❌ [DEV] 헬스체크 실패 → 롤백 (festival-dev-${NEXT_COLOR} 중단)"
                 docker compose -f docker-compose.yml -f $NEXT_COMPOSE stop festival-dev-${NEXT_COLOR} || true
                 exit 1

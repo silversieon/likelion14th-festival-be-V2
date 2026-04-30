@@ -1,6 +1,6 @@
 # 개발 환경용 앱 컨테이너 Compose 파일
 services:
-  app:
+  festival-dev-blue:
     image: ${DOCKER_USERNAME}/${DEV_DOCKER_REPO}:latest
     container_name: festival-dev-blue
     ports:

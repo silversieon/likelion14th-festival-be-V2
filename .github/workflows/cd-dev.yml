@@ -124,9 +124,9 @@ jobs:
                 echo "✅ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 통과 (${i}회차)"
                 break
               fi
-              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 60s) status=$STATUS"
+              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 120s) status=$STATUS"
               sleep 5
-              if [ "$i" = "12" ]; then
+              if [ "$i" = "24" ]; then
                 echo "❌ [DEV] 헬스체크 실패 → 롤백 (festival-dev-${NEXT_COLOR} 중단)"
                 docker compose -f docker-compose.yml -f $NEXT_COMPOSE stop festival-dev-${NEXT_COLOR} || true
                 exit 1

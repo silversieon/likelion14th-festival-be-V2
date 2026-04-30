@@ -15,7 +15,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.Size;
 
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 import com.skulikelion.festival.global.enums.Language;
@@ -53,7 +52,6 @@ public class BoothTranslation extends BaseTimeEntity {
 
   private String boothName;
 
-  @Size(max = 150)
-  @Column(length = 150)
+  @Column(columnDefinition = "TEXT")
   private String description;
 }

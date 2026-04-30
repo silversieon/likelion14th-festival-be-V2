@@ -35,7 +35,7 @@ public class BoothResponse {
   @Schema(description = "부스명")
   private String boothName;
 
-  @Schema(description = "부스 설명", maxLength = 150)
+  @Schema(description = "부스 설명")
   private String description;
 
   @Schema(description = "상세 이미지 목록")

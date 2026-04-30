@@ -7,9 +7,11 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skulikelion.festival.domain.booth.dto.request.BoothOperationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
+import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.enums.Language;
@@ -41,6 +43,26 @@ public interface BoothService {
       BoothRequest request,
       MultipartFile thumbnail,
       List<MultipartFile> detailImages);
+
+  /**
+   * [ 부스 운영 시간 변경 메서드 ]
+   *
+   * @param departmentName 요청한 관리자의 학과명
+   * @param boothId 운영 시간을 변경할 부스의 식별자
+   * @param request 부스 운영 시간 변경 요청 정보
+   * @return 변경된 부스 운영 정보
+   */
+  BoothOperationResponse updateBoothOperation(
+      String departmentName, Long boothId, BoothOperationRequest request);
+
+  /**
+   * [ 부스 운영 시간 정보 조회 메서드 ]
+   *
+   * @param departmentName 요청한 관리자의 학과명
+   * @param boothId 운영 시간 정보를 조회할 부스의 식별자
+   * @return 부스 운영 시간 정보 리스트
+   */
+  List<BoothOperationResponse> getBoothOperationInfos(String departmentName, Long boothId);
 
   /**
    * [ 부스 삭제 메서드 ]

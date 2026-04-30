@@ -10,13 +10,16 @@ import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skulikelion.festival.domain.booth.dto.request.BoothMultipartBody;
+import com.skulikelion.festival.domain.booth.dto.request.BoothOperationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
+import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.service.BoothService;
@@ -43,7 +46,7 @@ public class BoothController {
       description =
           """
           **Parameters**  \n
-          request: 부스 생성 정보, 운영 정보 3개, KO/EN/ZH 번역 정보 \n
+          request: 부스 생성 정보, 운영 정보 3개 이상, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n
@@ -84,7 +87,7 @@ public class BoothController {
           """
           **Parameters**  \n
           boothId: 수정할 부스 식별자 \n
-          request: 부스 수정 정보, 운영 정보 3개, KO/EN/ZH 번역 정보 \n
+          request: 부스 수정 정보, 운영 정보 3개 이상, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n
@@ -118,6 +121,59 @@ public class BoothController {
       @RequestPart(value = "detailImages", required = false) List<MultipartFile> detailImages) {
     BoothResponse response = boothService.updateBooth(boothId, request, thumbnail, detailImages);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 수정 성공", response));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 부스 운영 시간 변경 ]",
+      description =
+          """
+          **Parameters**  \n
+          boothId: 운영 시간을 변경할 부스 식별자 \n
+          operationDate: 변경할 운영 날짜 \n
+          timeType: 운영 시간 타입 \n
+          dayOpenTime: 낮 시작 시간, DAY/ALL 필수 \n
+          nightOpenTime: 밤 시작 시간, NIGHT/ALL 필수 \n
+          closeTime: 마감 시간 \n
+          \n
+          **Returns**  \n
+          operationDate: 운영 날짜 \n
+          timeType: 운영 시간 타입 \n
+          dayOpenTime: 낮 시작 시간 \n
+          nightOpenTime: 밤 시작 시간 \n
+          closeTime: 마감 시간 \n
+          """)
+  @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
+  @PatchMapping("/booths/{boothId}/operations")
+  public ResponseEntity<BaseResponse<BoothOperationResponse>> updateBoothOperation(
+      @AuthenticationPrincipal String departmentName,
+      @PathVariable Long boothId,
+      @Valid @RequestBody BoothOperationRequest request) {
+    BoothOperationResponse response =
+        boothService.updateBoothOperation(departmentName, boothId, request);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 운영 시간 변경 성공", response));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 부스 정보 조회 ]",
+      description =
+          """
+          **Parameters**  \n
+          boothId: 운영 시간 정보를 조회할 부스 식별자 \n
+          \n
+          **Returns**  \n
+          operationDate: 운영 날짜 \n
+          timeType: 운영 시간 타입 \n
+          dayOpenTime: 낮 시작 시간 \n
+          nightOpenTime: 밤 시작 시간 \n
+          closeTime: 마감 시간 \n
+          """)
+  @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
+  @GetMapping("/booths/{boothId}/operations")
+  public ResponseEntity<BaseResponse<List<BoothOperationResponse>>> getBoothOperationInfos(
+      @AuthenticationPrincipal String departmentName, @PathVariable Long boothId) {
+    List<BoothOperationResponse> response =
+        boothService.getBoothOperationInfos(departmentName, boothId);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 정보 조회 성공", response));
   }
 
   @Operation(

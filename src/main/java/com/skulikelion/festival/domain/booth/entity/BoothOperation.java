@@ -60,6 +60,14 @@ public class BoothOperation extends BaseTimeEntity {
   @Column(nullable = false)
   private LocalTime closeTime;
 
+  public void update(
+      TimeType timeType, LocalTime dayOpenTime, LocalTime nightOpenTime, LocalTime closeTime) {
+    this.timeType = timeType;
+    this.dayOpenTime = dayOpenTime;
+    this.nightOpenTime = nightOpenTime;
+    this.closeTime = closeTime;
+  }
+
   public boolean isOpenAt(LocalTime now) {
     return switch (timeType) {
       case DAY, ALL -> dayOpenTime != null && isWithinOperatingTime(now, dayOpenTime, closeTime);

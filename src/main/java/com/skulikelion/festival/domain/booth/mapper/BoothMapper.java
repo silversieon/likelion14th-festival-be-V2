@@ -19,6 +19,7 @@ import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothDetailImageResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothMenuSummaryGroupResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothMenuSummaryResponse;
+import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
@@ -109,6 +110,16 @@ public class BoothMapper {
         .accountName(booth.getAccountName())
         .accountNumber(booth.getAccountNumber())
         .bankName(booth.getBankName())
+        .build();
+  }
+
+  public BoothOperationResponse toBoothOperationResponse(BoothOperation operation) {
+    return BoothOperationResponse.builder()
+        .operationDate(operation.getOperationDate())
+        .timeType(operation.getTimeType())
+        .dayOpenTime(operation.getDayOpenTime())
+        .nightOpenTime(operation.getNightOpenTime())
+        .closeTime(operation.getCloseTime())
         .build();
   }
 

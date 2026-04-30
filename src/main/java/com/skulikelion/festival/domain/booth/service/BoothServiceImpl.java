@@ -19,6 +19,7 @@ import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
+import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
@@ -33,6 +34,11 @@ import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothTranslationRepository;
+import com.skulikelion.festival.domain.manager.entity.Manager;
+import com.skulikelion.festival.domain.manager.entity.enums.Role;
+import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
+import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
@@ -53,6 +59,7 @@ public class BoothServiceImpl implements BoothService {
   private final BoothDetailImageRepository boothDetailImageRepository;
   private final BoothOperationRepository boothOperationRepository;
   private final BoothMenuRepository boothMenuRepository;
+  private final ManagerRepository managerRepository;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
 
@@ -204,6 +211,71 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional
+  public BoothOperationResponse updateBoothOperation(
+      String departmentName, Long boothId, BoothOperationRequest request) {
+    log.info(
+        "[BoothService] 부스 운영 시간 변경 요청 - 관리자 학과: {}, 부스 식별자: {}, 운영 날짜: {}",
+        departmentName,
+        boothId,
+        request.getOperationDate());
+    Booth booth = getBooth(boothId);
+
+    // 부스 관리자 권한 검증
+    validateBoothManager(departmentName, booth);
+
+    // 운영 시간 요청값 검증
+    validateOperationTime(request);
+    LocalDate operationDate = boothMapper.parseDate(request.getOperationDate());
+    BoothOperation operation =
+        boothOperationRepository
+            .findByBoothIdAndOperationDate(boothId, operationDate)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[BoothService] 부스 운영 시간 변경 실패 - 운영 정보 없음, 부스 식별자: {}, 운영 날짜: {}",
+                      boothId,
+                      operationDate);
+                  return new CustomException(BoothErrorCode.BOOTH_OPERATION_NOT_FOUND);
+                });
+
+    // 운영 시간 변경
+    operation.update(
+        request.getTimeType(),
+        boothMapper.parseTime(request.getDayOpenTime()),
+        boothMapper.parseTime(request.getNightOpenTime()),
+        boothMapper.parseTime(request.getCloseTime()));
+    log.info(
+        "[BoothService] 부스 운영 시간 변경 발생 - 부스 식별자: {}, 운영 날짜: {}, 운영 타입: {}",
+        boothId,
+        operationDate,
+        operation.getTimeType());
+    return boothMapper.toBoothOperationResponse(operation);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<BoothOperationResponse> getBoothOperationInfos(String departmentName, Long boothId) {
+    log.info("[BoothService] 부스 운영 시간 정보 조회 요청 - 관리자 학과: {}, 부스 식별자: {}", departmentName, boothId);
+    Booth booth = getBooth(boothId);
+
+    // 부스 관리자 권한 검증
+    validateBoothManager(departmentName, booth);
+
+    // 전체 운영 시간 조회
+    List<BoothOperation> operations =
+        boothOperationRepository.findByBoothIdOrderByOperationDateAsc(boothId);
+    if (operations.isEmpty()) {
+      log.warn("[BoothService] 부스 운영 시간 정보 조회 실패 - 운영 정보 없음, 부스 식별자: {}", boothId);
+      throw new CustomException(BoothErrorCode.BOOTH_OPERATION_NOT_FOUND);
+    }
+
+    log.info(
+        "[BoothService] 부스 운영 시간 정보 조회 발생 - 부스 식별자: {}, 운영 정보 개수: {}", boothId, operations.size());
+    return operations.stream().map(boothMapper::toBoothOperationResponse).toList();
+  }
+
+  @Override
+  @Transactional
   public void deleteBooth(Long boothId) {
     log.info("[BoothService] 부스 삭제 요청 - 부스 식별자: {}", boothId);
     Booth booth = getBooth(boothId);
@@ -301,6 +373,23 @@ public class BoothServiceImpl implements BoothService {
             });
   }
 
+  private void validateBoothManager(String departmentName, Booth booth) {
+    Department department = Department.valueOf(departmentName);
+    Manager currentManager =
+        managerRepository
+            .findByDepartment(department)
+            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
+
+    if (!booth.getDepartment().equals(currentManager.getDepartment())
+        && currentManager.getRole() != Role.ADMIN) {
+      log.warn(
+          "[BoothService] 부스 접근 권한 검증 실패 - 관리자 학과: {}, 부스 학과: {}",
+          currentManager.getDepartment(),
+          booth.getDepartment());
+      throw new CustomException(BoothErrorCode.BOOTH_ACCESS_DENIED);
+    }
+  }
+
   private List<BoothDetailImage> saveDetailImages(Booth booth, List<MultipartFile> detailImages) {
     if (detailImages == null || detailImages.isEmpty()) {
       log.info("[BoothService] 부스 상세 이미지 없음 - 부스 식별자: {}", booth.getId());
@@ -370,7 +459,7 @@ public class BoothServiceImpl implements BoothService {
   }
 
   private void validateOperations(List<BoothOperationRequest> operations) {
-    if (operations == null || operations.size() != 3) {
+    if (operations == null || operations.size() < 3) {
       log.warn(
           "[BoothService] 운영 정보 검증 실패 - 요청 개수: {}", operations == null ? 0 : operations.size());
       throw new CustomException(BoothErrorCode.BOOTH_OPERATION_REQUIRED);

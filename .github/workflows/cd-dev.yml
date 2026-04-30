@@ -1,0 +1,136 @@
+name: CD - Development
+
+on:
+  push:
+    branches: [ "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GIT_ACTION_TOKEN }}
+          submodules: true
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build & Push
+        run: |
+          echo "🟢 [DEV] Building Docker image"
+          docker build -f ./docker/Dockerfile \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest-${{ github.sha }} .
+
+          echo "🟢 [DEV] Pushing Docker image"
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest-${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: development
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose files to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          source: "docker/docker-compose.yml,docker/dev/docker-compose-blue-dev.yml,docker/dev/docker-compose-green-dev.yml"
+          target: "~/app"
+
+      - name: Deploy on Development Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/app/docker
+
+            echo "🟢 [DEV] festival-network 생성"
+            docker network inspect festival-network >/dev/null 2>&1 \
+              || docker network create festival-network
+
+            echo "🟢 [DEV] .env 생성 중..."
+            printf "${{ secrets.DEV_ENV_FILE }}" > .env
+
+            echo "🟢 [DEV] MySQL 상태 확인 중..."
+            MYSQL_STATUS=$(docker inspect -f '{{.State.Status}}' mysql 2>/dev/null || echo "not_found")
+
+            if [ "$MYSQL_STATUS" != "running" ]; then
+              echo "🟢 [DEV] MySQL not running → 공용 스택 기동"
+              docker compose -f docker-compose.yml pull
+              docker compose -f docker-compose.yml up -d
+            fi
+
+            # ── 블루/그린 활성 컬러 판별 ──────────────────────────────
+            if docker ps --filter "name=festival-dev-blue" --filter "status=running" | grep -q festival-dev-blue; then
+              ACTIVE_COLOR="blue"
+              NEXT_COLOR="green"
+              NEXT_PORT=8081
+            elif docker ps --filter "name=festival-dev-green" --filter "status=running" | grep -q festival-dev-green; then
+              ACTIVE_COLOR="green"
+              NEXT_COLOR="blue"
+              NEXT_PORT=8080
+            else
+              ACTIVE_COLOR="none"
+              NEXT_COLOR="blue"
+              NEXT_PORT=8080
+            fi
+
+            echo "🔵🟢 [DEV] ACTIVE=$ACTIVE_COLOR → NEXT=$NEXT_COLOR (port $NEXT_PORT)"
+
+            # ── NEXT 컨테이너 배포 ────────────────────────────────────
+            docker compose -f docker-compose.yml -f docker-compose-${NEXT_COLOR}-dev.yml pull festival-dev-${NEXT_COLOR}
+            docker compose -f docker-compose.yml -f docker-compose-${NEXT_COLOR}-dev.yml up -d --no-deps festival-dev-${NEXT_COLOR}
+
+            # ── 헬스체크 (최대 60초) ──────────────────────────────────
+            echo "⏳ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 중..."
+            for i in $(seq 1 12); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${NEXT_PORT}/actuator/health || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "✅ [DEV] festival-dev-${NEXT_COLOR} 헬스체크 통과 (${i}회차)"
+                break
+              fi
+              echo "🔄 [DEV] 대기 중... ($((i * 5))s / 60s) status=$STATUS"
+              sleep 5
+              if [ "$i" = "12" ]; then
+                echo "❌ [DEV] 헬스체크 실패 → 롤백 (festival-dev-${NEXT_COLOR} 중단)"
+                docker compose -f docker-compose.yml -f docker-compose-${NEXT_COLOR}-dev.yml stop festival-dev-${NEXT_COLOR} || true
+                exit 1
+              fi
+            done
+
+            # ── nginx upstream 전환 ───────────────────────────────────
+            echo "🔀 [DEV] nginx upstream → $NEXT_COLOR (port $NEXT_PORT)"
+            echo "upstream app { server localhost:${NEXT_PORT}; }" \
+              | sudo tee /etc/nginx/conf.d/upstream-app.conf > /dev/null
+
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ [DEV] nginx upstream 전환 완료"
+
+            # ── 이전 컨테이너 중단 ────────────────────────────────────
+            if [ "$ACTIVE_COLOR" != "none" ]; then
+              echo "🛑 [DEV] festival-dev-${ACTIVE_COLOR} 중단"
+              docker compose -f docker-compose.yml -f docker-compose-${ACTIVE_COLOR}-dev.yml stop festival-dev-${ACTIVE_COLOR} || true
+            fi
+
+            echo "🟢 [DEV] 사용하지 않는 이미지 정리"
+            docker image prune -f
+
+            echo "✅ [DEV] 블루/그린 배포 완료! (active: $NEXT_COLOR)"

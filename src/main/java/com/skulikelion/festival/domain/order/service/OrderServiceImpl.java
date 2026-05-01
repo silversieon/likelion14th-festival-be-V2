@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.order.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,6 @@ import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.manager.entity.Manager;
-import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
@@ -40,6 +40,7 @@ import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitRe
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
+import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.Order;
@@ -269,6 +270,24 @@ public class OrderServiceImpl implements OrderService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public SalesResponse getSales(String departmentName, LocalDate date) {
+    Booth booth = validateBoothExists(departmentName);
+    Long boothId = booth.getId();
+    validateBoothUsesOrder(booth);
+    validateBoothManager(departmentName, booth);
+
+    if (date == null) {
+      return orderRepository.findCompletedOrderTotalAmountByBoothId(boothId);
+    }
+
+    LocalDateTime start = date.atStartOfDay();
+    LocalDateTime end = date.plusDays(1).atStartOfDay();
+
+    return orderRepository.findCompletedOrderTotalAmountByBoothIdAndDate(boothId, start, end);
+  }
+
+  @Override
   @Transactional
   public void updateOrderStatus(String departmentName, Long orderId, OrderStatus newOrderStatus) {
     Booth booth = validateBoothExists(departmentName);
@@ -466,8 +485,7 @@ public class OrderServiceImpl implements OrderService {
                   log.warn("[OrderService] 매니저를 찾을 수 없습니다 - 학과명: {}", departmentName);
                   return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
                 });
-    if (!booth.getDepartment().equals(currentManager.getDepartment())
-        && currentManager.getRole() != Role.ADMIN) {
+    if (!booth.getDepartment().equals(currentManager.getDepartment())) {
       log.warn(
           "[OrderService] 부스 접근 권한 없음 - 학과명: {}, 매니저 역할: {}",
           departmentName,

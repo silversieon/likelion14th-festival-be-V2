@@ -12,6 +12,7 @@ import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
+import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
@@ -73,6 +74,15 @@ public interface OrderService {
    */
   List<CanceledOrderResponse> getCanceledOrders(
       String departmentName, LocalDate orderDate, String keyword);
+
+  /**
+   * [ 매출액 조회 메서드 ] 날짜별 매출액 조회
+   *
+   * @param departmentName 학과명
+   * @param date 조회할 날짜
+   * @return 매출액 응답 객체
+   */
+  SalesResponse getSales(String departmentName, LocalDate date);
 
   /**
    * [ 주문 상태 변경 메서드 ] 각 주문의 상태 변경 (대기 > 조리, 조리 > 완료 가능)

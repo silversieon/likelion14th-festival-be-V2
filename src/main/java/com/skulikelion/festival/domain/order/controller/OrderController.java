@@ -20,6 +20,7 @@ import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
+import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
@@ -60,7 +61,7 @@ public class OrderController {
                   EVENT NAME: connect \n
                   EVENT DATA: connected order subscribe
                   """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping(value = "/orders/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribeOrders(
       @AuthenticationPrincipal String departmentName,
@@ -141,7 +142,7 @@ public class OrderController {
                   totalOrderItemPrice: 주문 상세 총 가격
                   }
                   """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/waiting")
   public ResponseEntity<BaseResponse<List<WaitingOrderResponse>>> getWaitingOrders(
       @AuthenticationPrincipal String departmentName) {
@@ -171,7 +172,7 @@ public class OrderController {
                   isServed: 완료(또는 서빙) 여부
                  }
                  """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/cooking")
   public ResponseEntity<BaseResponse<List<CookingOrderResponse>>> getCookingOrders(
       @AuthenticationPrincipal String departmentName) {
@@ -184,6 +185,10 @@ public class OrderController {
       summary = "[ 부스 관리자 | 토큰 O | 완료된 주문 목록 조회 ]",
       description =
           """
+                  **Parameters** \n
+                  date: 조회할 날짜 (2026-05-01 형태) \n
+                  keyword: 검색어 \n
+                  \n
                   **Returns** \n
                   orderId: 주문 식별자 \n
                   tableNumber: 테이블 번호 \n
@@ -204,11 +209,11 @@ public class OrderController {
                   totalOrderItemPrice: 주문 상세 총 가격
                  }
                  """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/completed")
   public ResponseEntity<BaseResponse<List<CompletedOrderResponse>>> getCompletedOrders(
       @AuthenticationPrincipal String departmentName,
-      @RequestParam(required = false) @DateTimeFormat(pattern = "M/d") LocalDate date,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String keyword) {
     List<CompletedOrderResponse> completedOrders =
         orderService.getCompletedOrders(departmentName, date, keyword);
@@ -220,6 +225,10 @@ public class OrderController {
       summary = "[ 부스 관리자 | 토큰 O | 취소된 주문 목록 조회 ]",
       description =
           """
+                  **Parameters** \n
+                  date: 조회할 날짜 (2026-05-01 형태) \n
+                  keyword: 검색어 \n
+                  \n
                   **Returns** \n
                   orderId: 주문 식별자 \n
                   tableNumber: 테이블 번호 \n
@@ -241,16 +250,36 @@ public class OrderController {
                   totalOrderItemPrice: 주문 상세 총 가격
                  }
                  """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/canceled")
   public ResponseEntity<BaseResponse<List<CanceledOrderResponse>>> getCanceledOrders(
       @AuthenticationPrincipal String departmentName,
-      @RequestParam(required = false) @DateTimeFormat(pattern = "M/d") LocalDate date,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String keyword) {
     List<CanceledOrderResponse> canceledOrders =
         orderService.getCanceledOrders(departmentName, date, keyword);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "취소된 주문 목록 조회에 성공했습니다.", canceledOrders));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 날짜별 매출 조회 ]",
+      description =
+          """
+          **Parameters** \n
+          date: 조회할 날짜 (2026-05-01 형태) \n
+          \n
+          **Returns** \n
+          sales: 매출 \n
+          """)
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
+  @GetMapping("/orders/sales")
+  public ResponseEntity<BaseResponse<SalesResponse>> getSales(
+      @AuthenticationPrincipal String departmentName,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    SalesResponse response = orderService.getSales(departmentName, date);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "매출 조회에 성공했습니다.", response));
   }
 
   @Operation(
@@ -272,7 +301,7 @@ public class OrderController {
                   EVENT DATA: 조리 중, 완료된 주문 응답 (json) \n
                   }
                   """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/orders/{orderId}/status")
   public ResponseEntity<BaseResponse<Void>> updateOrderStatus(
       @AuthenticationPrincipal String departmentName,
@@ -294,7 +323,7 @@ public class OrderController {
                   EVENT NAME: canceledOrderEvent \n
                   EVENT DATA: 취소된 주문 응답 (json)
                   """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/orders/{orderId}/cancel")
   public ResponseEntity<BaseResponse<Void>> cancelOrder(
       @AuthenticationPrincipal String departmentName,
@@ -316,7 +345,7 @@ public class OrderController {
                   EVENT NAME: orderItemUnitStatusEvent \n
                   EVENT DATA: 주문 상세 개별 서빙 여부 (json)
                   """)
-  @PreAuthorize("hasAnyRole({'BOOTH_MANAGER', 'ADMIN'})")
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/order-item-units/{orderItemUnitId}")
   public ResponseEntity<BaseResponse<Void>> updateOrderItemUnit(
       @AuthenticationPrincipal String departmentName,

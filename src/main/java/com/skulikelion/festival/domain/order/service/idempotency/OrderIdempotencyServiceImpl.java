@@ -34,7 +34,7 @@ public class OrderIdempotencyServiceImpl implements OrderIdempotencyService {
                 .setIfAbsent(
                     IDEMPOTENCY_PREFIX + idempotencyKey, ORDER_PROCESSING, Duration.ofMinutes(1)));
     if (!isNew) {
-      log.info("[OrderIdempotencyService] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
+      log.warn("[OrderIdempotencyService] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
     }
     return isNew;
   }
@@ -63,7 +63,7 @@ public class OrderIdempotencyServiceImpl implements OrderIdempotencyService {
             IDEMPOTENCY_PREFIX + idempotencyKey,
             objectMapper.writeValueAsString(response),
             Duration.ofMinutes(10));
-    log.info("[OrderIdempotencyService] 응답 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
+    log.debug("[OrderIdempotencyService] 응답 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
   }
 
   @Override

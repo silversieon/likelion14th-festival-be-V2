@@ -64,7 +64,7 @@ public class Booth extends BaseTimeEntity {
       String bankName) {
     this.department = department;
     this.thumbnailUrl = thumbnailUrl;
-    this.orderEnabled = orderEnabled;
+    this.orderEnabled = Boolean.TRUE.equals(orderEnabled);
     this.location = location;
     this.locationDetail = locationDetail;
     this.accountName = accountName;

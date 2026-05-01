@@ -148,7 +148,6 @@ public class BoothServiceImpl implements BoothService {
     if (thumbnail != null && !thumbnail.isEmpty()) {
       thumbnailUrl = uploadImage(PathName.BOOTH_THUMBNAIL, thumbnail);
     }
-    deleteImageQuietly(oldThumbnailUrl);
     log.info(
         "[BoothService] 부스 썸네일 전체 교체 완료 - 부스 식별자: {}, thumbnailUrl: {}", boothId, thumbnailUrl);
 
@@ -186,7 +185,6 @@ public class BoothServiceImpl implements BoothService {
     // 상세 이미지 전체 교체
     List<BoothDetailImage> oldDetailImages =
         boothDetailImageRepository.findByBoothIdOrderByIdAsc(boothId);
-    oldDetailImages.forEach(detailImage -> deleteImageQuietly(detailImage.getImageUrl()));
     boothDetailImageRepository.deleteByBoothId(boothId);
     boothDetailImageRepository.flush();
     List<BoothDetailImage> responseDetailImages = saveDetailImages(booth, detailImages);
@@ -203,8 +201,12 @@ public class BoothServiceImpl implements BoothService {
             .findFirst()
             .orElse(translations.getFirst());
 
+    // DB 연관 데이터 교체 후 기존 이미지 정리
+    deleteImageQuietly(oldThumbnailUrl);
+    oldDetailImages.forEach(detailImage -> deleteImageQuietly(detailImage.getImageUrl()));
+
     log.info("[BoothService] 부스 수정 발생 - 부스 식별자: {}, 학과: {}", boothId, booth.getDepartment());
-    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByDisplayOrderAsc(boothId);
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     return boothMapper.toBoothResponse(
         booth, responseTranslation, responseDetailImages, operations, menus);
   }
@@ -264,10 +266,6 @@ public class BoothServiceImpl implements BoothService {
     // 전체 운영 시간 조회
     List<BoothOperation> operations =
         boothOperationRepository.findByBoothIdOrderByOperationDateAsc(boothId);
-    if (operations.isEmpty()) {
-      log.warn("[BoothService] 부스 운영 시간 정보 조회 실패 - 운영 정보 없음, 부스 식별자: {}", boothId);
-      throw new CustomException(BoothErrorCode.BOOTH_OPERATION_NOT_FOUND);
-    }
 
     log.info(
         "[BoothService] 부스 운영 시간 정보 조회 발생 - 부스 식별자: {}, 운영 정보 개수: {}", boothId, operations.size());
@@ -281,17 +279,20 @@ public class BoothServiceImpl implements BoothService {
     Booth booth = getBooth(boothId);
     List<BoothDetailImage> detailImages =
         boothDetailImageRepository.findByBoothIdOrderByIdAsc(boothId);
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
 
     // S3 이미지 정리
     deleteImageQuietly(booth.getThumbnailUrl());
     detailImages.forEach(detailImage -> deleteImageQuietly(detailImage.getImageUrl()));
+    menus.forEach(menu -> deleteImageQuietly(menu.getIconImageUrl()));
 
     // 부스 연관 데이터 삭제
     boothDetailImageRepository.deleteByBoothId(boothId);
     boothTranslationRepository.deleteByBoothId(boothId);
     boothOperationRepository.deleteByBoothId(boothId);
+    boothMenuRepository.deleteByBoothId(boothId);
     boothRepository.delete(booth);
-    log.info("[BoothService] 부스 연관 데이터 삭제 완료 - 부스 식별자: {}", boothId);
+    log.info("[BoothService] 부스 연관 데이터 삭제 완료 - 부스 식별자: {}, 메뉴 개수: {}", boothId, menus.size());
 
     log.info("[BoothService] 부스 삭제 발생 - 부스 식별자: {}", boothId);
   }
@@ -344,7 +345,7 @@ public class BoothServiceImpl implements BoothService {
         boothDetailImageRepository.findByBoothIdOrderByIdAsc(boothId);
     List<BoothOperation> operations =
         boothOperationRepository.findByBoothIdOrderByOperationDateAsc(boothId);
-    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByDisplayOrderAsc(boothId);
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     log.info(
         "[BoothService] 부스 단건 조회 발생 - 부스 식별자: {}, 언어: {}, 상세 이미지 개수: {}, 운영 정보 개수: {}, 메뉴 개수: {}",
         boothId,
@@ -378,7 +379,11 @@ public class BoothServiceImpl implements BoothService {
     Manager currentManager =
         managerRepository
             .findByDepartment(department)
-            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
+            .orElseThrow(
+                () -> {
+                  log.warn("[BoothService] 매니저 조회 실패 - 학과명: {}", departmentName);
+                  return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
+                });
 
     if (!booth.getDepartment().equals(currentManager.getDepartment())
         && currentManager.getRole() != Role.ADMIN) {

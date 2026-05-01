@@ -154,7 +154,7 @@ public class BoothController {
   }
 
   @Operation(
-      summary = "[ 부스 관리자 | 토큰 O | 부스 정보 조회 ]",
+      summary = "[ 부스 관리자 | 토큰 O | 부스 운영 시간 정보 조회 ]",
       description =
           """
           **Parameters**  \n

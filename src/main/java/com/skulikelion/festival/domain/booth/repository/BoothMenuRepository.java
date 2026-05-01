@@ -11,5 +11,7 @@ import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 
 public interface BoothMenuRepository extends JpaRepository<BoothMenu, Long> {
 
-  List<BoothMenu> findByBoothIdOrderByDisplayOrderAsc(Long boothId);
+  List<BoothMenu> findByBoothIdOrderByIdAsc(Long boothId);
+
+  void deleteByBoothId(Long boothId);
 }

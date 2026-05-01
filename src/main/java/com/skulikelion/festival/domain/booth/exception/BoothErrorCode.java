@@ -23,12 +23,15 @@ public enum BoothErrorCode implements BaseErrorCode {
   BOOTH_OPERATION_REQUIRED("BOOTH_4006", "부스 운영 정보는 3개 이상 입력해주세요.", HttpStatus.BAD_REQUEST),
   BOOTH_OPERATION_DUPLICATED("BOOTH_4007", "중복된 날짜의 부스 운영 정보가 있습니다.", HttpStatus.BAD_REQUEST),
   BOOTH_OPERATION_TIME_REQUIRED("BOOTH_4008", "운영 타입에 맞는 운영 시간을 입력해주세요.", HttpStatus.BAD_REQUEST),
+  BOOTH_MENU_ICON_IMAGE_COUNT_MISMATCH(
+      "BOOTH_4009", "메뉴 개수와 아이콘 이미지 개수가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
 
   BOOTH_ACCESS_DENIED("BOOTH_4031", "해당 부스에 대한 접근이 거부되었습니다.", HttpStatus.FORBIDDEN),
 
   BOOTH_NOT_FOUND("BOOTH_4041", "부스 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   BOOTH_TRANSLATION_NOT_FOUND("BOOTH_4042", "부스 번역 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   BOOTH_OPERATION_NOT_FOUND("BOOTH_4043", "부스 운영 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  BOOTH_MENU_NOT_FOUND("BOOTH_4044", "부스 메뉴 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
   BOOTH_ALREADY_EXISTS("BOOTH_4091", "이미 해당 학과의 부스가 존재합니다.", HttpStatus.CONFLICT);
 

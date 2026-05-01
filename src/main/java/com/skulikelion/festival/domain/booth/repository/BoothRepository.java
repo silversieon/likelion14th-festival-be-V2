@@ -8,14 +8,13 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
-
-import io.lettuce.core.dynamic.annotation.Param;
 
 public interface BoothRepository extends JpaRepository<Booth, Long> {
 

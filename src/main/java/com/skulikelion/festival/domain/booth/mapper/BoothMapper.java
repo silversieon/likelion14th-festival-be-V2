@@ -12,22 +12,28 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
+import com.skulikelion.festival.domain.booth.dto.request.BoothMenuRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothOperationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.request.BoothTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothDetailImageResponse;
+import com.skulikelion.festival.domain.booth.dto.response.BoothMenuResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothMenuSummaryGroupResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothMenuSummaryResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.OrderAvailableBoothMenuGroupResponse;
+import com.skulikelion.festival.domain.booth.dto.response.OrderAvailableBoothMenuResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 import com.skulikelion.festival.domain.booth.entity.BoothOperation;
 import com.skulikelion.festival.domain.booth.entity.BoothTranslation;
+import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
+import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 
 @Component
@@ -57,6 +63,21 @@ public class BoothMapper {
         .dayOpenTime(parseTime(request.getDayOpenTime()))
         .nightOpenTime(parseTime(request.getNightOpenTime()))
         .closeTime(parseTime(request.getCloseTime()))
+        .build();
+  }
+
+  public BoothMenu toBoothMenu(Booth booth, BoothMenuRequest request, String iconImageUrl) {
+    return BoothMenu.builder()
+        .booth(booth)
+        .nameKo(request.getNameKo())
+        .nameEn(request.getNameEn())
+        .nameZh(request.getNameZh())
+        .price(request.getPrice())
+        .timeType(request.getTimeType())
+        .isSoldOut(Boolean.TRUE.equals(request.getSoldOut()))
+        .descriptionKo(request.getDescriptionKo())
+        .category(request.getCategory())
+        .iconImageUrl(iconImageUrl)
         .build();
   }
 
@@ -123,6 +144,28 @@ public class BoothMapper {
         .build();
   }
 
+  public BoothMenuResponse toBoothMenuResponse(BoothMenu menu) {
+    return BoothMenuResponse.builder()
+        .menuId(menu.getId())
+        .name(menu.getNameKo())
+        .price(menu.getPrice())
+        .timeType(menu.getTimeType())
+        .soldOut(menu.getIsSoldOut())
+        .description(menu.getDescriptionKo())
+        .category(menu.getCategory())
+        .iconImageUrl(menu.getIconImageUrl())
+        .build();
+  }
+
+  public OrderAvailableBoothMenuGroupResponse toOrderAvailableBoothMenuGroupResponse(
+      List<BoothMenu> menus, Language language) {
+    return OrderAvailableBoothMenuGroupResponse.builder()
+        .main(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.MAIN))
+        .side(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.SIDE))
+        .drink(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.DRINK))
+        .build();
+  }
+
   private List<BoothDetailImageResponse> toBoothDetailImageResponses(
       List<BoothDetailImage> detailImages) {
     return detailImages.stream()
@@ -158,6 +201,26 @@ public class BoothMapper {
 
   private BoothMenuSummaryResponse toBoothMenuSummaryResponse(BoothMenu menu) {
     return BoothMenuSummaryResponse.builder().name(menu.getNameKo()).price(menu.getPrice()).build();
+  }
+
+  private List<OrderAvailableBoothMenuResponse> toOrderAvailableBoothMenuResponses(
+      List<BoothMenu> menus, Language language, MenuCategory category) {
+    return menus.stream()
+        .filter(menu -> menu.getCategory() == category)
+        .map(menu -> toOrderAvailableBoothMenuResponse(menu, language))
+        .toList();
+  }
+
+  private OrderAvailableBoothMenuResponse toOrderAvailableBoothMenuResponse(
+      BoothMenu menu, Language language) {
+    return OrderAvailableBoothMenuResponse.builder()
+        .menuId(menu.getId())
+        .iconImageUrl(menu.getIconImageUrl())
+        .name(language.getMenuName(menu))
+        .description(menu.getDescriptionKo())
+        .price(menu.getPrice())
+        .soldOut(menu.getIsSoldOut())
+        .build();
   }
 
   public LocalTime parseTime(String time) {

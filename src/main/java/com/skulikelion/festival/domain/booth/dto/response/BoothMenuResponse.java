@@ -38,7 +38,4 @@ public class BoothMenuResponse {
 
   @Schema(description = "아이콘 이미지 URL")
   private String iconImageUrl;
-
-  @Schema(description = "표시 순서")
-  private Integer displayOrder;
 }

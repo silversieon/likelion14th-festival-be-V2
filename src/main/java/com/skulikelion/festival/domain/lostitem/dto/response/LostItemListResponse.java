@@ -31,4 +31,7 @@ public class LostItemListResponse {
 
   @Schema(description = "습득 요일", example = "WEDNESDAY")
   private String dayOfWeek;
+
+  @Schema(description = "수령 여부", example = "false")
+  private final boolean isReturned;
 }

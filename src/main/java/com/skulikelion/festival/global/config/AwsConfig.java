@@ -3,8 +3,12 @@
  */
 package com.skulikelion.festival.global.config;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.skulikelion.festival.global.config.property.AwsProperties;
 
@@ -37,5 +41,20 @@ public class AwsConfig {
         .region(Region.of(awsProperties.getRegionStatic()))
         .credentialsProvider(awsCredentialsProvider)
         .build();
+  }
+
+  @Bean(name = "s3UploadExecutor")
+  public Executor s3UploadExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+    executor.setCorePoolSize(4);
+    executor.setMaxPoolSize(6);
+    executor.setQueueCapacity(30);
+    executor.setThreadNamePrefix("s3-upload-");
+
+    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+    executor.initialize();
+    return executor;
   }
 }

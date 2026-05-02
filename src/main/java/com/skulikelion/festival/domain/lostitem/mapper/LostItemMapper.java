@@ -37,6 +37,7 @@ public class LostItemMapper {
         .foundPlace(lostItem.getFoundPlace())
         .foundDate(lostItem.getFoundDate())
         .dayOfWeek(getDay(lostItem.getFoundDate()))
+        .isReturned(lostItem.isReturned())
         .build();
   }
 

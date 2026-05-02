@@ -36,6 +36,7 @@ public class LostItem extends BaseTimeEntity {
   @Column(nullable = false)
   private LocalDate foundDate; // 습득 날짜
 
+  @Builder.Default
   @Column(nullable = false)
   private boolean isReturned = false; // 수령 유무, true면 찾아감, false면 못찾음, default는 false
 }

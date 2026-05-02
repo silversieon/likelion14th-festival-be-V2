@@ -42,6 +42,7 @@ import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
+import com.skulikelion.festival.global.s3.service.S3AsyncService;
 import com.skulikelion.festival.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,7 @@ public class BoothServiceImpl implements BoothService {
   private final ManagerRepository managerRepository;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
+  private final S3AsyncService s3AsyncService;
 
   @Override
   @Transactional
@@ -402,12 +404,11 @@ public class BoothServiceImpl implements BoothService {
     }
 
     // 빈 파일 제외 후 업로드
+    List<String> detailImageUrls = s3AsyncService.uploadFiles(PathName.BOOTH_DETAIL, detailImages);
+
     List<BoothDetailImage> boothDetailImages =
-        detailImages.stream()
-            .filter(file -> file != null && !file.isEmpty())
-            .map(
-                file ->
-                    boothMapper.toBoothDetailImage(booth, uploadImage(PathName.BOOTH_DETAIL, file)))
+        detailImageUrls.stream()
+            .map(imageUrl -> boothMapper.toBoothDetailImage(booth, imageUrl))
             .toList();
     log.info(
         "[BoothService] 부스 상세 이미지 업로드 완료 - 부스 식별자: {}, 개수: {}",

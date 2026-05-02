@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Schema(description = "부스 위치")
 public enum BoothLocation {
-  YUDAM("유담관"),
+  DAEIL("대일관"),
   EUNJU_1("은주1관"),
   EUNJU_2("은주2관"),
   CHEONGUN("청운관"),

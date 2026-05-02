@@ -35,6 +35,7 @@ import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
+import com.skulikelion.festival.global.s3.service.S3AsyncService;
 import com.skulikelion.festival.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   private final ManagerRepository managerRepository;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
+  private final S3AsyncService s3AsyncService;
 
   @Override
   @Transactional
@@ -73,12 +75,22 @@ public class BoothMenuServiceImpl implements BoothMenuService {
     Booth booth = getBooth(boothId);
 
     // 아이콘 업로드 및 메뉴 저장
+    List<String> iconImageUrls =
+        validIconImages.isEmpty()
+            ? List.of()
+            : s3AsyncService.uploadFiles(PathName.COMMON_ICON, validIconImages);
+
     List<BoothMenu> boothMenus =
         IntStream.range(0, requests.size())
             .mapToObj(
                 index -> {
                   BoothMenuRequest request = requests.get(index);
-                  String iconImageUrl = uploadImage(getIconImage(validIconImages, index));
+
+                  String iconImageUrl =
+                      iconImageUrls.isEmpty() || iconImageUrls.size() <= index
+                          ? null
+                          : iconImageUrls.get(index);
+
                   return boothMapper.toBoothMenu(booth, request, iconImageUrl);
                 })
             .toList();

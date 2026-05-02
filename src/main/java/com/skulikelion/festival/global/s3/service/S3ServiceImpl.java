@@ -8,11 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.UUID;
-
-import javax.imageio.ImageIO;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +38,7 @@ public class S3ServiceImpl implements S3Service {
   private static final String INFIX_S3_URL = ".s3.";
   private static final String SUFFIX_S3_URL = ".amazonaws.com/";
   private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
-  private static final int WEBP_QUALITY = 85;
+  private static final int WEBP_QUALITY = 80;
   private static final String WEBP_EXTENSION = "webp";
   private static final String WEBP_CONTENT_TYPE = "image/webp";
 
@@ -59,7 +55,9 @@ public class S3ServiceImpl implements S3Service {
     validateFile(file);
 
     try {
-      byte[] webpBytes = convertToWebp(file.getBytes());
+      byte[] originalBytes = file.getBytes();
+      byte[] webpBytes = convertToWebp(originalBytes);
+
       String keyName = createKeyName(pathName, WEBP_EXTENSION);
       uploadToS3(keyName, webpBytes);
 
@@ -160,17 +158,6 @@ public class S3ServiceImpl implements S3Service {
     if (contentType == null || !contentType.startsWith("image/")) {
       throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
     }
-
-    try (InputStream inputStream = file.getInputStream()) {
-      BufferedImage image = ImageIO.read(inputStream);
-
-      if (image == null) {
-        throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
-      }
-    } catch (IOException e) {
-      log.error("[S3] 이미지 파일 검증 중 I/O 오류 발생", e);
-      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
-    }
   }
 
   private String createBucketImageUrl(String keyName) {
@@ -220,9 +207,11 @@ public class S3ServiceImpl implements S3Service {
         image.forWriter(writer).write(outputStream);
         return outputStream.toByteArray();
       }
+    } catch (CustomException e) {
+      throw e;
     } catch (Exception e) {
-      log.error("[S3] WebP 변환 실패", e);
-      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
+      log.error("[S3] WebP 변환 실패 - 유효하지 않은 이미지 또는 변환 실패", e);
+      throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
     }
   }
 }

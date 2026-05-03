@@ -116,7 +116,21 @@ public class OrderMapper {
         .build();
   }
 
-  public CookingOrderResponse toCookingOrderResponse(
+  public WaitingOrderResponse toWaitingOrderResponseFromDto(
+      Order order, List<WaitingOrderItemResponse> orderItems) {
+    return WaitingOrderResponse.builder()
+        .orderId(order.getId())
+        .tableNumber(order.getTableNumber())
+        .numOfPeople(order.getNumOfPeople())
+        .customerName(order.getCustomerName())
+        .customerPhoneNumber(order.getCustomerPhoneNumber())
+        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
+        .totalOrderPrice(order.getTotalOrderPrice())
+        .orderItems(orderItems)
+        .build();
+  }
+
+  public CookingOrderResponse toCookingOrderResponseFromDto(
       Order order, List<CookingOrderItemUnitResponse> orderItemUnits) {
     return CookingOrderResponse.builder()
         .orderId(order.getId())
@@ -130,7 +144,7 @@ public class OrderMapper {
         .build();
   }
 
-  public CompletedOrderResponse toCompletedOrderResponse(
+  public CompletedOrderResponse toCompletedOrderResponseFromDto(
       Order order, List<CompletedOrderItemResponse> orderItems) {
     return CompletedOrderResponse.builder()
         .orderId(order.getId())
@@ -146,7 +160,7 @@ public class OrderMapper {
         .build();
   }
 
-  public CanceledOrderResponse toCanceledOrderResponse(
+  public CanceledOrderResponse toCanceledOrderResponseFromDto(
       Order order,
       List<CanceledOrderItemResponse> orderItems,
       OrderCancelReason orderCancelReason) {

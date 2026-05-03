@@ -32,7 +32,7 @@ public enum OrderStatus {
   CANCELED("취소된") {
     @Override
     public boolean canChangeTo(OrderStatus orderStatus) {
-      return orderStatus == COOKING;
+      return orderStatus == WAITING;
     }
   };
 

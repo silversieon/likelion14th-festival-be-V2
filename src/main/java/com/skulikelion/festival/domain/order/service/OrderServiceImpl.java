@@ -310,6 +310,15 @@ public class OrderServiceImpl implements OrderService {
         previousStatus,
         newOrderStatus);
     switch (newOrderStatus) {
+      case WAITING -> {
+        List<WaitingOrderItemResponse> waitingOrderItems =
+            orderItemRepository.findWaitingOrderItemsByOrderIds(List.of(orderId));
+
+        eventPublisher.publishEvent(
+            orderEventMapper.toWaitingOrderPayload(
+                booth, orderMapper.toWaitingOrderResponseFromDto(order, waitingOrderItems)));
+        log.debug("[OrderService] 취소 > 대기 이벤트 발행 - 주문 식별자: {}", orderId);
+      }
       case COOKING -> {
         List<Long> orderItemIds = orderItemRepository.findOrderItemIdsByOrderIds(List.of(orderId));
 
@@ -319,7 +328,7 @@ public class OrderServiceImpl implements OrderService {
                 : orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
 
         CookingOrderResponse cookingOrderResponse =
-            orderMapper.toCookingOrderResponse(order, cookingOrderItemUnits);
+            orderMapper.toCookingOrderResponseFromDto(order, cookingOrderItemUnits);
 
         eventPublisher.publishEvent(
             orderEventMapper.toCookingOrderPayload(booth, cookingOrderResponse));
@@ -331,8 +340,8 @@ public class OrderServiceImpl implements OrderService {
 
         eventPublisher.publishEvent(
             orderEventMapper.toCompletedOrderPayload(
-                booth, orderMapper.toCompletedOrderResponse(order, completedOrderItems)));
-        log.debug("[OrderService] 완료 이벤트 발행 - 주문 식별자: {}", orderId);
+                booth, orderMapper.toCompletedOrderResponseFromDto(order, completedOrderItems)));
+        log.debug("[OrderService] 조리 > 완료 이벤트 발행 - 주문 식별자: {}", orderId);
       }
     }
   }
@@ -346,7 +355,13 @@ public class OrderServiceImpl implements OrderService {
     validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
+    OrderStatus previousStatus = order.getOrderStatus();
+    if (previousStatus == OrderStatus.CANCELED) {
+      log.debug("[OrderService] 주문 취소 요청이 현재 상태와 동일 - 주문 식별자: {}", orderId);
+      return;
+    }
     order.cancelOrder(orderCancelReason);
+
     log.info(
         "[OrderService] 주문 취소 - 학과명: {}, 주문 식별자: {}, 취소 사유: {}",
         departmentName,
@@ -359,13 +374,14 @@ public class OrderServiceImpl implements OrderService {
     if (canceledOrderItems.isEmpty()) {
       eventPublisher.publishEvent(
           orderEventMapper.toCanceledOrderPayload(
-              booth, orderMapper.toCanceledOrderResponse(order, List.of(), orderCancelReason)));
+              booth,
+              orderMapper.toCanceledOrderResponseFromDto(order, List.of(), orderCancelReason)));
       log.debug("[OrderService] 취소 이벤트 발행 (주문 항목 없음) - 주문 식별자: {}", orderId);
       return;
     }
 
     CanceledOrderResponse canceledOrderResponse =
-        orderMapper.toCanceledOrderResponse(order, canceledOrderItems, orderCancelReason);
+        orderMapper.toCanceledOrderResponseFromDto(order, canceledOrderItems, orderCancelReason);
 
     eventPublisher.publishEvent(
         orderEventMapper.toCanceledOrderPayload(booth, canceledOrderResponse));

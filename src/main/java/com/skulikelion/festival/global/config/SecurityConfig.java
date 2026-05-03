@@ -22,6 +22,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.skulikelion.festival.global.common.BaseResponse;
@@ -105,12 +106,16 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()
-                .requestMatchers("/actuator/health", "/actuator/prometheus")
+                .requestMatchers("/actuator/health")
                 .permitAll()
+                .requestMatchers("/actuator/prometheus")
+                .access(
+                    new WebExpressionAuthorizationManager(
+                        "hasIpAddress('${monitoring.allowed-ip}')"))
                 .requestMatchers("/api/auth/**")
                 .permitAll()
                 .anyRequest()
-                .permitAll());
+                .authenticated());
   }
 
   /** 비밀번호 인코더 Bean */

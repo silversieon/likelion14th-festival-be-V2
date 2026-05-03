@@ -8,6 +8,7 @@ import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -42,6 +43,9 @@ public class SecurityConfig {
   private final CorsConfig corsConfig;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final ObjectMapper objectMapper;
+
+  @Value("${monitoring.allowed-ip}")
+  private String monitoringAllowedIp;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -109,9 +113,8 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health")
                 .permitAll()
                 .requestMatchers("/actuator/prometheus")
-                .access(
-                    new WebExpressionAuthorizationManager(
-                        "hasIpAddress('${monitoring.allowed-ip}')"))
+                .access(new WebExpressionAuthorizationManager(
+                    "hasIpAddress('" + monitoringAllowedIp + "')"))
                 .requestMatchers("/api/auth/**")
                 .permitAll()
                 .anyRequest()

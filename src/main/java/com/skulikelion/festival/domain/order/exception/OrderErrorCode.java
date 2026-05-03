@@ -19,7 +19,7 @@ public enum OrderErrorCode implements BaseErrorCode {
   ORDER_ITEM_TOTAL_PRICE_MISMATCH(
       "ORDER_4003", "주문 상세 메뉴 가격의 총합이 주문 상세 메뉴 가격의 총합 값과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
   ORDER_STATUS_CHANGE_FAILED("ORDER_4004", "유효하지 않은 주문 상태 변경입니다.", HttpStatus.BAD_REQUEST),
-  ORDER_CANCEL_FAILED("ORDER_4005", "완료된 주문에서 취소 주문으로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+  ORDER_CANCEL_FAILED("ORDER_4005", "취소 주문으로 변경할 수 없는 상태입니다.", HttpStatus.BAD_REQUEST),
   ORDER_NOT_USED_BOOTH("ORDER_4006", "주문을 사용하지 않는 부스입니다.", HttpStatus.BAD_REQUEST),
   NOT_TIME_TO_ORDER("ORDER_4007", "주문을 받지 않는 시간입니다.", HttpStatus.BAD_REQUEST),
   ORDER_MENU_SOLD_OUT("ORDER_4007", "품절된 메뉴를 주문하였습니다.", HttpStatus.BAD_REQUEST),

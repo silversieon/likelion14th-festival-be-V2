@@ -14,15 +14,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.skulikelion.festival.domain.booth.dto.request.BoothMultipartBody;
-import com.skulikelion.festival.domain.booth.dto.request.BoothOperationRequest;
-import com.skulikelion.festival.domain.booth.dto.request.BoothRequest;
-import com.skulikelion.festival.domain.booth.dto.response.BoothAccountResponse;
-import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
-import com.skulikelion.festival.domain.booth.dto.response.BoothOperationResponse;
-import com.skulikelion.festival.domain.booth.dto.response.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.request.booth.BoothMultipartBody;
+import com.skulikelion.festival.domain.booth.dto.request.booth.BoothOperationRequest;
+import com.skulikelion.festival.domain.booth.dto.request.booth.BoothRequest;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
-import com.skulikelion.festival.domain.booth.service.BoothService;
+import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
 

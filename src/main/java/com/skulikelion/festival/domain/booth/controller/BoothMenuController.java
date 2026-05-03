@@ -14,15 +14,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.skulikelion.festival.domain.booth.dto.request.BoothMenuBulkMultipartBody;
-import com.skulikelion.festival.domain.booth.dto.request.BoothMenuListRequest;
-import com.skulikelion.festival.domain.booth.dto.request.BoothMenuMultipartBody;
-import com.skulikelion.festival.domain.booth.dto.request.BoothMenuRequest;
-import com.skulikelion.festival.domain.booth.dto.request.UpdateBoothMenuPriceRequest;
-import com.skulikelion.festival.domain.booth.dto.request.UpdateBoothMenuSoldOutRequest;
-import com.skulikelion.festival.domain.booth.dto.response.BoothMenuResponse;
-import com.skulikelion.festival.domain.booth.dto.response.OrderAvailableBoothMenuGroupResponse;
-import com.skulikelion.festival.domain.booth.service.BoothMenuService;
+import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuBulkMultipartBody;
+import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuListRequest;
+import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuMultipartBody;
+import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuRequest;
+import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuPriceRequest;
+import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuSoldOutRequest;
+import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuResponse;
+import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoothMenuGroupResponse;
+import com.skulikelion.festival.domain.booth.service.menu.BoothMenuService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
 

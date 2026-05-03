@@ -43,9 +43,9 @@ public enum Department {
   ARTS("이음 통합예술대"),
   FILM("영화영상학과"),
   BEAUTY("미용예술학부"),
-  MUSIC("음악학부"),
   PRACTICAL_MUSIC("실용음악학부"),
-  DESIGN("디자인학부"),
+  DESIGN_VDLD("디자인학부(비디, 라디)"),
+  DESIGN_VOID("디자인학부(VOID(보이드)/sesi)"),
   AD_PR("광고홍보영상학과"),
 
   // 융합대
@@ -53,8 +53,8 @@ public enum Department {
   SPORTS_TECH("스포츠앤테크놀로지학과"),
 
   // 미융대
-  FUTURE_1("미래융합학부1"),
-  FUTURE_2("미래융합학부2"),
+  FUTURE_1("미래융합대학1"),
+  FUTURE_2("미래융합대학2"),
 
   // 자치기구
   CLUB("총동아리연합회"),
@@ -62,6 +62,8 @@ public enum Department {
 
   // 총학생회
   STUDENT_COUNCIL("총학생회"),
+
+  FESTIVAL_PLANNING("축제기획단"),
 
   // 멋사 운영진
   SKULIKELION("멋사 운영진");

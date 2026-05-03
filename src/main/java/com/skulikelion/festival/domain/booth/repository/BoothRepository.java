@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.skulikelion.festival.domain.booth.dto.response.BoothListResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.enums.Department;
@@ -24,7 +24,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
 
   @Query(
       """
-      SELECT new com.skulikelion.festival.domain.booth.dto.response.BoothListResponse(
+      SELECT new com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse(
         b.id,
         b.thumbnailUrl,
         b.location,
@@ -40,7 +40,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
 
   @Query(
       """
-      SELECT new com.skulikelion.festival.domain.booth.dto.response.BoothListResponse(
+      SELECT new com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse(
         b.id,
         b.thumbnailUrl,
         b.location,
@@ -58,7 +58,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
 
   @Query(
       """
-      SELECT new com.skulikelion.festival.domain.booth.dto.response.BoothListResponse(
+      SELECT new com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse(
         b.id,
         b.thumbnailUrl,
         b.location,

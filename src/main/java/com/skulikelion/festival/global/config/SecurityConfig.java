@@ -118,7 +118,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**")
                 .permitAll()
                 .anyRequest()
-                .authenticated());
+                .permitAll());
   }
 
   /** 비밀번호 인코더 Bean */

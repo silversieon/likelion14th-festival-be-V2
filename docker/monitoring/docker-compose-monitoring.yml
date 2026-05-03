@@ -1,0 +1,41 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--storage.tsdb.path=/prometheus'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+    networks:
+      - festival-monitoring-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - festival-monitoring-network
+
+networks:
+  festival-monitoring-network:
+    external: true
+
+volumes:
+  prometheus-data:
+  grafana-data:

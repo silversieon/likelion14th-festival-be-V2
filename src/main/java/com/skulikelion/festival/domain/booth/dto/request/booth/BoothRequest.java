@@ -27,11 +27,11 @@ public class BoothRequest {
   @Schema(description = "주문 서비스 사용 여부", example = "true")
   private Boolean orderEnabled;
 
-  @Schema(description = "부스 위치", example = "YUDAM")
+  @Schema(description = "부스 위치", example = "DAEIL")
   private BoothLocation location;
 
-  @Schema(description = "부스 상세 위치", example = "유담관 앞")
-  private String locationDetail;
+  @Schema(description = "부스 번호 목록", example = "[1, 2]")
+  private List<Integer> boothNumbers;
 
   @Schema(description = "예금주", example = "홍길동")
   private String accountName;

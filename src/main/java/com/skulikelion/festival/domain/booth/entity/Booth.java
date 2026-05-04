@@ -3,7 +3,10 @@
  */
 package com.skulikelion.festival.domain.booth.entity;
 
+import java.util.List;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.skulikelion.festival.domain.booth.converter.IntegerListJsonConverter;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 import com.skulikelion.festival.global.enums.Department;
@@ -47,7 +51,9 @@ public class Booth extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   private BoothLocation location;
 
-  private String locationDetail;
+  @Convert(converter = IntegerListJsonConverter.class)
+  @Column(columnDefinition = "JSON")
+  private List<Integer> boothNumbers;
 
   private String accountName;
   private String accountNumber;
@@ -58,7 +64,7 @@ public class Booth extends BaseTimeEntity {
       String thumbnailUrl,
       Boolean orderEnabled,
       BoothLocation location,
-      String locationDetail,
+      List<Integer> boothNumbers,
       String accountName,
       String accountNumber,
       String bankName) {
@@ -66,7 +72,7 @@ public class Booth extends BaseTimeEntity {
     this.thumbnailUrl = thumbnailUrl;
     this.orderEnabled = Boolean.TRUE.equals(orderEnabled);
     this.location = location;
-    this.locationDetail = locationDetail;
+    this.boothNumbers = boothNumbers;
     this.accountName = accountName;
     this.accountNumber = accountNumber;
     this.bankName = bankName;

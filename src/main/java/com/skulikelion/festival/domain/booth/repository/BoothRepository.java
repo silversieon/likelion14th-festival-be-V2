@@ -28,7 +28,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
         b.id,
         b.thumbnailUrl,
         b.location,
-        b.locationDetail,
+        b.boothNumbers,
         bt.departmentName
       )
       FROM Booth b
@@ -44,7 +44,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
         b.id,
         b.thumbnailUrl,
         b.location,
-        b.locationDetail,
+        b.boothNumbers,
         bt.departmentName
       )
       FROM Booth b
@@ -62,7 +62,7 @@ public interface BoothRepository extends JpaRepository<Booth, Long> {
         b.id,
         b.thumbnailUrl,
         b.location,
-        b.locationDetail,
+        b.boothNumbers,
         bt.departmentName
       )
       FROM Booth b

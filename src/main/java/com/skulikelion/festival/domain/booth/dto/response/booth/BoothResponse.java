@@ -6,6 +6,7 @@ package com.skulikelion.festival.domain.booth.dto.response.booth;
 import java.util.List;
 
 import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuSummaryGroupResponse;
+import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -28,8 +29,14 @@ public class BoothResponse {
   @Schema(description = "주문 버튼 활성화 여부")
   private boolean orderAvailable;
 
-  @Schema(description = "부스 상세 위치")
-  private String locationDetail;
+  @Schema(description = "부스 위치")
+  private BoothLocation location;
+
+  @Schema(description = "부스 위치 설명")
+  private String locationDescription;
+
+  @Schema(description = "부스 번호 목록")
+  private List<Integer> boothNumbers;
 
   @Schema(description = "학과명")
   private String departmentName;

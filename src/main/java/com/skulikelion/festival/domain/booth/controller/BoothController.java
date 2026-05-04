@@ -55,7 +55,9 @@ public class BoothController {
           thumbnailUrl: 부스 썸네일 이미지 URL \n
           open: 영업중 여부 \n
           orderAvailable: 주문 버튼 활성화 여부 \n
-          locationDetail: 부스 상세 위치 \n
+          location: 부스 위치 \n
+          locationDescription: 부스 위치 설명 \n
+          boothNumbers: 부스 번호 목록 \n
           departmentName: 학과명 \n
           boothName: 부스명 \n
           description: 부스 설명 \n
@@ -96,7 +98,9 @@ public class BoothController {
           thumbnailUrl: 부스 썸네일 이미지 URL \n
           open: 영업중 여부 \n
           orderAvailable: 주문 버튼 활성화 여부 \n
-          locationDetail: 부스 상세 위치 \n
+          location: 부스 위치 \n
+          locationDescription: 부스 위치 설명 \n
+          boothNumbers: 부스 번호 목록 \n
           departmentName: 학과명 \n
           boothName: 부스명 \n
           description: 부스 설명 \n
@@ -204,7 +208,8 @@ public class BoothController {
           boothId: 부스 식별자 \n
           thumbnailUrl: 부스 썸네일 이미지 URL \n
           location: 부스 위치 \n
-          locationDetail: 부스 상세 위치 \n
+          locationDescription: 부스 위치 설명 \n
+          boothNumbers: 부스 번호 목록 \n
           departmentName: 학과명 \n
           """)
   @GetMapping("/booths")
@@ -225,7 +230,8 @@ public class BoothController {
           boothId: 부스 식별자 \n
           thumbnailUrl: 부스 썸네일 이미지 URL \n
           location: 부스 위치 \n
-          locationDetail: 부스 상세 위치 \n
+          locationDescription: 부스 위치 설명 \n
+          boothNumbers: 부스 번호 목록 \n
           departmentName: 학과명 \n
           """)
   @GetMapping("/booths/search")
@@ -248,7 +254,9 @@ public class BoothController {
           thumbnailUrl: 부스 썸네일 이미지 URL \n
           open: 영업중 여부 \n
           orderAvailable: 주문 버튼 활성화 여부 \n
-          locationDetail: 부스 상세 위치 \n
+          location: 부스 위치 \n
+          locationDescription: 부스 위치 설명 \n
+          boothNumbers: 부스 번호 목록 \n
           departmentName: 학과명 \n
           boothName: 부스명 \n
           description: 부스 설명 \n

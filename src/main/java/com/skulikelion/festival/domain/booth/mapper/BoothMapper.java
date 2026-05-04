@@ -48,7 +48,7 @@ public class BoothMapper {
         .thumbnailUrl(thumbnailUrl)
         .orderEnabled(Boolean.TRUE.equals(request.getOrderEnabled()))
         .location(request.getLocation())
-        .locationDetail(request.getLocationDetail())
+        .boothNumbers(request.getBoothNumbers())
         .accountName(request.getAccountName())
         .accountNumber(request.getAccountNumber())
         .bankName(request.getBankName())
@@ -117,7 +117,9 @@ public class BoothMapper {
         .thumbnailUrl(booth.getThumbnailUrl())
         .open(open)
         .orderAvailable(orderAvailable)
-        .locationDetail(booth.getLocationDetail())
+        .location(booth.getLocation())
+        .locationDescription(getLocationDescription(booth))
+        .boothNumbers(booth.getBoothNumbers())
         .departmentName(translation.getDepartmentName())
         .boothName(translation.getBoothName())
         .description(translation.getDescription())
@@ -221,6 +223,13 @@ public class BoothMapper {
         .price(menu.getPrice())
         .soldOut(menu.getIsSoldOut())
         .build();
+  }
+
+  private String getLocationDescription(Booth booth) {
+    if (booth.getLocation() == null) {
+      return null;
+    }
+    return booth.getLocation().getDescription();
   }
 
   public LocalTime parseTime(String time) {

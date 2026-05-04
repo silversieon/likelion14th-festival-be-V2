@@ -3,6 +3,8 @@
  */
 package com.skulikelion.festival.domain.booth.dto.response.booth;
 
+import java.util.List;
+
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,9 +29,26 @@ public class BoothListResponse {
   @Schema(description = "부스 위치")
   private BoothLocation location;
 
-  @Schema(description = "부스 상세 위치")
-  private String locationDetail;
+  @Schema(description = "부스 위치 설명")
+  private String locationDescription;
+
+  @Schema(description = "부스 번호 목록")
+  private List<Integer> boothNumbers;
 
   @Schema(description = "학과명")
   private String departmentName;
+
+  public BoothListResponse(
+      Long boothId,
+      String thumbnailUrl,
+      BoothLocation location,
+      List<Integer> boothNumbers,
+      String departmentName) {
+    this.boothId = boothId;
+    this.thumbnailUrl = thumbnailUrl;
+    this.location = location;
+    this.locationDescription = location == null ? null : location.getDescription();
+    this.boothNumbers = boothNumbers;
+    this.departmentName = departmentName;
+  }
 }

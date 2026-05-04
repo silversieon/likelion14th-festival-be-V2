@@ -159,7 +159,7 @@ public class BoothServiceImpl implements BoothService {
         thumbnailUrl,
         request.getOrderEnabled(),
         request.getLocation(),
-        request.getLocationDetail(),
+        request.getBoothNumbers(),
         request.getAccountName(),
         request.getAccountNumber(),
         request.getBankName());

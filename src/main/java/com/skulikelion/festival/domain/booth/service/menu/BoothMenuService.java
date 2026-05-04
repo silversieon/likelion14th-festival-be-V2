@@ -75,6 +75,14 @@ public interface BoothMenuService {
   OrderAvailableBoothMenuGroupResponse getOrderAvailableMenus(Long boothId, Language language);
 
   /**
+   * [ 부스 관리자 전체 메뉴 조회 메서드 ]
+   *
+   * @param departmentName 요청한 관리자의 학과명
+   * @return 카테고리별 전체 메뉴 정보
+   */
+  OrderAvailableBoothMenuGroupResponse getAllMenus(String departmentName);
+
+  /**
    * [ 부스 메뉴 삭제 메서드 ]
    *
    * @param menuId 삭제할 메뉴의 식별자

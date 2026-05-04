@@ -113,8 +113,9 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health")
                 .permitAll()
                 .requestMatchers("/actuator/prometheus")
-                .access(new WebExpressionAuthorizationManager(
-                    "hasIpAddress('" + monitoringAllowedIp + "')"))
+                .access(
+                    new WebExpressionAuthorizationManager(
+                        "hasIpAddress('" + monitoringAllowedIp + "')"))
                 .requestMatchers("/api/auth/**")
                 .permitAll()
                 .anyRequest()

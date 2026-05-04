@@ -108,6 +108,32 @@ public class BoothMenuController {
   }
 
   @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 전체 메뉴 조회 ]",
+      description =
+          """
+          **Parameters**  \n
+          departmentName: 토큰에서 추출되는 관리자 학과명 \n
+          \n
+          **Returns**  \n
+          main: 메인 메뉴 목록 \n
+          side: 사이드 메뉴 목록 \n
+          drink: 음료 메뉴 목록 \n
+          menuId: 메뉴 식별자 \n
+          iconImageUrl: 아이콘 이미지 URL \n
+          name: 한국어 메뉴명 \n
+          description: 메뉴 설명 \n
+          price: 가격 \n
+          soldOut: 품절 여부 \n
+          """)
+  @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
+  @GetMapping("/booth-menus/all")
+  public ResponseEntity<BaseResponse<OrderAvailableBoothMenuGroupResponse>> getAllMenus(
+      @AuthenticationPrincipal String departmentName) {
+    OrderAvailableBoothMenuGroupResponse response = boothMenuService.getAllMenus(departmentName);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "전체 메뉴 조회 성공", response));
+  }
+
+  @Operation(
       summary = "[ 총 관리자 | 토큰 O | 메뉴 수정 ]",
       description =
           """

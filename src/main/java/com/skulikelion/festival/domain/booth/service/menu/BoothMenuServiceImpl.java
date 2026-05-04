@@ -213,6 +213,29 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public OrderAvailableBoothMenuGroupResponse getAllMenus(String departmentName) {
+    log.info("[BoothMenuService] 부스 관리자 전체 메뉴 조회 요청 - 관리자 학과: {}", departmentName);
+    Department department = Department.valueOf(departmentName);
+    Booth booth =
+        boothRepository
+            .findByDepartment(department)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[BoothMenuService] 부스 관리자 전체 메뉴 조회 실패 - 할당 부스 없음, 관리자 학과: {}", department);
+                  return new CustomException(ManagerErrorCode.BOOTH_NOT_EXIST);
+                });
+
+    List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(booth.getId());
+    log.info(
+        "[BoothMenuService] 부스 관리자 전체 메뉴 조회 발생 - 부스 식별자: {}, 메뉴 개수: {}",
+        booth.getId(),
+        menus.size());
+    return boothMapper.toOrderAvailableBoothMenuGroupResponse(menus, Language.KO);
+  }
+
+  @Override
   @Transactional
   public void deleteMenu(Long menuId) {
     log.info("[BoothMenuService] 메뉴 삭제 요청 - 메뉴 식별자: {}", menuId);

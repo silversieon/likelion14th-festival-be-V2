@@ -1,7 +1,7 @@
 # 개발 환경용 앱 컨테이너 Compose 파일
 services:
-  festival-dev-green:
-    image: ${DOCKER_USERNAME}/${DEV_DOCKER_REPO}:latest
+  festival-prod-green:
+    image: ${DOCKER_USERNAME}/${PROD_DOCKER_REPO}:latest
     container_name: festival-prod-green
     ports:
       - "8081:8080"

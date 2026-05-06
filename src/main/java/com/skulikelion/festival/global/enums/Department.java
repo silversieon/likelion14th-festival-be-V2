@@ -64,6 +64,7 @@ public enum Department {
   STUDENT_COUNCIL("총학생회"),
 
   FESTIVAL_PLANNING("축제기획단"),
+  STUDENT_OFFICE("학생처"),
 
   // 멋사 운영진
   SKULIKELION("멋사 운영진");

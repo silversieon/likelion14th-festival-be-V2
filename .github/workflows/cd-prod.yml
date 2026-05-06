@@ -1,0 +1,153 @@
+name: CD - Production
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GIT_ACTION_TOKEN }}
+          submodules: true
+
+      - name: Docker Hub Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Build & Push
+        run: |
+          echo "🟢 [PROD] Building Docker image"
+          docker build -f ./docker/Dockerfile \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest-${{ github.sha }} .
+
+          echo "🟢 [PROD] Pushing Docker image"
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest-${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose files to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          source: "docker/docker-compose.yml,docker/prod/docker-compose-blue-prod.yml,docker/prod/docker-compose-green-prod.yml"
+          target: "~/app"
+
+      - name: Deploy on Production Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/app/docker
+            
+            echo "🟢 [PROD] festival-network 생성"
+            docker network inspect festival-network >/dev/null 2>&1 \
+              || docker network create festival-network
+            
+            echo "🟢 [PROD] .env 생성 중..."
+            printf "${{ secrets.PROD_ENV_FILE }}" > .env
+            
+            echo "🟢 [PROD] MySQL 상태 확인 중..."
+            MYSQL_STATUS=$(docker inspect -f '{{.State.Status}}' mysql 2>/dev/null || echo "not_found")
+            
+            if [ "$MYSQL_STATUS" != "running" ]; then
+              echo "🟢 [PROD] MySQL not running → 공용 스택 기동"
+              docker compose -f docker-compose.yml pull
+              docker compose -f docker-compose.yml up -d
+            fi
+            
+            # ── 컴포즈 파일 경로 ──────────────────────────────────────
+            BLUE_COMPOSE="prod/docker-compose-blue-prod.yml"
+            GREEN_COMPOSE="prod/docker-compose-green-prod.yml"
+            
+            # ── 블루/그린 활성 컬러 판별 ──────────────────────────────
+            if docker ps --filter "name=festival-prod-blue" --filter "status=running" | grep -q festival-prod-blue; then
+              ACTIVE_COLOR="blue"
+              NEXT_COLOR="green"
+              NEXT_PORT=8081
+            elif docker ps --filter "name=festival-prod-green" --filter "status=running" | grep -q festival-prod-green; then
+              ACTIVE_COLOR="green"
+              NEXT_COLOR="blue"
+              NEXT_PORT=8080
+            else
+              ACTIVE_COLOR="none"
+              NEXT_COLOR="blue"
+              NEXT_PORT=8080
+            fi
+            
+            # ── 컬러별 컴포즈 파일 변수 설정 ─────────────────────────
+            if [ "$NEXT_COLOR" = "blue" ]; then
+              NEXT_COMPOSE=$BLUE_COMPOSE
+            else
+              NEXT_COMPOSE=$GREEN_COMPOSE
+            fi
+            
+            if [ "$ACTIVE_COLOR" = "blue" ]; then
+              ACTIVE_COMPOSE=$BLUE_COMPOSE
+            else
+              ACTIVE_COMPOSE=$GREEN_COMPOSE
+            fi
+            
+            echo "🔵🟢 [PROD] ACTIVE=$ACTIVE_COLOR → NEXT=$NEXT_COLOR (port $NEXT_PORT)"
+            
+            # ── NEXT 컨테이너 배포 ────────────────────────────────────
+            docker compose -f docker-compose.yml -f $NEXT_COMPOSE pull festival-prod-${NEXT_COLOR}
+            docker compose -f docker-compose.yml -f $NEXT_COMPOSE up -d --no-deps festival-prod-${NEXT_COLOR}
+            
+            # ── 헬스체크 (최대 600초) ──────────────────────────────────
+            echo "⏳ [PROD] festival-prod-${NEXT_COLOR} 헬스체크 중..."
+            for i in $(seq 1 120); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${NEXT_PORT}/actuator/health || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "✅ [PROD] festival-prod-${NEXT_COLOR} 헬스체크 통과 (${i}회차)"
+                break
+              fi
+              echo "🔄 [PROD] 대기 중... ($((i * 5))s / 600s) status=$STATUS"
+              sleep 5
+              if [ "$i" = "120" ]; then
+                echo "❌ [PROD] 헬스체크 실패 → 롤백 (festival-prod-${NEXT_COLOR} 중단)"
+                docker compose -f docker-compose.yml -f $NEXT_COMPOSE stop festival-prod-${NEXT_COLOR} || true
+                exit 1
+              fi
+            done
+            
+            # ── nginx upstream 전환 ───────────────────────────────────
+            echo "🔀 [PROD] nginx upstream → $NEXT_COLOR (port $NEXT_PORT)"
+            echo "upstream app { server localhost:${NEXT_PORT}; }" \
+              | sudo tee /etc/nginx/conf.d/upstream-app.conf > /dev/null
+            
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ [PROD] nginx upstream 전환 완료"
+            
+            # ── 이전 컨테이너 중단 ────────────────────────────────────
+            if [ "$ACTIVE_COLOR" != "none" ]; then
+              echo "🛑 [PROD] festival-prod-${ACTIVE_COLOR} 중단"
+              docker compose -f docker-compose.yml -f $ACTIVE_COMPOSE stop festival-prod-${ACTIVE_COLOR} || true
+            fi
+            
+            echo "🟢 [PROD] 사용하지 않는 이미지 정리"
+            docker image prune -f
+            
+            echo "✅ [PROD] 블루/그린 배포 완료! (active: $NEXT_COLOR)"

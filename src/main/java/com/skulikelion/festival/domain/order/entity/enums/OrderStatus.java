@@ -3,6 +3,8 @@
  */
 package com.skulikelion.festival.domain.order.entity.enums;
 
+import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -39,4 +41,13 @@ public enum OrderStatus {
   private final String description;
 
   public abstract boolean canChangeTo(OrderStatus orderStatus);
+
+  public SseSubscribeType toSseSubscribeType() {
+    return switch (this) {
+      case WAITING -> SseSubscribeType.WAITING;
+      case COOKING -> SseSubscribeType.COOKING;
+      case COMPLETED -> SseSubscribeType.COMPLETED;
+      case CANCELED -> SseSubscribeType.CANCELED;
+    };
+  }
 }

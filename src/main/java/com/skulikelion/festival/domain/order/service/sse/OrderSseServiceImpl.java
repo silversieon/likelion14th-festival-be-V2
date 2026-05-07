@@ -17,6 +17,7 @@ import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.domain.order.dto.event.DismissOrderIdEvent;
 import com.skulikelion.festival.domain.order.dto.event.OrderStatusNotificationEvent;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
@@ -85,7 +86,7 @@ public class OrderSseServiceImpl implements OrderSseService {
   }
 
   @Override
-  public void sendOrderEventNotification(Booth booth, SseSubscribeType currentSubscribeType) {
+  public void sendOrderIncrementNotification(Booth booth, SseSubscribeType currentSubscribeType) {
     Map<SseSubscribeType, List<SseEmitter>> statusMap =
         orderSseEmitterRepository.findByBoothId(booth.getId());
 
@@ -101,7 +102,7 @@ public class OrderSseServiceImpl implements OrderSseService {
                         try {
                           emitter.send(
                               SseEmitter.event()
-                                  .name("orderNotification")
+                                  .name("orderIncrementNotification")
                                   .data(
                                       new OrderStatusNotificationEvent(
                                           currentSubscribeType
@@ -112,19 +113,87 @@ public class OrderSseServiceImpl implements OrderSseService {
                                                           OrderErrorCode
                                                               .INVALID_SUBSCRIBE_TYPE_CONVERSION)))));
                           log.debug(
-                              "[OrderSseService] 주문 상태 변경 알림 전송 성공 - 학과명: {}, 변경된 상태: {}, 수신 구독 타입: {}",
+                              "[OrderSseService] 주문 상태 변경에 의한 증가 알림 전송 성공 - 학과명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
                               booth.getDepartment().getDescription(),
                               currentSubscribeType,
                               subscribedType);
                         } catch (IOException e) {
                           log.warn(
-                              "[OrderSseService] 주문 상태 변경 알림 전송 실패 - 학과명: {}, 수신 구독 타입: {}",
+                              "[OrderSseService] 주문 상태 변경에 의한 증가 알림 전송 실패 - 학과명: {}, 수신되었어야 할 타입: {}",
                               booth.getDepartment().getDescription(),
                               subscribedType);
                           orderSseEmitterRepository.remove(booth.getId(), subscribedType, emitter);
                         }
                       });
             });
+  }
+
+  @Override
+  public void sendOrderDecrementNotification(Booth booth, SseSubscribeType currentSubscribeType) {
+    Map<SseSubscribeType, List<SseEmitter>> statusMap =
+        orderSseEmitterRepository.findByBoothId(booth.getId());
+
+    statusMap.entrySet().stream()
+        .filter(entry -> entry.getKey() != currentSubscribeType)
+        .forEach(
+            entry -> {
+              SseSubscribeType subscribedType = entry.getKey();
+              entry
+                  .getValue()
+                  .forEach(
+                      emitter -> {
+                        try {
+                          emitter.send(
+                              SseEmitter.event()
+                                  .name("orderDecrementNotification")
+                                  .data(
+                                      new OrderStatusNotificationEvent(
+                                          currentSubscribeType
+                                              .toOrderStatus()
+                                              .orElseThrow(
+                                                  () ->
+                                                      new CustomException(
+                                                          OrderErrorCode
+                                                              .INVALID_SUBSCRIBE_TYPE_CONVERSION)))));
+                          log.debug(
+                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 성공 - 학과명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
+                              booth.getDepartment().getDescription(),
+                              currentSubscribeType,
+                              subscribedType);
+                        } catch (IOException e) {
+                          log.warn(
+                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 실패 - 학과명: {}, 수신되었어야 할 타입: {}",
+                              booth.getDepartment().getDescription(),
+                              subscribedType);
+                          orderSseEmitterRepository.remove(booth.getId(), subscribedType, emitter);
+                        }
+                      });
+            });
+  }
+
+  @Override
+  public void sendOrderDismissNotification(
+      Booth booth, SseSubscribeType currentSubscribeType, Long orderId) {
+    String eventName = "dismissNotification";
+    List<SseEmitter> emitterList =
+        orderSseEmitterRepository.findByBoothIdAndSubscribeType(
+            booth.getId(), currentSubscribeType);
+    emitterList.forEach(
+        emitter -> {
+          try {
+            emitter.send(SseEmitter.event().name(eventName).data(new DismissOrderIdEvent(orderId)));
+            log.debug(
+                "[OrderSseService] 주문 제외 이벤트 전송 성공 - 학과명: {}, 이벤트: {}",
+                booth.getDepartment().getDescription(),
+                eventName);
+          } catch (IOException e) {
+            log.warn(
+                "[OrderSseService] 주문 제외 이벤트 전송 실패 - 학과명: {}, 이벤트: {}",
+                booth.getDepartment().getDescription(),
+                eventName);
+            orderSseEmitterRepository.remove(booth.getId(), currentSubscribeType, emitter);
+          }
+        });
   }
 
   @Override

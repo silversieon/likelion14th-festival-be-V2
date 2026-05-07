@@ -27,8 +27,8 @@ import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
-import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
-import com.skulikelion.festival.domain.order.dto.event.WaitingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.OrderIdempotencyPayload;
+import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
@@ -161,7 +161,6 @@ public class OrderServiceImpl implements OrderService {
   public List<WaitingOrderResponse> getWaitingOrders(String departmentName) {
     Booth booth = validateBoothExists(departmentName);
     Long boothId = booth.getId();
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<WaitingOrderResponse> waitingOrders = orderRepository.findWaitingOrdersByBoothId(boothId);
@@ -187,7 +186,6 @@ public class OrderServiceImpl implements OrderService {
   public List<CookingOrderResponse> getCookingOrders(String departmentName) {
     Booth booth = validateBoothExists(departmentName);
     Long boothId = booth.getId();
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CookingOrderResponse> cookingOrders = orderRepository.findCookingOrdersByBoothId(boothId);
@@ -219,7 +217,6 @@ public class OrderServiceImpl implements OrderService {
       String departmentName, LocalDate orderDate, String keyword) {
     Booth booth = validateBoothExists(departmentName);
     Long boothId = booth.getId();
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CompletedOrderResponse> completedOrders =
@@ -247,7 +244,6 @@ public class OrderServiceImpl implements OrderService {
       String departmentName, LocalDate orderDate, String keyword) {
     Booth booth = validateBoothExists(departmentName);
     Long boothId = booth.getId();
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     List<CanceledOrderResponse> canceledOrders =
@@ -274,7 +270,6 @@ public class OrderServiceImpl implements OrderService {
   public SalesResponse getSales(String departmentName, LocalDate date) {
     Booth booth = validateBoothExists(departmentName);
     Long boothId = booth.getId();
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
 
     if (date == null) {
@@ -291,7 +286,6 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public void updateOrderStatus(String departmentName, Long orderId, OrderStatus newOrderStatus) {
     Booth booth = validateBoothExists(departmentName);
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
@@ -317,6 +311,8 @@ public class OrderServiceImpl implements OrderService {
         eventPublisher.publishEvent(
             orderEventMapper.toWaitingOrderPayload(
                 booth, orderMapper.toWaitingOrderResponseFromDto(order, waitingOrderItems)));
+        eventPublisher.publishEvent(
+            orderEventMapper.toDismissOrderPayload(booth, previousStatus, orderId));
         log.debug("[OrderService] 취소 > 대기 이벤트 발행 - 주문 식별자: {}", orderId);
       }
       case COOKING -> {
@@ -331,7 +327,11 @@ public class OrderServiceImpl implements OrderService {
             orderMapper.toCookingOrderResponseFromDto(order, cookingOrderItemUnits);
 
         eventPublisher.publishEvent(
-            orderEventMapper.toCookingOrderPayload(booth, cookingOrderResponse));
+            orderEventMapper.toCookingOrderPayload(
+                booth, cookingOrderResponse, previousStatus, newOrderStatus));
+        eventPublisher.publishEvent(
+            orderEventMapper.toDismissOrderPayload(booth, previousStatus, orderId));
+        // 만약 대기 중에서 보낸 거라면, 대기중 탭을 제외한 사람들에게 알림 숫자 2 라면 1로 바뀌게 필요
         log.debug("[OrderService] 조리 중 이벤트 발행 - 주문 식별자: {}", orderId);
       }
       case COMPLETED -> {
@@ -340,7 +340,13 @@ public class OrderServiceImpl implements OrderService {
 
         eventPublisher.publishEvent(
             orderEventMapper.toCompletedOrderPayload(
-                booth, orderMapper.toCompletedOrderResponseFromDto(order, completedOrderItems)));
+                booth,
+                orderMapper.toCompletedOrderResponseFromDto(order, completedOrderItems),
+                previousStatus,
+                newOrderStatus));
+        eventPublisher.publishEvent(
+            orderEventMapper.toDismissOrderPayload(booth, previousStatus, orderId));
+        // 만약 조리 중에서 보낸 거라면, 조리중 탭을 제외한 사람들에게 조리중 탭의 알림 숫자를 2 라면 1로 바뀌게 필요
         log.debug("[OrderService] 조리 > 완료 이벤트 발행 - 주문 식별자: {}", orderId);
       }
     }
@@ -351,7 +357,6 @@ public class OrderServiceImpl implements OrderService {
   public void cancelOrder(
       String departmentName, Long orderId, OrderCancelReason orderCancelReason) {
     Booth booth = validateBoothExists(departmentName);
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     Order order = validateOrderExists(orderId);
 
@@ -376,6 +381,8 @@ public class OrderServiceImpl implements OrderService {
           orderEventMapper.toCanceledOrderPayload(
               booth,
               orderMapper.toCanceledOrderResponseFromDto(order, List.of(), orderCancelReason)));
+      eventPublisher.publishEvent(
+          orderEventMapper.toDismissOrderPayload(booth, previousStatus, orderId));
       log.debug("[OrderService] 취소 이벤트 발행 (주문 항목 없음) - 주문 식별자: {}", orderId);
       return;
     }
@@ -385,6 +392,8 @@ public class OrderServiceImpl implements OrderService {
 
     eventPublisher.publishEvent(
         orderEventMapper.toCanceledOrderPayload(booth, canceledOrderResponse));
+    eventPublisher.publishEvent(
+        orderEventMapper.toDismissOrderPayload(booth, previousStatus, orderId));
     log.debug(
         "[OrderService] 취소 이벤트 발행 - 주문 식별자: {}, 취소 항목 수: {}", orderId, canceledOrderItems.size());
   }
@@ -394,7 +403,6 @@ public class OrderServiceImpl implements OrderService {
   public void updateServedStatus(
       String departmentName, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
     Booth booth = validateBoothExists(departmentName);
-    validateBoothUsesOrder(booth);
     validateBoothManager(departmentName, booth);
     validateOrderIsCooking(orderItemUnitId);
     OrderItemUnit orderItemUnit = validateOrderItemUnitExists(orderItemUnitId);

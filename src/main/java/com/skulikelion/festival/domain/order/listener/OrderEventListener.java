@@ -7,12 +7,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.skulikelion.festival.domain.order.dto.event.CanceledOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.CompletedOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.CookingOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
-import com.skulikelion.festival.domain.order.dto.event.OrderItemUnitStatusPayload;
-import com.skulikelion.festival.domain.order.dto.event.WaitingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.OrderIdempotencyPayload;
+import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
@@ -40,7 +41,7 @@ public class OrderEventListener {
   public void handleWaitingOrderEvent(WaitingOrderPayload waitingOrderPayload) {
     orderSseService.sendWaitingOrderEvent(
         waitingOrderPayload.booth(), waitingOrderPayload.waitingOrderResponse());
-    orderSseService.sendOrderEventNotification(
+    orderSseService.sendOrderIncrementNotification(
         waitingOrderPayload.booth(), SseSubscribeType.WAITING);
   }
 
@@ -48,14 +49,18 @@ public class OrderEventListener {
   public void handleCookingOrderEvent(CookingOrderPayload cookingOrderPayload) {
     orderSseService.sendCookingOrderEvent(
         cookingOrderPayload.booth(), cookingOrderPayload.cookingOrderResponse());
-    orderSseService.sendOrderEventNotification(
-        cookingOrderPayload.booth(), SseSubscribeType.COOKING);
+    orderSseService.sendOrderIncrementNotification(
+        cookingOrderPayload.booth(), cookingOrderPayload.currentStatus().toSseSubscribeType());
+    orderSseService.sendOrderDecrementNotification(
+        cookingOrderPayload.booth(), cookingOrderPayload.previousStatus().toSseSubscribeType());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCompletedOrderEvent(CompletedOrderPayload completedOrderPayload) {
     orderSseService.sendCompletedOrderEvent(
         completedOrderPayload.booth(), completedOrderPayload.completedOrderResponse());
+    orderSseService.sendOrderDecrementNotification(
+        completedOrderPayload.booth(), completedOrderPayload.previousStatus().toSseSubscribeType());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -70,6 +75,14 @@ public class OrderEventListener {
     orderSseService.sendOrderItemUnitStatusEvent(
         orderItemUnitStatusPayload.booth(),
         orderItemUnitStatusPayload.orderItemUnitStatusResponse());
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handleDismissOrderEvent(DismissOrderPayload dismissOrderPayload) {
+    orderSseService.sendOrderDismissNotification(
+        dismissOrderPayload.booth(),
+        dismissOrderPayload.currentOrderStatus().toSseSubscribeType(),
+        dismissOrderPayload.orderId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

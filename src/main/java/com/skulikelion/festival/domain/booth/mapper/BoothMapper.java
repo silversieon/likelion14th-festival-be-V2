@@ -102,7 +102,8 @@ public class BoothMapper {
       BoothTranslation translation,
       List<BoothDetailImage> detailImages,
       List<BoothOperation> operations,
-      List<BoothMenu> menus) {
+      List<BoothMenu> menus,
+      Language language) {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
     Optional<BoothOperation> todayOperation =
@@ -126,7 +127,7 @@ public class BoothMapper {
         .boothName(translation.getBoothName())
         .description(translation.getDescription())
         .detailImages(toBoothDetailImageResponses(detailImages))
-        .menus(toBoothMenuSummaryGroupResponse(menus))
+        .menus(toBoothMenuSummaryGroupResponse(menus, language))
         .build();
   }
 
@@ -181,7 +182,8 @@ public class BoothMapper {
         .toList();
   }
 
-  private BoothMenuSummaryGroupResponse toBoothMenuSummaryGroupResponse(List<BoothMenu> menus) {
+  private BoothMenuSummaryGroupResponse toBoothMenuSummaryGroupResponse(
+      List<BoothMenu> menus, Language language) {
     if (menus == null || menus.isEmpty()) {
       return BoothMenuSummaryGroupResponse.builder().day(null).night(null).build();
     }
@@ -190,13 +192,13 @@ public class BoothMapper {
         menus.stream()
             .filter(
                 menu -> menu.getTimeType() == TimeType.DAY || menu.getTimeType() == TimeType.ALL)
-            .map(this::toBoothMenuSummaryResponse)
+            .map(menu -> toBoothMenuSummaryResponse(menu, language))
             .toList();
     List<BoothMenuSummaryResponse> nightMenus =
         menus.stream()
             .filter(
                 menu -> menu.getTimeType() == TimeType.NIGHT || menu.getTimeType() == TimeType.ALL)
-            .map(this::toBoothMenuSummaryResponse)
+            .map(menu -> toBoothMenuSummaryResponse(menu, language))
             .toList();
 
     return BoothMenuSummaryGroupResponse.builder()
@@ -205,8 +207,11 @@ public class BoothMapper {
         .build();
   }
 
-  private BoothMenuSummaryResponse toBoothMenuSummaryResponse(BoothMenu menu) {
-    return BoothMenuSummaryResponse.builder().name(menu.getNameKo()).price(menu.getPrice()).build();
+  private BoothMenuSummaryResponse toBoothMenuSummaryResponse(BoothMenu menu, Language language) {
+    return BoothMenuSummaryResponse.builder()
+        .name(language.getMenuName(menu))
+        .price(menu.getPrice())
+        .build();
   }
 
   private List<OrderAvailableBoothMenuResponse> toOrderAvailableBoothMenuResponses(

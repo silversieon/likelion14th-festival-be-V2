@@ -18,8 +18,8 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASS}
 
       JAVA_OPTS: >-
-        -Xms768m
-        -Xmx768m
+        -Xms512m
+        -Xmx512m
         -XX:+UseG1GC
         -XX:MaxGCPauseMillis=200
         -Dfile.encoding=UTF-8
@@ -38,7 +38,7 @@ services:
       retries: 3
       start_period: 120s
 
-    mem_limit: 1200m
+    mem_limit: 1300m
     cpus: 1.0
 
     networks:

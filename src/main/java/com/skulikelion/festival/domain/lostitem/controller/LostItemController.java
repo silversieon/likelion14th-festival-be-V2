@@ -74,7 +74,7 @@ public class LostItemController {
   }
 
   @Operation(
-      summary = "[ 토큰 X | 분실물 상세 조회 ]",
+      summary = "[ 사용자 | 토큰 X | 분실물 상세 조회 ]",
       description =
           """
           **Parameters**  \n
@@ -98,7 +98,7 @@ public class LostItemController {
   }
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 분실물 등록 ]",
+      summary = "[ 총학생회 | 토큰 O | 분실물 등록 ]",
       description =
           """
           **Parameters**  \n
@@ -136,7 +136,7 @@ public class LostItemController {
   }
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 분실물 수정 ]",
+      summary = "[ 총학생회 | 토큰 O | 분실물 수정 ]",
       description =
           """
           **Parameters**  \n
@@ -176,7 +176,7 @@ public class LostItemController {
   }
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 분실물 삭제 ]",
+      summary = "[ 총학생회 | 토큰 O | 분실물 삭제 ]",
       description =
           """
           **Parameters**  \n

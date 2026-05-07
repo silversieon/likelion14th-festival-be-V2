@@ -41,10 +41,6 @@ public class S3AsyncService {
       return List.of();
     }
 
-    if (validFiles.size() == 1) {
-      return List.of(s3Service.uploadFile(pathName, validFiles.get(0)));
-    }
-
     List<CompletableFuture<String>> futures =
         validFiles.stream().map(file -> uploadFileAsync(pathName, file)).toList();
 

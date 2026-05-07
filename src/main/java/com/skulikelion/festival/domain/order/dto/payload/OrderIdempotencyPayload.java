@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.dto.event;
+package com.skulikelion.festival.domain.order.dto.payload;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 

@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -118,8 +119,21 @@ public class SecurityConfig {
                         "hasIpAddress('" + monitoringAllowedIp + "')"))
                 .requestMatchers("/api/auth/**")
                 .permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/booths",
+                    "/api/booths/search",
+                    "/api/booths/{boothId}",
+                    "/api/booths/{boothId}/account")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/booths/{boothId}/menus/order-available")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/lost-items/{lostItemId}", "/api/lost-items")
+                .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/booths/{boothId}/orders")
+                .permitAll()
                 .anyRequest()
-                .permitAll());
+                .authenticated());
   }
 
   /** 비밀번호 인코더 Bean */

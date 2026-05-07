@@ -44,7 +44,7 @@ public class BoothRequest {
 
   @Valid
   @NotEmpty(message = "부스 운영 정보를 입력해주세요.")
-  @Schema(description = "부스 운영 정보, 3개 이상")
+  @Schema(description = "부스 운영 정보, 1개 이상")
   private List<BoothOperationRequest> operations;
 
   @Valid

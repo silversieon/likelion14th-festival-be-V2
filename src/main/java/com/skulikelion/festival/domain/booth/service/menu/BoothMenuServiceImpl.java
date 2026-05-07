@@ -121,6 +121,8 @@ public class BoothMenuServiceImpl implements BoothMenuService {
         request.getTimeType(),
         request.getSoldOut(),
         request.getDescriptionKo(),
+        request.getDescriptionEn(),
+        request.getDescriptionZh(),
         request.getCategory(),
         iconImageUrl);
     log.info("[BoothMenuService] 메뉴 수정 발생 - 메뉴 식별자: {}", menuId);

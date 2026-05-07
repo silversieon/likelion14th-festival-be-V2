@@ -465,7 +465,7 @@ public class BoothServiceImpl implements BoothService {
   }
 
   private void validateOperations(List<BoothOperationRequest> operations) {
-    if (operations == null || operations.size() < 3) {
+    if (operations == null || operations.isEmpty()) {
       log.warn(
           "[BoothService] 운영 정보 검증 실패 - 요청 개수: {}", operations == null ? 0 : operations.size());
       throw new CustomException(BoothErrorCode.BOOTH_OPERATION_REQUIRED);

@@ -1,4 +1,4 @@
-# 개발 환경용 앱 컨테이너 Compose 파일
+# 운영 환경용 앱 컨테이너 Compose 파일
 services:
   festival-prod-blue:
     image: ${DOCKER_USERNAME}/${PROD_DOCKER_REPO}:latest
@@ -23,7 +23,7 @@ services:
       # JVM 옵션
       JAVA_OPTS: >-
         -Xms256m
-        -Xmx512m
+        -Xmx768m
         -XX:+UseG1GC
         -XX:MaxGCPauseMillis=200
         -Dfile.encoding=UTF-8

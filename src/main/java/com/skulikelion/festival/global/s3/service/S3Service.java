@@ -28,15 +28,6 @@ public interface S3Service {
   String uploadFile(PathName pathName, MultipartFile file);
 
   /**
-   * 이미지를 바이트 형식으로 S3 버킷에 업로드하는 메서드
-   *
-   * @param pathName 이미지를 넣을 폴더 경로
-   * @param bytes 이미지의 바이트 형식
-   * @return 업로드한 이미지의 s3 url
-   */
-  String uploadByte(PathName pathName, byte[] bytes);
-
-  /**
    * keyName을 인자로 받아 해당 이미지 파일을 s3에서 삭제하는 메서드
    *
    * @param keyName keyName

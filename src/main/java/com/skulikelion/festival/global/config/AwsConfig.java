@@ -47,8 +47,8 @@ public class AwsConfig {
   public Executor s3UploadExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
-    executor.setCorePoolSize(4);
-    executor.setMaxPoolSize(6);
+    executor.setCorePoolSize(2);
+    executor.setMaxPoolSize(4);
     executor.setQueueCapacity(30);
     executor.setThreadNamePrefix("s3-upload-");
 

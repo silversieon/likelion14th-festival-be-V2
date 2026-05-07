@@ -6,18 +6,20 @@ package com.skulikelion.festival.domain.order.mapper;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.order.dto.event.CanceledOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.CompletedOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.CookingOrderPayload;
-import com.skulikelion.festival.domain.order.dto.event.OrderIdempotencyPayload;
-import com.skulikelion.festival.domain.order.dto.event.OrderItemUnitStatusPayload;
-import com.skulikelion.festival.domain.order.dto.event.WaitingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.dto.payload.OrderIdempotencyPayload;
+import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemUnitStatusResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
+import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
 
 @Component
 public class OrderEventMapper {
@@ -31,18 +33,28 @@ public class OrderEventMapper {
   }
 
   public CookingOrderPayload toCookingOrderPayload(
-      Booth booth, CookingOrderResponse cookingOrderResponse) {
+      Booth booth,
+      CookingOrderResponse cookingOrderResponse,
+      OrderStatus previousStatus,
+      OrderStatus currentStatus) {
     return CookingOrderPayload.builder()
         .cookingOrderResponse(cookingOrderResponse)
         .booth(booth)
+        .previousStatus(previousStatus)
+        .currentStatus(currentStatus)
         .build();
   }
 
   public CompletedOrderPayload toCompletedOrderPayload(
-      Booth booth, CompletedOrderResponse completedOrderResponse) {
+      Booth booth,
+      CompletedOrderResponse completedOrderResponse,
+      OrderStatus previousStatus,
+      OrderStatus currentStatus) {
     return CompletedOrderPayload.builder()
         .completedOrderResponse(completedOrderResponse)
         .booth(booth)
+        .previousStatus(previousStatus)
+        .currentStatus(currentStatus)
         .build();
   }
 
@@ -59,6 +71,15 @@ public class OrderEventMapper {
     return OrderItemUnitStatusPayload.builder()
         .booth(booth)
         .orderItemUnitStatusResponse(orderItemUnitStatusResponse)
+        .build();
+  }
+
+  public DismissOrderPayload toDismissOrderPayload(
+      Booth booth, OrderStatus orderStatus, Long orderId) {
+    return DismissOrderPayload.builder()
+        .booth(booth)
+        .currentOrderStatus(orderStatus)
+        .orderId(orderId)
         .build();
   }
 

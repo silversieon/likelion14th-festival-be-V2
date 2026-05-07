@@ -5,6 +5,7 @@ package com.skulikelion.festival.global.config;
 
 import java.io.IOException;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -108,6 +109,8 @@ public class SecurityConfig {
     http.authorizeHttpRequests(
         auth ->
             auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
+                .permitAll()
+                .dispatcherTypeMatchers(DispatcherType.ASYNC)
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()

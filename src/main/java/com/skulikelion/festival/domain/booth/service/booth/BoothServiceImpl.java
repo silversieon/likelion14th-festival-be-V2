@@ -120,7 +120,7 @@ public class BoothServiceImpl implements BoothService {
 
     log.info("[BoothService] 부스 생성 발생 - 부스 식별자: {}, 학과: {}", booth.getId(), booth.getDepartment());
     return boothMapper.toBoothResponse(
-        booth, responseTranslation, savedDetailImages, operations, List.of());
+        booth, responseTranslation, savedDetailImages, operations, List.of(), Language.KO);
   }
 
   @Override
@@ -210,7 +210,7 @@ public class BoothServiceImpl implements BoothService {
     log.info("[BoothService] 부스 수정 발생 - 부스 식별자: {}, 학과: {}", boothId, booth.getDepartment());
     List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     return boothMapper.toBoothResponse(
-        booth, responseTranslation, responseDetailImages, operations, menus);
+        booth, responseTranslation, responseDetailImages, operations, menus, Language.KO);
   }
 
   @Override
@@ -355,7 +355,8 @@ public class BoothServiceImpl implements BoothService {
         detailImages.size(),
         operations.size(),
         menus.size());
-    return boothMapper.toBoothResponse(booth, translation, detailImages, operations, menus);
+    return boothMapper.toBoothResponse(
+        booth, translation, detailImages, operations, menus, language);
   }
 
   @Override

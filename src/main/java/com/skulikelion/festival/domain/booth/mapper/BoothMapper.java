@@ -76,6 +76,8 @@ public class BoothMapper {
         .timeType(request.getTimeType())
         .isSoldOut(Boolean.TRUE.equals(request.getSoldOut()))
         .descriptionKo(request.getDescriptionKo())
+        .descriptionEn(request.getDescriptionEn())
+        .descriptionZh(request.getDescriptionZh())
         .category(request.getCategory())
         .iconImageUrl(iconImageUrl)
         .build();
@@ -153,7 +155,9 @@ public class BoothMapper {
         .price(menu.getPrice())
         .timeType(menu.getTimeType())
         .soldOut(menu.getIsSoldOut())
-        .description(menu.getDescriptionKo())
+        .descriptionKo(menu.getDescriptionKo())
+        .descriptionEn(menu.getDescriptionEn())
+        .descriptionZh(menu.getDescriptionZh())
         .category(menu.getCategory())
         .iconImageUrl(menu.getIconImageUrl())
         .build();
@@ -219,7 +223,7 @@ public class BoothMapper {
         .menuId(menu.getId())
         .iconImageUrl(menu.getIconImageUrl())
         .name(language.getMenuName(menu))
-        .description(menu.getDescriptionKo())
+        .description(language.getMenuDescription(menu))
         .price(menu.getPrice())
         .soldOut(menu.getIsSoldOut())
         .build();

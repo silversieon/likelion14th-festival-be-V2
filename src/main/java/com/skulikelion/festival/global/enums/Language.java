@@ -26,4 +26,12 @@ public enum Language {
       case ZH -> menu.getNameZh();
     };
   }
+
+  public String getMenuDescription(BoothMenu menu) {
+    return switch (this) {
+      case KO -> menu.getDescriptionKo();
+      case EN -> menu.getDescriptionEn();
+      case ZH -> menu.getDescriptionZh();
+    };
+  }
 }

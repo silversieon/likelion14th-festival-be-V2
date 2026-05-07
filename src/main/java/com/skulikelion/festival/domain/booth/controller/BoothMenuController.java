@@ -56,7 +56,9 @@ public class BoothMenuController {
           price: 가격 \n
           timeType: 운영 시간 타입 \n
           soldOut: 품절 여부 \n
-          description: 메뉴 설명 \n
+          descriptionKo: 한국어 메뉴 설명 \n
+          descriptionEn: 영어 메뉴 설명 \n
+          descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
           iconImageUrl: 아이콘 이미지 URL \n
           """,
@@ -95,7 +97,7 @@ public class BoothMenuController {
           menuId: 메뉴 식별자 \n
           iconImageUrl: 아이콘 이미지 URL \n
           name: 언어별 메뉴명 \n
-          description: 메뉴 설명 \n
+          description: 언어별 메뉴 설명 \n
           price: 가격 \n
           soldOut: 품절 여부 \n
           """)
@@ -121,7 +123,7 @@ public class BoothMenuController {
           menuId: 메뉴 식별자 \n
           iconImageUrl: 아이콘 이미지 URL \n
           name: 한국어 메뉴명 \n
-          description: 메뉴 설명 \n
+          description: 한국어 메뉴 설명 \n
           price: 가격 \n
           soldOut: 품절 여부 \n
           """)
@@ -148,7 +150,9 @@ public class BoothMenuController {
           price: 가격 \n
           timeType: 운영 시간 타입 \n
           soldOut: 품절 여부 \n
-          description: 메뉴 설명 \n
+          descriptionKo: 한국어 메뉴 설명 \n
+          descriptionEn: 영어 메뉴 설명 \n
+          descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
           iconImageUrl: 아이콘 이미지 URL \n
           """,
@@ -186,7 +190,9 @@ public class BoothMenuController {
           price: 가격 \n
           timeType: 운영 시간 타입 \n
           soldOut: 품절 여부 \n
-          description: 메뉴 설명 \n
+          descriptionKo: 한국어 메뉴 설명 \n
+          descriptionEn: 영어 메뉴 설명 \n
+          descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
           iconImageUrl: 아이콘 이미지 URL \n
           """)
@@ -215,7 +221,9 @@ public class BoothMenuController {
           price: 가격 \n
           timeType: 운영 시간 타입 \n
           soldOut: 품절 여부 \n
-          description: 메뉴 설명 \n
+          descriptionKo: 한국어 메뉴 설명 \n
+          descriptionEn: 영어 메뉴 설명 \n
+          descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
           iconImageUrl: 아이콘 이미지 URL \n
           """)

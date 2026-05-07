@@ -46,7 +46,7 @@ public class BoothController {
       description =
           """
           **Parameters**  \n
-          request: 부스 생성 정보, 운영 정보 3개 이상, KO/EN/ZH 번역 정보 \n
+          request: 부스 생성 정보, 운영 정보 1개 이상, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n
@@ -89,7 +89,7 @@ public class BoothController {
           """
           **Parameters**  \n
           boothId: 수정할 부스 식별자 \n
-          request: 부스 수정 정보, 운영 정보 3개 이상, KO/EN/ZH 번역 정보 \n
+          request: 부스 수정 정보, 운영 정보 1개 이상, KO/EN/ZH 번역 정보 \n
           thumbnail: 부스 썸네일 이미지 \n
           detailImages: 부스 상세 이미지 리스트, 최대 3개 \n
           \n

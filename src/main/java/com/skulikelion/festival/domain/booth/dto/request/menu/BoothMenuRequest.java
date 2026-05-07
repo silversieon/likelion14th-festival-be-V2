@@ -5,7 +5,6 @@ package com.skulikelion.festival.domain.booth.dto.request.menu;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
@@ -40,9 +39,14 @@ public class BoothMenuRequest {
   @Schema(description = "품절 여부", example = "false")
   private Boolean soldOut;
 
-  @Size(max = 150, message = "메뉴 설명은 150자 이하로 입력해주세요.")
-  @Schema(description = "한국어 메뉴 설명", maxLength = 150)
+  @Schema(description = "한국어 메뉴 설명")
   private String descriptionKo;
+
+  @Schema(description = "영어 메뉴 설명")
+  private String descriptionEn;
+
+  @Schema(description = "중국어 메뉴 설명")
+  private String descriptionZh;
 
   @NotNull(message = "메뉴 카테고리를 입력해주세요.") @Schema(description = "메뉴 카테고리", example = "MAIN")
   private MenuCategory category;

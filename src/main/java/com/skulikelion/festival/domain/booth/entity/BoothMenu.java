@@ -4,7 +4,6 @@
 package com.skulikelion.festival.domain.booth.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 
 import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
@@ -50,9 +49,14 @@ public class BoothMenu extends BaseTimeEntity {
   @Column(nullable = false)
   private Boolean isSoldOut = false;
 
-  @Size(max = 150)
-  @Column(length = 150)
+  @Column(columnDefinition = "TEXT")
   private String descriptionKo;
+
+  @Column(columnDefinition = "TEXT")
+  private String descriptionEn;
+
+  @Column(columnDefinition = "TEXT")
+  private String descriptionZh;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -68,6 +72,8 @@ public class BoothMenu extends BaseTimeEntity {
       TimeType timeType,
       Boolean isSoldOut,
       String descriptionKo,
+      String descriptionEn,
+      String descriptionZh,
       MenuCategory category,
       String iconImageUrl) {
     this.nameKo = nameKo;
@@ -77,6 +83,8 @@ public class BoothMenu extends BaseTimeEntity {
     this.timeType = timeType;
     this.isSoldOut = Boolean.TRUE.equals(isSoldOut);
     this.descriptionKo = descriptionKo;
+    this.descriptionEn = descriptionEn;
+    this.descriptionZh = descriptionZh;
     this.category = category;
     this.iconImageUrl = iconImageUrl;
   }

@@ -30,8 +30,14 @@ public class BoothMenuResponse {
   @Schema(description = "품절 여부")
   private Boolean soldOut;
 
-  @Schema(description = "메뉴 설명")
-  private String description;
+  @Schema(description = "한국어 메뉴 설명")
+  private String descriptionKo;
+
+  @Schema(description = "영어 메뉴 설명")
+  private String descriptionEn;
+
+  @Schema(description = "중국어 메뉴 설명")
+  private String descriptionZh;
 
   @Schema(description = "메뉴 카테고리")
   private MenuCategory category;

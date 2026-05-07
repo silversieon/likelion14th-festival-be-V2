@@ -37,6 +37,14 @@ public class S3AsyncService {
             ? List.of()
             : files.stream().filter(file -> file != null && !file.isEmpty()).toList();
 
+    if (validFiles.isEmpty()) {
+      return List.of();
+    }
+
+    if (validFiles.size() == 1) {
+      return List.of(s3Service.uploadFile(pathName, validFiles.get(0)));
+    }
+
     List<CompletableFuture<String>> futures =
         validFiles.stream().map(file -> uploadFileAsync(pathName, file)).toList();
 
@@ -50,11 +58,11 @@ public class S3AsyncService {
         throw customException;
       }
 
-      log.error("[S3AsyncService] S3 병렬 업로드 실패 - pathName: {}", pathName, e);
+      log.error("[S3AsyncService] S3 파일 업로드 실패 - pathName: {}", pathName, e);
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
 
     } catch (Exception e) {
-      log.error("[S3AsyncService] S3 병렬 업로드 실패 - pathName: {}", pathName, e);
+      log.error("[S3AsyncService] S3 파일 업로드 실패 - pathName: {}", pathName, e);
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
   }

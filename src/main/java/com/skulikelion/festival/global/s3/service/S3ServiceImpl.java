@@ -6,8 +6,9 @@ package com.skulikelion.festival.global.s3.service;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -55,35 +56,21 @@ public class S3ServiceImpl implements S3Service {
     validateFile(file);
 
     try {
-      byte[] originalBytes = file.getBytes();
-      byte[] webpBytes = convertToWebp(originalBytes);
+      Path webpTempFile = convertToWebpTempFile(file.getInputStream());
 
-      String keyName = createKeyName(pathName, WEBP_EXTENSION);
-      uploadToS3(keyName, webpBytes);
+      try {
+        String keyName = createKeyName(pathName, WEBP_EXTENSION);
+        uploadToS3(keyName, webpTempFile);
 
-      log.info("[S3] 파일 업로드 성공 - keyName: {}, size={} bytes", keyName, webpBytes.length);
-      return createBucketImageUrl(keyName);
+        log.info("[S3] 파일 업로드 성공 - keyName: {}, size={} bytes", keyName, Files.size(webpTempFile));
+        return createBucketImageUrl(keyName);
+      } finally {
+        Files.deleteIfExists(webpTempFile);
+      }
     } catch (CustomException e) {
       throw e;
     } catch (Exception e) {
       log.error("[S3] 파일 업로드 실패", e);
-      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
-    }
-  }
-
-  @Override
-  public String uploadByte(PathName pathName, byte[] bytes) {
-    try {
-      byte[] webpBytes = convertToWebp(bytes);
-      String keyName = createKeyName(pathName, WEBP_EXTENSION);
-      uploadToS3(keyName, webpBytes);
-
-      log.info("[S3] 바이트 업로드 성공 - keyName: {}, size={} bytes", keyName, webpBytes.length);
-      return createBucketImageUrl(keyName);
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error("[S3] 바이트 업로드 실패", e);
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
   }
@@ -127,6 +114,17 @@ public class S3ServiceImpl implements S3Service {
             .contentLength((long) bytes.length)
             .build(),
         RequestBody.fromBytes(bytes));
+  }
+
+  private void uploadToS3(String keyName, Path filePath) throws java.io.IOException {
+    s3Client.putObject(
+        PutObjectRequest.builder()
+            .bucket(awsProperties.getS3().getBucket())
+            .key(keyName)
+            .contentType(WEBP_CONTENT_TYPE)
+            .contentLength(Files.size(filePath))
+            .build(),
+        RequestBody.fromFile(filePath));
   }
 
   private void fileExists(String keyName) {
@@ -181,37 +179,37 @@ public class S3ServiceImpl implements S3Service {
     };
   }
 
-  private byte[] convertToWebp(byte[] originalBytes) {
+  private Path convertToWebpTempFile(InputStream inputStream) {
     try {
-      ImmutableImage image =
-          ImmutableImage.loader().fromStream(new ByteArrayInputStream(originalBytes));
-
-      BufferedImage src = image.awt();
-      int targetType =
-          src.getColorModel().hasAlpha()
-              ? BufferedImage.TYPE_INT_ARGB
-              : BufferedImage.TYPE_3BYTE_BGR;
-
-      if (src.getType() != targetType) {
-        BufferedImage converted = new BufferedImage(src.getWidth(), src.getHeight(), targetType);
-        Graphics2D graphics = converted.createGraphics();
-        graphics.setComposite(AlphaComposite.Src);
-        graphics.drawImage(src, 0, 0, null);
-        graphics.dispose();
-        image = ImmutableImage.fromAwt(converted);
-      }
+      ImmutableImage image = ImmutableImage.loader().fromStream(inputStream);
+      image = normalizeImageType(image);
 
       WebpWriter writer = WebpWriter.DEFAULT.withQ(WEBP_QUALITY);
-
-      try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-        image.forWriter(writer).write(outputStream);
-        return outputStream.toByteArray();
-      }
+      Path tempFile = Files.createTempFile("s3-upload-", "." + WEBP_EXTENSION);
+      image.forWriter(writer).write(tempFile);
+      return tempFile;
     } catch (CustomException e) {
       throw e;
     } catch (Exception e) {
-      log.error("[S3] WebP 변환 실패 - 유효하지 않은 이미지 또는 변환 실패", e);
+      log.error("[S3] WebP 임시 파일 변환 실패 - 유효하지 않은 이미지 또는 변환 실패", e);
       throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
     }
+  }
+
+  private ImmutableImage normalizeImageType(ImmutableImage image) {
+    BufferedImage src = image.awt();
+    int targetType =
+        src.getColorModel().hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_3BYTE_BGR;
+
+    if (src.getType() == targetType) {
+      return image;
+    }
+
+    BufferedImage converted = new BufferedImage(src.getWidth(), src.getHeight(), targetType);
+    Graphics2D graphics = converted.createGraphics();
+    graphics.setComposite(AlphaComposite.Src);
+    graphics.drawImage(src, 0, 0, null);
+    graphics.dispose();
+    return ImmutableImage.fromAwt(converted);
   }
 }

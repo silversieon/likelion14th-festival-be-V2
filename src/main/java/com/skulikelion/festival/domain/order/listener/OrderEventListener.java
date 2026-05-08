@@ -42,7 +42,9 @@ public class OrderEventListener {
     orderSseService.sendWaitingOrderEvent(
         waitingOrderPayload.booth(), waitingOrderPayload.waitingOrderResponse());
     orderSseService.sendOrderIncrementNotification(
-        waitingOrderPayload.booth(), SseSubscribeType.WAITING);
+        waitingOrderPayload.booth(),
+        SseSubscribeType.WAITING,
+        waitingOrderPayload.waitingOrderResponse().getOrderId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -50,9 +52,13 @@ public class OrderEventListener {
     orderSseService.sendCookingOrderEvent(
         cookingOrderPayload.booth(), cookingOrderPayload.cookingOrderResponse());
     orderSseService.sendOrderIncrementNotification(
-        cookingOrderPayload.booth(), cookingOrderPayload.currentStatus().toSseSubscribeType());
+        cookingOrderPayload.booth(),
+        cookingOrderPayload.currentStatus().toSseSubscribeType(),
+        cookingOrderPayload.cookingOrderResponse().getOrderId());
     orderSseService.sendOrderDecrementNotification(
-        cookingOrderPayload.booth(), cookingOrderPayload.previousStatus().toSseSubscribeType());
+        cookingOrderPayload.booth(),
+        cookingOrderPayload.previousStatus().toSseSubscribeType(),
+        cookingOrderPayload.cookingOrderResponse().getOrderId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -60,7 +66,9 @@ public class OrderEventListener {
     orderSseService.sendCompletedOrderEvent(
         completedOrderPayload.booth(), completedOrderPayload.completedOrderResponse());
     orderSseService.sendOrderDecrementNotification(
-        completedOrderPayload.booth(), completedOrderPayload.previousStatus().toSseSubscribeType());
+        completedOrderPayload.booth(),
+        completedOrderPayload.previousStatus().toSseSubscribeType(),
+        completedOrderPayload.completedOrderResponse().getOrderId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

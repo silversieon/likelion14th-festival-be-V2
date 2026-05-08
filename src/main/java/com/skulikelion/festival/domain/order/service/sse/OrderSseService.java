@@ -38,16 +38,20 @@ public interface OrderSseService {
    *
    * @param booth 이벤트가 발생한 부스
    * @param currentSubscribeType 이벤트가 발생한 구독 타입(해당 타입을 제외한 다른 타입들에게 전송)
+   * @param orderId 이벤트가 발생된 주문 식별자
    */
-  void sendOrderIncrementNotification(Booth booth, SseSubscribeType currentSubscribeType);
+  void sendOrderIncrementNotification(
+      Booth booth, SseSubscribeType currentSubscribeType, Long orderId);
 
   /**
    * [ 주문 알림 숫자 감소 전송 메서드 ] 대기 -> 조리, 조리 -> 완료 등 주문 이벤트 시에 다른 탭의 관리자들이 알림 -1 할 수 있게 알림 전송
    *
    * @param booth 이벤트가 발생한 부스
    * @param currentSubscribeType 이벤트를 발생 시킨 구독 타입(해당 타입을 제외한 다른 타입들에게 전송)
+   * @param orderId 이벤트가 발생된 주문 식별자
    */
-  void sendOrderDecrementNotification(Booth booth, SseSubscribeType currentSubscribeType);
+  void sendOrderDecrementNotification(
+      Booth booth, SseSubscribeType currentSubscribeType, Long orderId);
 
   /**
    * [ 주문 탭 이탈 알림 전송 메서드 ] 주문 상태 변경으로 인해 동일 구독 타입의 구독자에게 해당 주문이 현재 탭에서 제외됨을 알림

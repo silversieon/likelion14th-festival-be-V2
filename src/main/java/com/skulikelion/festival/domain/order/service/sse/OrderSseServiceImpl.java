@@ -18,7 +18,7 @@ import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.domain.order.dto.event.DismissOrderIdEvent;
-import com.skulikelion.festival.domain.order.dto.event.OrderStatusNotificationEvent;
+import com.skulikelion.festival.domain.order.dto.event.OrderCountNotification;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
@@ -86,7 +86,8 @@ public class OrderSseServiceImpl implements OrderSseService {
   }
 
   @Override
-  public void sendOrderIncrementNotification(Booth booth, SseSubscribeType currentSubscribeType) {
+  public void sendOrderIncrementNotification(
+      Booth booth, SseSubscribeType currentSubscribeType, Long orderId) {
     Map<SseSubscribeType, List<SseEmitter>> statusMap =
         orderSseEmitterRepository.findByBoothId(booth.getId());
 
@@ -104,14 +105,17 @@ public class OrderSseServiceImpl implements OrderSseService {
                               SseEmitter.event()
                                   .name("orderIncrementNotification")
                                   .data(
-                                      new OrderStatusNotificationEvent(
-                                          currentSubscribeType
-                                              .toOrderStatus()
-                                              .orElseThrow(
-                                                  () ->
-                                                      new CustomException(
-                                                          OrderErrorCode
-                                                              .INVALID_SUBSCRIBE_TYPE_CONVERSION)))));
+                                      OrderCountNotification.builder()
+                                          .orderStatus(
+                                              currentSubscribeType
+                                                  .toOrderStatus()
+                                                  .orElseThrow(
+                                                      () ->
+                                                          new CustomException(
+                                                              OrderErrorCode
+                                                                  .INVALID_SUBSCRIBE_TYPE_CONVERSION)))
+                                          .orderId(orderId)
+                                          .build()));
                           log.debug(
                               "[OrderSseService] 주문 상태 변경에 의한 증가 알림 전송 성공 - 학과명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
                               booth.getDepartment().getDescription(),
@@ -129,7 +133,8 @@ public class OrderSseServiceImpl implements OrderSseService {
   }
 
   @Override
-  public void sendOrderDecrementNotification(Booth booth, SseSubscribeType currentSubscribeType) {
+  public void sendOrderDecrementNotification(
+      Booth booth, SseSubscribeType currentSubscribeType, Long orderId) {
     Map<SseSubscribeType, List<SseEmitter>> statusMap =
         orderSseEmitterRepository.findByBoothId(booth.getId());
 
@@ -147,14 +152,17 @@ public class OrderSseServiceImpl implements OrderSseService {
                               SseEmitter.event()
                                   .name("orderDecrementNotification")
                                   .data(
-                                      new OrderStatusNotificationEvent(
-                                          currentSubscribeType
-                                              .toOrderStatus()
-                                              .orElseThrow(
-                                                  () ->
-                                                      new CustomException(
-                                                          OrderErrorCode
-                                                              .INVALID_SUBSCRIBE_TYPE_CONVERSION)))));
+                                      OrderCountNotification.builder()
+                                          .orderStatus(
+                                              currentSubscribeType
+                                                  .toOrderStatus()
+                                                  .orElseThrow(
+                                                      () ->
+                                                          new CustomException(
+                                                              OrderErrorCode
+                                                                  .INVALID_SUBSCRIBE_TYPE_CONVERSION)))
+                                          .orderId(orderId)
+                                          .build()));
                           log.debug(
                               "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 성공 - 학과명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
                               booth.getDepartment().getDescription(),

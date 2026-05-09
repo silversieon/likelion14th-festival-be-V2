@@ -15,12 +15,14 @@ import com.skulikelion.festival.domain.lostitem.entity.LostItem;
 @Repository
 public interface LostItemRepository extends JpaRepository<LostItem, Long> {
 
-  Page<LostItem> findAllByOrderByCreatedAtDesc(Pageable pageable);
+  Page<LostItem> findAllByOrderByIsReturnedAscCreatedAtDesc(Pageable pageable);
 
-  Page<LostItem> findByNameContainingIgnoreCaseOrderByCreatedAtDesc(String name, Pageable pageable);
+  Page<LostItem> findByNameContainingIgnoreCaseOrderByIsReturnedAscCreatedAtDesc(
+      String name, Pageable pageable);
 
-  Page<LostItem> findByFoundDateOrderByCreatedAtDesc(LocalDate foundDate, Pageable pageable);
+  Page<LostItem> findByFoundDateOrderByIsReturnedAscCreatedAtDesc(
+      LocalDate foundDate, Pageable pageable);
 
-  Page<LostItem> findByNameContainingIgnoreCaseAndFoundDateOrderByCreatedAtDesc(
+  Page<LostItem> findByNameContainingIgnoreCaseAndFoundDateOrderByIsReturnedAscCreatedAtDesc(
       String name, LocalDate foundDate, Pageable pageable);
 }

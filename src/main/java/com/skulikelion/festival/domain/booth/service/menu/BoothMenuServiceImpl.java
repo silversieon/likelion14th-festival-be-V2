@@ -193,13 +193,13 @@ public class BoothMenuServiceImpl implements BoothMenuService {
       return boothMapper.toOrderAvailableBoothMenuGroupResponse(List.of(), language);
     }
     LocalTime now = LocalTime.now();
-    if (!operation.isOpenAt(now)) {
+    if (!operation.isOpenAt()) {
       log.warn("[BoothMenuService] 주문 가능 시간 외 메뉴 조회 요청 - 부스 식별자: {}, 현재 시간: {}", boothId, now);
       throw new CustomException(OrderErrorCode.NOT_TIME_TO_ORDER);
     }
 
     // 현재 시간대 메뉴 필터링
-    TimeType currentTimeType = operation.getCurrentOrderTimeType(now);
+    TimeType currentTimeType = operation.getOrderableTimeType(now);
     List<TimeType> allowedTypes = TimeType.forQuery(currentTimeType);
     List<BoothMenu> menus =
         boothMenuRepository.findByBoothIdOrderByIdAsc(boothId).stream()

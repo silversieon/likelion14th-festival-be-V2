@@ -12,6 +12,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
@@ -72,6 +73,11 @@ public class GlobalExceptionHandler {
     log.warn("[Exception] 잘못된 요청 값 입력 - {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), "올바르지 않은 요청 값입니다."));
+  }
+
+  @ExceptionHandler(AsyncRequestNotUsableException.class)
+  public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException e) {
+    log.warn("[SSE] 클라이언트 연결 끊김 (정상 에러): {}", e.getMessage());
   }
 
   // 예상치 못한 예외

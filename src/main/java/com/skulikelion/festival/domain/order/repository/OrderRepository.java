@@ -150,4 +150,39 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
       @Param("boothId") Long boothId,
       @Param("startDate") LocalDateTime startDate,
       @Param("endDate") LocalDateTime endDate);
+
+  @Query(
+      """
+    SELECT COALESCE(SUM(o.totalOrderPrice), 0L)
+    FROM Order o
+    WHERE o.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COMPLETED
+    AND EXISTS (
+        SELECT 1
+        FROM OrderItem oi
+        JOIN oi.boothMenu bm
+        WHERE oi.order = o
+        AND bm.booth.id = :boothId
+    )
+""")
+  Long findTotalSalesByBoothId(@Param("boothId") Long boothId);
+
+  @Query(
+      """
+    SELECT COALESCE(SUM(o.totalOrderPrice), 0L)
+    FROM Order o
+    WHERE o.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COMPLETED
+    AND o.completedAt >= :startDate
+    AND o.completedAt < :endDate
+    AND EXISTS (
+        SELECT 1
+        FROM OrderItem oi
+        JOIN oi.boothMenu bm
+        WHERE oi.order = o
+        AND bm.booth.id = :boothId
+    )
+""")
+  Long findTotalSalesByBoothIdAndDateBetween(
+      @Param("boothId") Long boothId,
+      @Param("startDate") LocalDateTime startDate,
+      @Param("endDate") LocalDateTime endDate);
 }

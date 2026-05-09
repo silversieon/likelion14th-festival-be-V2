@@ -3,10 +3,12 @@
  */
 package com.skulikelion.festival.domain.booth.dto.response.booth;
 
+import java.time.LocalTime;
 import java.util.List;
 
 import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuSummaryGroupResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -43,6 +45,18 @@ public class BoothResponse {
 
   @Schema(description = "부스명")
   private String boothName;
+
+  @Schema(description = "부스 영업 상태")
+  private BoothStatus boothStatus;
+
+  @Schema(description = "낮 오픈 시간")
+  private LocalTime dayOpenTime;
+
+  @Schema(description = "밤 오픈 시간")
+  private LocalTime nightOpenTime;
+
+  @Schema(description = "마감 시간")
+  private LocalTime closeTime;
 
   @Schema(description = "부스 설명")
   private String description;

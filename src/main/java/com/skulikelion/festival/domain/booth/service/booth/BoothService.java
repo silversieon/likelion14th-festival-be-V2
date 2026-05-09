@@ -13,6 +13,7 @@ import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResp
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.global.enums.Language;
 
@@ -43,6 +44,15 @@ public interface BoothService {
       BoothRequest request,
       MultipartFile thumbnail,
       List<MultipartFile> detailImages);
+
+  /**
+   * [ 부스 썸네일 수정 메서드 ]
+   *
+   * @param boothId 썸네일을 수정할 부스의 식별자
+   * @param thumbnail 부스 썸네일 이미지
+   * @return 수정된 부스 썸네일 정보
+   */
+  BoothThumbnailResponse updateBoothThumbnail(Long boothId, MultipartFile thumbnail);
 
   /**
    * [ 부스 운영 시간 변경 메서드 ]

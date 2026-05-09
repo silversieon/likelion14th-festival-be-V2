@@ -21,6 +21,7 @@ import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResp
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
@@ -211,6 +212,21 @@ public class BoothServiceImpl implements BoothService {
     List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     return boothMapper.toBoothResponse(
         booth, responseTranslation, responseDetailImages, operations, menus, Language.KO);
+  }
+
+  @Override
+  @Transactional
+  public BoothThumbnailResponse updateBoothThumbnail(Long boothId, MultipartFile thumbnail) {
+    log.info("[BoothService] 부스 썸네일 수정 요청 - 부스 식별자: {}", boothId);
+    Booth booth = getBooth(boothId);
+    String oldThumbnailUrl = booth.getThumbnailUrl();
+    String thumbnailUrl = uploadRequiredImage(PathName.BOOTH_THUMBNAIL, thumbnail);
+
+    booth.updateThumbnailUrl(thumbnailUrl);
+    deleteImageQuietly(oldThumbnailUrl);
+
+    log.info("[BoothService] 부스 썸네일 수정 발생 - 부스 식별자: {}, thumbnailUrl: {}", boothId, thumbnailUrl);
+    return BoothThumbnailResponse.builder().boothId(boothId).thumbnailUrl(thumbnailUrl).build();
   }
 
   @Override
@@ -424,6 +440,12 @@ public class BoothServiceImpl implements BoothService {
       return null;
     }
     log.info("[BoothService] 이미지 업로드 요청 - 경로: {}, 파일명: {}", pathName, image.getOriginalFilename());
+    return s3Service.uploadFile(pathName, image);
+  }
+
+  private String uploadRequiredImage(PathName pathName, MultipartFile image) {
+    String fileName = image == null ? null : image.getOriginalFilename();
+    log.info("[BoothService] 이미지 업로드 요청 - 경로: {}, 파일명: {}", pathName, fileName);
     return s3Service.uploadFile(pathName, image);
   }
 

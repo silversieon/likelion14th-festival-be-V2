@@ -21,6 +21,7 @@ import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResp
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.global.common.BaseResponse;
@@ -125,6 +126,28 @@ public class BoothController {
       @RequestPart(value = "detailImages", required = false) List<MultipartFile> detailImages) {
     BoothResponse response = boothService.updateBooth(boothId, request, thumbnail, detailImages);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 수정 성공", response));
+  }
+
+  @Operation(
+      summary = "[ 총 관리자 | 토큰 O | 부스 썸네일 수정 ]",
+      description =
+          """
+          **Parameters**  \n
+          boothId: 썸네일을 수정할 부스 식별자 \n
+          thumbnail: 새 부스 썸네일 이미지 \n
+          \n
+          **Returns**  \n
+          boothId: 부스 식별자 \n
+          thumbnailUrl: 수정된 썸네일 이미지 URL \n
+          """)
+  @PreAuthorize("hasRole('ADMIN')")
+  @PatchMapping(
+      value = "/booths/{boothId}/thumbnail",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<BaseResponse<BoothThumbnailResponse>> updateBoothThumbnail(
+      @PathVariable Long boothId, @RequestPart("thumbnail") MultipartFile thumbnail) {
+    BoothThumbnailResponse response = boothService.updateBoothThumbnail(boothId, thumbnail);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 썸네일 수정 성공", response));
   }
 
   @Operation(

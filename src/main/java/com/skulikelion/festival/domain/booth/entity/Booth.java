@@ -78,6 +78,10 @@ public class Booth extends BaseTimeEntity {
     this.bankName = bankName;
   }
 
+  public void updateThumbnailUrl(String thumbnailUrl) {
+    this.thumbnailUrl = thumbnailUrl;
+  }
+
   public boolean isOrderEnabled() {
     return Boolean.TRUE.equals(orderEnabled);
   }

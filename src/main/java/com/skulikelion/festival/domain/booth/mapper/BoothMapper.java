@@ -181,7 +181,7 @@ public class BoothMapper {
   public BoothBusinessInfoResponse toBoothBusinessInfoResponse(
       Booth booth, BoothOperation operation, Long sales) {
     return BoothBusinessInfoResponse.builder()
-        .departmentName(booth.getDepartment().name())
+        .departmentName(booth.getDepartment().getDescription())
         .isActive(booth.getBoothStatus().equals(BoothStatus.OPEN))
         .dayOpenTime(operation.getDayOpenTime())
         .nightOpenTime(operation.getNightOpenTime())

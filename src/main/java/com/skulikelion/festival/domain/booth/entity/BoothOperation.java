@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 
@@ -68,10 +69,10 @@ public class BoothOperation extends BaseTimeEntity {
     this.closeTime = closeTime;
   }
 
-  public boolean isOpenAt(LocalTime now) {
+  public boolean isOpenAt() {
     return switch (timeType) {
-      case DAY, ALL -> dayOpenTime != null && isWithinOperatingTime(now, dayOpenTime, closeTime);
-      case NIGHT -> nightOpenTime != null && isWithinOperatingTime(now, nightOpenTime, closeTime);
+      case DAY, ALL -> dayOpenTime != null && this.booth.getBoothStatus() == BoothStatus.OPEN;
+      case NIGHT -> nightOpenTime != null && this.booth.getBoothStatus() == BoothStatus.OPEN;
     };
   }
 
@@ -83,16 +84,6 @@ public class BoothOperation extends BaseTimeEntity {
     };
   }
 
-  private boolean isWithinOperatingTime(LocalTime now, LocalTime startTime, LocalTime endTime) {
-    if (startTime.equals(endTime)) {
-      return true;
-    }
-    if (startTime.isBefore(endTime)) {
-      return !now.isBefore(startTime) && now.isBefore(endTime);
-    }
-    return !now.isBefore(startTime) || now.isBefore(endTime);
-  }
-
   public TimeType getCurrentOrderTimeType(LocalTime now) {
     if (nightOpenTime != null && isWithinOperatingTime(now, nightOpenTime, closeTime)) {
       return TimeType.NIGHT;
@@ -101,5 +92,33 @@ public class BoothOperation extends BaseTimeEntity {
       return TimeType.DAY;
     }
     return null;
+  }
+
+  public TimeType getOrderableTimeType(LocalTime now) {
+    if (this.booth.getBoothStatus() == BoothStatus.OPEN && getCurrentOrderTimeType(now) == null) {
+
+      LocalTime firstOpenTime = dayOpenTime != null ? dayOpenTime : nightOpenTime;
+
+      // 조기 오픈 - 최초 오픈 시간 이전
+      if (now.isBefore(firstOpenTime)) {
+        if (dayOpenTime != null) return TimeType.DAY;
+        return TimeType.NIGHT;
+      }
+
+      // 연장 영업 - 마지막 오픈 시간 이후
+      if (nightOpenTime != null) return TimeType.NIGHT;
+      return TimeType.DAY;
+    }
+    return getCurrentOrderTimeType(now);
+  }
+
+  private boolean isWithinOperatingTime(LocalTime now, LocalTime startTime, LocalTime endTime) {
+    if (startTime.equals(endTime)) {
+      return true;
+    }
+    if (startTime.isBefore(endTime)) {
+      return !now.isBefore(startTime) && now.isBefore(endTime);
+    }
+    return !now.isBefore(startTime) || now.isBefore(endTime);
   }
 }

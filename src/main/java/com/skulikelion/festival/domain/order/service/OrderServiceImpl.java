@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 import com.skulikelion.festival.domain.booth.entity.BoothOperation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
@@ -90,12 +91,18 @@ public class OrderServiceImpl implements OrderService {
 
       Booth booth = validateBoothExists(boothId);
       validateBoothUsesOrder(booth);
-      BoothOperation boothOperation = validateBoothOrderTime(booth);
+      validateBoothStatusIsOpen(booth);
 
       List<Long> boothMenuIds =
           request.getOrderItems().stream().map(OrderItemCreateRequest::getBoothMenuId).toList();
       List<BoothMenu> boothMenus = boothMenuRepository.findAllById(boothMenuIds);
       validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
+
+      LocalDate today = LocalDate.now();
+      BoothOperation boothOperation =
+          boothOperationRepository
+              .findByBoothIdAndOperationDate(boothId, today)
+              .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_TIME_BOOTH_NOT_FOUND));
       validateBoothMenusOrderable(boothMenus, boothOperation);
 
       Map<Long, BoothMenu> boothMenuMap =
@@ -564,22 +571,15 @@ public class OrderServiceImpl implements OrderService {
     }
   }
 
-  private BoothOperation validateBoothOrderTime(Booth booth) {
-    BoothOperation operation =
-        boothOperationRepository
-            .findByBoothIdAndOperationDate(booth.getId(), LocalDate.now())
-            .orElseThrow(
-                () -> {
-                  log.warn(
-                      "[OrderService] 오늘 부스 운영 정보를 찾을 수 없습니다 - 학과명: {}",
-                      booth.getDepartment().getDescription());
-                  return new CustomException(OrderErrorCode.ORDER_TIME_BOOTH_NOT_FOUND);
-                });
-    if (!operation.isOpenAt(LocalTime.now())) {
-      log.warn("[OrderService] 주문 가능 시간 외 주문 요청 - 학과명: {}", booth.getDepartment().getDescription());
+  private void validateBoothStatusIsOpen(Booth booth) {
+    BoothStatus boothStatus = booth.getBoothStatus();
+    if (boothStatus != BoothStatus.OPEN) {
+      log.warn(
+          "[OrderService] 영업 중 외 주문 요청 - 학과명: {}, 부스 상태: {}",
+          booth.getDepartment().getDescription(),
+          boothStatus);
       throw new CustomException(OrderErrorCode.NOT_TIME_TO_ORDER);
     }
-    return operation;
   }
 
   private void validateBoothMenusOrderable(
@@ -597,7 +597,7 @@ public class OrderServiceImpl implements OrderService {
   }
 
   private void validateBoothMenuTimeType(List<BoothMenu> boothMenus, BoothOperation operation) {
-    TimeType currentTimeType = operation.getCurrentOrderTimeType(LocalTime.now());
+    TimeType currentTimeType = operation.getOrderableTimeType(LocalTime.now());
     List<TimeType> allowedTypes = TimeType.forQuery(currentTimeType);
 
     boolean hasInvalidMenu =

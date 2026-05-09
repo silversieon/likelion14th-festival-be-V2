@@ -17,6 +17,7 @@ import com.skulikelion.festival.domain.booth.dto.request.booth.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.request.booth.BoothTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuRequest;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothBusinessInfoResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothDetailImageResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
@@ -30,6 +31,7 @@ import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 import com.skulikelion.festival.domain.booth.entity.BoothOperation;
 import com.skulikelion.festival.domain.booth.entity.BoothTranslation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
@@ -105,15 +107,14 @@ public class BoothMapper {
       List<BoothMenu> menus,
       Language language) {
     LocalDate today = LocalDate.now();
-    LocalTime now = LocalTime.now();
     Optional<BoothOperation> todayOperation =
         operations.stream()
             .filter(operation -> operation.getOperationDate().equals(today))
             .findFirst();
-    boolean open = todayOperation.map(operation -> operation.isOpenAt(now)).orElse(false);
+    BoothOperation boothOperation = todayOperation.orElse(null);
+    boolean open = todayOperation.map(BoothOperation::isOpenAt).orElse(false);
     boolean orderAvailable =
-        booth.isOrderEnabled()
-            && todayOperation.map(operation -> operation.isOpenAt(now)).orElse(false);
+        booth.isOrderEnabled() && todayOperation.map(BoothOperation::isOpenAt).orElse(false);
 
     return BoothResponse.builder()
         .boothId(booth.getId())
@@ -125,6 +126,10 @@ public class BoothMapper {
         .boothNumbers(booth.getBoothNumbers())
         .departmentName(translation.getDepartmentName())
         .boothName(translation.getBoothName())
+        .boothStatus(booth.getBoothStatus())
+        .dayOpenTime(boothOperation != null ? boothOperation.getDayOpenTime() : null)
+        .nightOpenTime(boothOperation != null ? boothOperation.getNightOpenTime() : null)
+        .closeTime(boothOperation != null ? boothOperation.getCloseTime() : null)
         .description(translation.getDescription())
         .detailImages(toBoothDetailImageResponses(detailImages))
         .menus(toBoothMenuSummaryGroupResponse(menus, language))
@@ -170,6 +175,18 @@ public class BoothMapper {
         .main(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.MAIN))
         .side(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.SIDE))
         .drink(toOrderAvailableBoothMenuResponses(menus, language, MenuCategory.DRINK))
+        .build();
+  }
+
+  public BoothBusinessInfoResponse toBoothBusinessInfoResponse(
+      Booth booth, BoothOperation operation, Long sales) {
+    return BoothBusinessInfoResponse.builder()
+        .departmentName(booth.getDepartment().getDescription())
+        .isActive(booth.getBoothStatus().equals(BoothStatus.OPEN))
+        .dayOpenTime(operation.getDayOpenTime())
+        .nightOpenTime(operation.getNightOpenTime())
+        .closeTime(operation.getCloseTime())
+        .sales(sales)
         .build();
   }
 

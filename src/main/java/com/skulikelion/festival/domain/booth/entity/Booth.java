@@ -17,6 +17,7 @@ import jakarta.persistence.Table;
 
 import com.skulikelion.festival.domain.booth.converter.IntegerListJsonConverter;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 import com.skulikelion.festival.global.enums.Department;
 
@@ -48,6 +49,10 @@ public class Booth extends BaseTimeEntity {
   @Column(nullable = false)
   private Boolean orderEnabled = false;
 
+  @Builder.Default
+  @Enumerated(EnumType.STRING)
+  private BoothStatus boothStatus = BoothStatus.CLOSED;
+
   @Enumerated(EnumType.STRING)
   private BoothLocation location;
 
@@ -78,7 +83,15 @@ public class Booth extends BaseTimeEntity {
     this.bankName = bankName;
   }
 
+  public void updateThumbnailUrl(String thumbnailUrl) {
+    this.thumbnailUrl = thumbnailUrl;
+  }
+
   public boolean isOrderEnabled() {
     return Boolean.TRUE.equals(orderEnabled);
+  }
+
+  public void changeStatus(BoothStatus newStatus) {
+    this.boothStatus = newStatus;
   }
 }

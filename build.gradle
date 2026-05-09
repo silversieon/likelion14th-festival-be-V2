@@ -52,6 +52,7 @@ dependencies {
     // S3
     implementation platform("software.amazon.awssdk:bom:2.41.10")
     implementation "software.amazon.awssdk:s3"
+    implementation 'com.drewnoakes:metadata-extractor:2.19.0'
 
     // MinIO
     implementation 'io.minio:minio:8.4.3'

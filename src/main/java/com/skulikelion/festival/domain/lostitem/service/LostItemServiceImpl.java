@@ -74,15 +74,18 @@ public class LostItemServiceImpl implements LostItemService {
 
     if (hasName && hasDate) {
       lostItems =
-          lostItemRepository.findByNameContainingIgnoreCaseAndFoundDateOrderByCreatedAtDesc(
-              name, foundDate, pageable);
+          lostItemRepository
+              .findByNameContainingIgnoreCaseAndFoundDateOrderByIsReturnedAscCreatedAtDesc(
+                  name, foundDate, pageable);
     } else if (hasName) {
       lostItems =
-          lostItemRepository.findByNameContainingIgnoreCaseOrderByCreatedAtDesc(name, pageable);
+          lostItemRepository.findByNameContainingIgnoreCaseOrderByIsReturnedAscCreatedAtDesc(
+              name, pageable);
     } else if (hasDate) {
-      lostItems = lostItemRepository.findByFoundDateOrderByCreatedAtDesc(foundDate, pageable);
+      lostItems =
+          lostItemRepository.findByFoundDateOrderByIsReturnedAscCreatedAtDesc(foundDate, pageable);
     } else {
-      lostItems = lostItemRepository.findAllByOrderByCreatedAtDesc(pageable);
+      lostItems = lostItemRepository.findAllByOrderByIsReturnedAscCreatedAtDesc(pageable);
     }
 
     return lostItemMapper.toPageResponse(lostItems);

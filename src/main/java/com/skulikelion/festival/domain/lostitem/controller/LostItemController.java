@@ -47,6 +47,10 @@ public class LostItemController {
           page: 페이지 번호 (기본값: 0) \n
           size: 페이지당 게시물 수 (기본값: 4) \n
           \n
+          **Sort**  \n
+          수령 전(false) 분실물이 먼저 조회되고, 수령 완료(true) 분실물은 뒤로 정렬됩니다. \n
+          각 상태 그룹 안에서는 최신 등록순으로 정렬됩니다. \n
+          \n
           **Returns**  \n
           content: 분실물 리스트 \n
             - id: 분실물 식별자  \n
@@ -55,6 +59,7 @@ public class LostItemController {
             - foundPlace: 습득 장소  \n
             - foundDate: 습득 날짜  \n
             - dayOfWeek: 습득 요일  \n
+            - returned: 수령 여부  \n
           totalElements: 전체 분실물 개수 \n
           totalPages: 전체 페이지 개수 \n
           pageNum: 현재 페이지 번호 \n

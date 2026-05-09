@@ -3,10 +3,12 @@
  */
 package com.skulikelion.festival.domain.booth.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,10 +20,13 @@ import com.skulikelion.festival.domain.booth.dto.request.booth.BoothMultipartBod
 import com.skulikelion.festival.domain.booth.dto.request.booth.BoothOperationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.booth.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothBusinessInfoResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
@@ -125,6 +130,28 @@ public class BoothController {
       @RequestPart(value = "detailImages", required = false) List<MultipartFile> detailImages) {
     BoothResponse response = boothService.updateBooth(boothId, request, thumbnail, detailImages);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 수정 성공", response));
+  }
+
+  @Operation(
+      summary = "[ 총 관리자 | 토큰 O | 부스 썸네일 수정 ]",
+      description =
+          """
+          **Parameters**  \n
+          boothId: 썸네일을 수정할 부스 식별자 \n
+          thumbnail: 새 부스 썸네일 이미지 \n
+          \n
+          **Returns**  \n
+          boothId: 부스 식별자 \n
+          thumbnailUrl: 수정된 썸네일 이미지 URL \n
+          """)
+  @PreAuthorize("hasRole('ADMIN')")
+  @PatchMapping(
+      value = "/booths/{boothId}/thumbnail",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<BaseResponse<BoothThumbnailResponse>> updateBoothThumbnail(
+      @PathVariable Long boothId, @RequestPart("thumbnail") MultipartFile thumbnail) {
+    BoothThumbnailResponse response = boothService.updateBoothThumbnail(boothId, thumbnail);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 썸네일 수정 성공", response));
   }
 
   @Operation(
@@ -287,5 +314,62 @@ public class BoothController {
       @PathVariable Long boothId) {
     BoothAccountResponse response = boothService.getBoothAccount(boothId);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "입금 계좌 조회 성공", response));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 부스 영업 관리 조회 ]",
+      description =
+          """
+              **Parameters**  \n
+              date: 매출을 조회할 날짜 (2026-05-01 형태) \n
+              \n
+              **Returns**  \n
+              departmentName: 학과명 \n
+              isActive: 부스 영업 중 여부 \n
+              dayOpenTime: 낮 오픈 시간 \n
+              nightOpenTime: 밤 오픈 시간 \n
+              closeTime: 마감 시간 \n
+              sales: 매출 \n
+          """)
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
+  @GetMapping("/booths/business-info")
+  public ResponseEntity<BaseResponse<BoothBusinessInfoResponse>> getBoothBusinessInfo(
+      @AuthenticationPrincipal String departmentName,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    BoothBusinessInfoResponse boothBusinessInfo =
+        boothService.getBoothBusinessInfo(departmentName, date);
+    return ResponseEntity.status(200)
+        .body(BaseResponse.success(200, "부스 영업 정보 조회 성공", boothBusinessInfo));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 부스 영업 중으로 전환 ]",
+      description = """
+          **Returns**  \n
+          """)
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
+  @PatchMapping("/booths/status/open")
+  public ResponseEntity<BaseResponse<Void>> changeBoothStatusToOpen(
+      @AuthenticationPrincipal String departmentName) {
+    boothService.changeBoothStatusToOpen(departmentName);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 영업 중 전환 성공", null));
+  }
+
+  @Operation(
+      summary = "[ 부스 관리자 | 토큰 O | 부스 영업 중단으로 전환 ]",
+      description =
+          """
+          **Parameters**  \n
+          BoothStatus: 중단 사유 (OPEN은 예외 처리 됨)
+          \n
+          **Returns**  \n
+          """)
+  @PreAuthorize("hasRole('BOOTH_MANAGER')")
+  @PatchMapping("/booths/status/close")
+  public ResponseEntity<BaseResponse<Void>> getBoothBusinessInfo(
+      @AuthenticationPrincipal String departmentName, @RequestParam BoothStatus boothStatus) {
+    boothService.changeBoothStatusToClose(departmentName, boothStatus);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 영업 중단 전환 성공", null));
   }
 }

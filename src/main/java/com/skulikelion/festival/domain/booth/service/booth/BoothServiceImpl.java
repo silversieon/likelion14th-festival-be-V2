@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.booth.service.booth;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -18,15 +19,18 @@ import com.skulikelion.festival.domain.booth.dto.request.booth.BoothOperationReq
 import com.skulikelion.festival.domain.booth.dto.request.booth.BoothRequest;
 import com.skulikelion.festival.domain.booth.dto.request.booth.BoothTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothAccountResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothBusinessInfoResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
+import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 import com.skulikelion.festival.domain.booth.entity.BoothOperation;
 import com.skulikelion.festival.domain.booth.entity.BoothTranslation;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
+import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.mapper.BoothMapper;
 import com.skulikelion.festival.domain.booth.repository.BoothDetailImageRepository;
@@ -38,6 +42,7 @@ import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.domain.order.repository.OrderRepository;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
@@ -64,6 +69,7 @@ public class BoothServiceImpl implements BoothService {
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
   private final S3AsyncService s3AsyncService;
+  private final OrderRepository orderRepository;
 
   @Override
   @Transactional
@@ -211,6 +217,21 @@ public class BoothServiceImpl implements BoothService {
     List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     return boothMapper.toBoothResponse(
         booth, responseTranslation, responseDetailImages, operations, menus, Language.KO);
+  }
+
+  @Override
+  @Transactional
+  public BoothThumbnailResponse updateBoothThumbnail(Long boothId, MultipartFile thumbnail) {
+    log.info("[BoothService] 부스 썸네일 수정 요청 - 부스 식별자: {}", boothId);
+    Booth booth = getBooth(boothId);
+    String oldThumbnailUrl = booth.getThumbnailUrl();
+    String thumbnailUrl = uploadRequiredImage(PathName.BOOTH_THUMBNAIL, thumbnail);
+
+    booth.updateThumbnailUrl(thumbnailUrl);
+    deleteImageQuietly(oldThumbnailUrl);
+
+    log.info("[BoothService] 부스 썸네일 수정 발생 - 부스 식별자: {}, thumbnailUrl: {}", boothId, thumbnailUrl);
+    return BoothThumbnailResponse.builder().boothId(boothId).thumbnailUrl(thumbnailUrl).build();
   }
 
   @Override
@@ -367,6 +388,60 @@ public class BoothServiceImpl implements BoothService {
     return boothMapper.toBoothAccountResponse(booth);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public BoothBusinessInfoResponse getBoothBusinessInfo(String departmentName, LocalDate date) {
+    Booth booth = validateBoothExists(departmentName);
+    BoothOperation boothOperation =
+        boothOperationRepository
+            .findByBoothIdAndOperationDate(booth.getId(), LocalDate.now())
+            .orElseThrow(() -> new CustomException(BoothErrorCode.BOOTH_OPERATION_NOT_FOUND));
+
+    Long sales;
+    if (date == null) {
+      sales = orderRepository.findTotalSalesByBoothId(booth.getId());
+    } else {
+      LocalDateTime start = date.atStartOfDay();
+      LocalDateTime end = date.plusDays(1).atStartOfDay();
+
+      sales = orderRepository.findTotalSalesByBoothIdAndDateBetween(booth.getId(), start, end);
+    }
+
+    return boothMapper.toBoothBusinessInfoResponse(booth, boothOperation, sales);
+  }
+
+  @Override
+  @Transactional
+  public void changeBoothStatusToOpen(String departmentName) {
+    Booth booth = validateBoothExists(departmentName);
+    booth.changeStatus(BoothStatus.OPEN);
+  }
+
+  @Override
+  @Transactional
+  public void changeBoothStatusToClose(String departmentName, BoothStatus boothStatus) {
+    Booth booth = validateBoothExists(departmentName);
+    booth.changeStatus(boothStatus);
+  }
+
+  @Override
+  @Transactional
+  public void allBoothStatusToClose() {
+    boothRepository.updateAllBoothStatusToClosed();
+  }
+
+  @Override
+  @Transactional
+  public void updateBoothStatusToOpen(LocalDate today, LocalTime now) {
+    boothRepository.updateBoothStatusToOpen(today, now);
+  }
+
+  @Override
+  @Transactional
+  public void updateBoothStatusToClose(LocalDate today, LocalTime now) {
+    boothRepository.updateBoothStatusToClosed(today, now);
+  }
+
   private Booth getBooth(Long boothId) {
     return boothRepository
         .findById(boothId)
@@ -424,6 +499,12 @@ public class BoothServiceImpl implements BoothService {
       return null;
     }
     log.info("[BoothService] 이미지 업로드 요청 - 경로: {}, 파일명: {}", pathName, image.getOriginalFilename());
+    return s3Service.uploadFile(pathName, image);
+  }
+
+  private String uploadRequiredImage(PathName pathName, MultipartFile image) {
+    String fileName = image == null ? null : image.getOriginalFilename();
+    log.info("[BoothService] 이미지 업로드 요청 - 경로: {}, 파일명: {}", pathName, fileName);
     return s3Service.uploadFile(pathName, image);
   }
 
@@ -525,5 +606,15 @@ public class BoothServiceImpl implements BoothService {
     } catch (RuntimeException e) {
       log.warn("[BoothService] S3 이미지 삭제 실패 - imageUrl: {}", imageUrl, e);
     }
+  }
+
+  private Booth validateBoothExists(String departmentName) {
+    return boothRepository
+        .findByDepartment(Department.valueOf(departmentName))
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
+            });
   }
 }

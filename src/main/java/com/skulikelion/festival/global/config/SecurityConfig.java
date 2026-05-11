@@ -30,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.filter.JwtAuthenticationFilter;
+import com.skulikelion.festival.global.filter.MdcFilter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class SecurityConfig {
   private final CorsConfig corsConfig;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final ObjectMapper objectMapper;
+  private final MdcFilter mdcFilter;
 
   @Value("${monitoring.allowed-ip}")
   private String monitoringAllowedIp;
@@ -63,6 +65,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(mdcFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
   }
 

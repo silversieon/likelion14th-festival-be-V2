@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
@@ -78,6 +79,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AsyncRequestNotUsableException.class)
   public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException e) {
     log.warn("[SSE] 클라이언트 연결 끊김 (정상 에러): {}", e.getMessage());
+  }
+
+  @ExceptionHandler(AsyncRequestTimeoutException.class)
+  public void handleAsyncTimeout(AsyncRequestTimeoutException e) {
+    log.warn("[SSE] AsyncRequestTimeoutException 발생 - SSE 타임아웃");
   }
 
   // 예상치 못한 예외

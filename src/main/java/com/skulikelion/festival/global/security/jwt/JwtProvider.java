@@ -129,7 +129,8 @@ public class JwtProvider {
       Claims claims = extractClaims(token);
       String tokenType = claims.get("type", String.class);
       if (!tokenType.equals(type.name())) {
-        throw new JwtException("일치하지 않는 토큰 타입");
+        log.info("[Jwt] 일치하지 않는 토큰 타입.");
+        return false;
       }
       return true;
     } catch (SecurityException | MalformedJwtException e) {
@@ -139,9 +140,10 @@ public class JwtProvider {
       throw e;
     } catch (UnsupportedJwtException e) {
       log.info("[Jwt] 지원되지 않는 JWT 토큰입니다.");
-    } catch (IllegalArgumentException | JwtException e) {
+    } catch (IllegalArgumentException e) {
+      log.warn("[Jwt] JWT 토큰이 null 또는 비어있습니다.");
+    } catch (JwtException e) {
       log.info("[Jwt] JWT 토큰이 잘못되었습니다.");
-      throw e;
     }
     return false;
   }

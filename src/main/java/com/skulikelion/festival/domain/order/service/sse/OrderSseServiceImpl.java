@@ -60,12 +60,14 @@ public class OrderSseServiceImpl implements OrderSseService {
           log.info(
               "[OrderSseService] SSE 타임아웃 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
           orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
+          emitter.complete();
         });
     emitter.onError(
         e -> {
           log.warn(
               "[OrderSseService] SSE 에러 - 학과명: {}, 구독 타입: {}", departmentName, sseSubscribeType);
           orderSseEmitterRepository.remove(boothId, sseSubscribeType, emitter);
+          emitter.complete();
         });
 
     orderSseEmitterRepository.save(boothId, sseSubscribeType, emitter);

@@ -2,7 +2,7 @@ name: CD - Development
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "develop-temp" ]
 
 jobs:
   build:

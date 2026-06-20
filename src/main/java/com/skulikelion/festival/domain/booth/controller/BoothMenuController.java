@@ -42,7 +42,7 @@ public class BoothMenuController {
   private final BoothMenuService boothMenuService;
 
   @Operation(
-      summary = "[ 총 관리자 | 토큰 O | 메뉴 생성 ]",
+      summary = "[ 부스 관리자 | 토큰 O | 메뉴 생성 ]",
       description =
           """
           **Parameters**  \n
@@ -71,7 +71,7 @@ public class BoothMenuController {
                       encoding = {
                         @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
                       })))
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOTH_MANAGER')")
   @PostMapping(value = "/booths/{boothId}/menus", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<BaseResponse<List<BoothMenuResponse>>> createMenus(
       @PathVariable Long boothId,

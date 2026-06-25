@@ -21,3 +21,9 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ['3.36.138.107:8080', '3.36.138.107:8081']
+
+  - job_name: "spring-actuator-local"
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'festival-app:8080' ]

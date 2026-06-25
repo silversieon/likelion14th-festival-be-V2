@@ -40,9 +40,7 @@ public class BoothTranslationServiceImpl implements BoothTranslationService {
     String userPrompt = translationPromptBuilder.buildMenuTranslationPrompt(request, isCacheHit);
 
     String aiResponse = anthropicClient.call(systemPrompt, userPrompt);
-
-    // 캐시 히트 여부에 따라 응답 생성 방식 다르게
-    log.info(aiResponse);
+    log.debug(aiResponse);
 
     try {
       BoothMenuTranslationResponse translationResponse =

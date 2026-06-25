@@ -63,16 +63,13 @@ public class BoothMenuServiceImpl implements BoothMenuService {
     Booth booth = getBooth(boothId);
 
     List<BoothMenu> boothMenus =
-        IntStream.range(0, requests.size())
-            .mapToObj(
-                index -> {
-                  BoothMenuRequest request = requests.get(index);
-                  BoothMenuTranslationResponse boothMenuTranslationResponse =
-                      boothTranslationService.translateBoothMenu(
-                          new BoothMenuTranslationRequest(
-                              request.getNameKo(), request.getDescriptionKo()));
-                  return boothMapper.toBoothMenu(booth, request, boothMenuTranslationResponse);
-                })
+        requests.stream().map(boothMenuRequest -> {
+                BoothMenuTranslationResponse boothMenuTranslationResponse =
+                    boothTranslationService.translateBoothMenu(
+                        new BoothMenuTranslationRequest(
+                            boothMenuRequest.getNameKo(), boothMenuRequest.getDescriptionKo()));
+                return boothMapper.toBoothMenu(booth, boothMenuRequest, boothMenuTranslationResponse);
+            })
             .toList();
     List<BoothMenu> savedBoothMenus = boothMenuRepository.saveAll(boothMenus);
     log.info(

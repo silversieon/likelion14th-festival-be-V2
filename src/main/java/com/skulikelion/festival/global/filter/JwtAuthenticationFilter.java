@@ -63,6 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         || pathMatcher.match("/api/auth/login", uri)
         || pathMatcher.match("/api/auth/logout", uri)
         || pathMatcher.match("/api/auth/register", uri)
+        || pathMatcher.match("/actuator/prometheus", uri)
+        || pathMatcher.match("/actuator/health", uri)
         || "/error".equals(uri);
   }
 

@@ -122,7 +122,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/prometheus")
                 .access(
                     new WebExpressionAuthorizationManager(
-                        "hasIpAddress('" + monitoringAllowedIp + "')"))
+                        "isAnonymous() and hasIpAddress('" + monitoringAllowedIp + "')"))
                 .requestMatchers("/api/auth/**")
                 .permitAll()
                 .requestMatchers(

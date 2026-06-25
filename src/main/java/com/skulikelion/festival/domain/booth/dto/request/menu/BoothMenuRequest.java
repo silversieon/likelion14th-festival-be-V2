@@ -22,14 +22,6 @@ public class BoothMenuRequest {
   @Schema(description = "한국어 메뉴명", example = "해물야끼우동")
   private String nameKo;
 
-  @NotBlank(message = "영어 메뉴명을 입력해주세요.")
-  @Schema(description = "영어 메뉴명", example = "Seafood Yaki Udon")
-  private String nameEn;
-
-  @NotBlank(message = "중국어 메뉴명을 입력해주세요.")
-  @Schema(description = "중국어 메뉴명", example = "海鲜炒乌冬面")
-  private String nameZh;
-
   @NotNull(message = "가격을 입력해주세요.") @Schema(description = "가격", example = "11000")
   private Integer price;
 
@@ -41,12 +33,6 @@ public class BoothMenuRequest {
 
   @Schema(description = "한국어 메뉴 설명")
   private String descriptionKo;
-
-  @Schema(description = "영어 메뉴 설명")
-  private String descriptionEn;
-
-  @Schema(description = "중국어 메뉴 설명")
-  private String descriptionZh;
 
   @NotNull(message = "메뉴 카테고리를 입력해주세요.") @Schema(description = "메뉴 카테고리", example = "MAIN")
   private MenuCategory category;

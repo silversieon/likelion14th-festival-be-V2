@@ -12,11 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuBulkMultipartBody;
 import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuListRequest;
-import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuMultipartBody;
 import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuPriceRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuSoldOutRequest;
@@ -27,9 +24,6 @@ import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Encoding;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -48,7 +42,6 @@ public class BoothMenuController {
           **Parameters**  \n
           boothId: 메뉴를 생성할 부스 식별자 \n
           request: 메뉴 생성 정보 목록 \n
-          iconImages: 메뉴 아이콘 이미지 리스트, 입력 시 request.menus 개수 및 순서와 일치 필요 \n
           \n
           **Returns**  \n
           menuId: 메뉴 식별자 \n
@@ -57,28 +50,13 @@ public class BoothMenuController {
           timeType: 운영 시간 타입 \n
           soldOut: 품절 여부 \n
           descriptionKo: 한국어 메뉴 설명 \n
-          descriptionEn: 영어 메뉴 설명 \n
-          descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
-          iconImageUrl: 아이콘 이미지 URL \n
-          """,
-      requestBody =
-          @io.swagger.v3.oas.annotations.parameters.RequestBody(
-              content =
-                  @Content(
-                      mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                      schema = @Schema(implementation = BoothMenuBulkMultipartBody.class),
-                      encoding = {
-                        @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
-                      })))
+          """)
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOTH_MANAGER')")
-  @PostMapping(value = "/booths/{boothId}/menus", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PostMapping(value = "/booths/{boothId}/menus", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<BaseResponse<List<BoothMenuResponse>>> createMenus(
-      @PathVariable Long boothId,
-      @Valid @RequestPart("request") BoothMenuListRequest request,
-      @RequestPart(value = "iconImages", required = false) List<MultipartFile> iconImages) {
-    List<BoothMenuResponse> response =
-        boothMenuService.createMenus(boothId, request.getMenus(), iconImages);
+      @PathVariable Long boothId, @Valid @RequestBody BoothMenuListRequest request) {
+    List<BoothMenuResponse> response = boothMenuService.createMenus(boothId, request.getMenus());
     return ResponseEntity.status(201).body(BaseResponse.success(201, "메뉴 생성 성공", response));
   }
 
@@ -155,23 +133,12 @@ public class BoothMenuController {
           descriptionZh: 중국어 메뉴 설명 \n
           category: 메뉴 카테고리 \n
           iconImageUrl: 아이콘 이미지 URL \n
-          """,
-      requestBody =
-          @io.swagger.v3.oas.annotations.parameters.RequestBody(
-              content =
-                  @Content(
-                      mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                      schema = @Schema(implementation = BoothMenuMultipartBody.class),
-                      encoding = {
-                        @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
-                      })))
-  @PreAuthorize("hasRole('ADMIN')")
-  @PutMapping(value = "/booth-menus/{menuId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+          """)
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOTH_MANAGER')")
+  @PutMapping(value = "/booth-menus/{menuId}", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<BaseResponse<BoothMenuResponse>> updateMenu(
-      @PathVariable Long menuId,
-      @Valid @RequestPart("request") BoothMenuRequest request,
-      @RequestPart(value = "iconImage", required = false) MultipartFile iconImage) {
-    BoothMenuResponse response = boothMenuService.updateMenu(menuId, request, iconImage);
+      @PathVariable Long menuId, @Valid @RequestBody BoothMenuRequest request) {
+    BoothMenuResponse response = boothMenuService.updateMenu(menuId, request);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "메뉴 수정 성공", response));
   }
 

@@ -5,8 +5,6 @@ package com.skulikelion.festival.domain.booth.service.menu;
 
 import java.util.List;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuPriceRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuSoldOutRequest;
@@ -27,21 +25,18 @@ public interface BoothMenuService {
    *
    * @param boothId 메뉴를 생성할 부스의 식별자
    * @param requests 부스 메뉴 생성 요청 정보 리스트
-   * @param iconImages 메뉴 아이콘 이미지 리스트
    * @return 생성된 부스 메뉴 정보 리스트
    */
-  List<BoothMenuResponse> createMenus(
-      Long boothId, List<BoothMenuRequest> requests, List<MultipartFile> iconImages);
+  List<BoothMenuResponse> createMenus(Long boothId, List<BoothMenuRequest> requests);
 
   /**
    * [ 부스 메뉴 수정 메서드 ]
    *
    * @param menuId 수정할 메뉴의 식별자
    * @param request 부스 메뉴 수정 요청 정보
-   * @param iconImage 메뉴 아이콘 이미지
    * @return 수정된 부스 메뉴 정보
    */
-  BoothMenuResponse updateMenu(Long menuId, BoothMenuRequest request, MultipartFile iconImage);
+  BoothMenuResponse updateMenu(Long menuId, BoothMenuRequest request);
 
   /**
    * [ 부스 메뉴 가격 수정 메서드 ]

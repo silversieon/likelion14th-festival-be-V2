@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuRequest;
+import com.skulikelion.festival.domain.booth.dto.request.menu.BoothMenuTranslationRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuPriceRequest;
 import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuSoldOutRequest;
 import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuResponse;
+import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuTranslationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoothMenuGroupResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
@@ -26,6 +28,7 @@ import com.skulikelion.festival.domain.booth.mapper.BoothMapper;
 import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
+import com.skulikelion.festival.domain.booth.service.translation.BoothTranslationService;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
@@ -35,7 +38,6 @@ import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
-import com.skulikelion.festival.global.s3.service.S3AsyncService;
 import com.skulikelion.festival.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
@@ -50,48 +52,26 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   private final BoothMenuRepository boothMenuRepository;
   private final BoothOperationRepository boothOperationRepository;
   private final ManagerRepository managerRepository;
+  private final BoothTranslationService boothTranslationService;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
-  private final S3AsyncService s3AsyncService;
 
   @Override
   @Transactional
-  public List<BoothMenuResponse> createMenus(
-      Long boothId, List<BoothMenuRequest> requests, List<MultipartFile> iconImages) {
+  public List<BoothMenuResponse> createMenus(Long boothId, List<BoothMenuRequest> requests) {
     log.info("[BoothMenuService] 메뉴 생성 요청 - 부스 식별자: {}, 요청 개수: {}", boothId, requests.size());
-    List<MultipartFile> validIconImages =
-        iconImages == null
-            ? List.of()
-            : iconImages.stream()
-                .filter(iconImage -> iconImage != null && !iconImage.isEmpty())
-                .toList();
-    if (!validIconImages.isEmpty() && validIconImages.size() != requests.size()) {
-      log.warn(
-          "[BoothMenuService] 메뉴 생성 실패 - 메뉴 개수와 아이콘 이미지 개수 불일치, 메뉴 개수: {}, 이미지 개수: {}",
-          requests.size(),
-          validIconImages.size());
-      throw new CustomException(BoothErrorCode.BOOTH_MENU_ICON_IMAGE_COUNT_MISMATCH);
-    }
     Booth booth = getBooth(boothId);
-
-    // 아이콘 업로드 및 메뉴 저장
-    List<String> iconImageUrls =
-        validIconImages.isEmpty()
-            ? List.of()
-            : s3AsyncService.uploadFiles(PathName.COMMON_ICON, validIconImages);
 
     List<BoothMenu> boothMenus =
         IntStream.range(0, requests.size())
             .mapToObj(
                 index -> {
                   BoothMenuRequest request = requests.get(index);
-
-                  String iconImageUrl =
-                      iconImageUrls.isEmpty() || iconImageUrls.size() <= index
-                          ? null
-                          : iconImageUrls.get(index);
-
-                  return boothMapper.toBoothMenu(booth, request, iconImageUrl);
+                  BoothMenuTranslationResponse boothMenuTranslationResponse =
+                      boothTranslationService.translateBoothMenu(
+                          new BoothMenuTranslationRequest(
+                              request.getNameKo(), request.getDescriptionKo()));
+                  return boothMapper.toBoothMenu(booth, request, boothMenuTranslationResponse);
                 })
             .toList();
     List<BoothMenu> savedBoothMenus = boothMenuRepository.saveAll(boothMenus);
@@ -102,29 +82,18 @@ public class BoothMenuServiceImpl implements BoothMenuService {
 
   @Override
   @Transactional
-  public BoothMenuResponse updateMenu(
-      Long menuId, BoothMenuRequest request, MultipartFile iconImage) {
+  public BoothMenuResponse updateMenu(Long menuId, BoothMenuRequest request) {
     log.info("[BoothMenuService] 메뉴 수정 요청 - 메뉴 식별자: {}, 메뉴명: {}", menuId, request.getNameKo());
     BoothMenu boothMenu = getBoothMenu(menuId);
-
-    // 아이콘 전체 교체
-    String oldIconImageUrl = boothMenu.getIconImageUrl();
-    String iconImageUrl = uploadImage(iconImage);
-    deleteImageQuietly(oldIconImageUrl);
 
     // 메뉴 기본 정보 교체
     boothMenu.update(
         request.getNameKo(),
-        request.getNameEn(),
-        request.getNameZh(),
         request.getPrice(),
         request.getTimeType(),
         request.getSoldOut(),
         request.getDescriptionKo(),
-        request.getDescriptionEn(),
-        request.getDescriptionZh(),
-        request.getCategory(),
-        iconImageUrl);
+        request.getCategory());
     log.info("[BoothMenuService] 메뉴 수정 발생 - 메뉴 식별자: {}", menuId);
     return boothMapper.toBoothMenuResponse(boothMenu);
   }
@@ -243,8 +212,6 @@ public class BoothMenuServiceImpl implements BoothMenuService {
     log.info("[BoothMenuService] 메뉴 삭제 요청 - 메뉴 식별자: {}", menuId);
     BoothMenu boothMenu = getBoothMenu(menuId);
 
-    // S3 아이콘 정리 및 메뉴 삭제
-    deleteImageQuietly(boothMenu.getIconImageUrl());
     boothMenuRepository.delete(boothMenu);
     log.info("[BoothMenuService] 메뉴 삭제 발생 - 메뉴 식별자: {}", menuId);
   }

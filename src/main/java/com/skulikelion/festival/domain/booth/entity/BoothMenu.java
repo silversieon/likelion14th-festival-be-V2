@@ -34,11 +34,9 @@ public class BoothMenu extends BaseTimeEntity {
   @Column(nullable = false)
   private String nameKo;
 
-  @Column(nullable = false)
-  private String nameEn;
+  @Column private String nameEn;
 
-  @Column(nullable = false)
-  private String nameZh;
+  @Column private String nameZh;
 
   private Integer price;
 
@@ -62,31 +60,19 @@ public class BoothMenu extends BaseTimeEntity {
   @Column(nullable = false)
   private MenuCategory category;
 
-  private String iconImageUrl;
-
   public void update(
       String nameKo,
-      String nameEn,
-      String nameZh,
       Integer price,
       TimeType timeType,
       Boolean isSoldOut,
       String descriptionKo,
-      String descriptionEn,
-      String descriptionZh,
-      MenuCategory category,
-      String iconImageUrl) {
+      MenuCategory category) {
     this.nameKo = nameKo;
-    this.nameEn = nameEn;
-    this.nameZh = nameZh;
     this.price = price;
     this.timeType = timeType;
     this.isSoldOut = Boolean.TRUE.equals(isSoldOut);
     this.descriptionKo = descriptionKo;
-    this.descriptionEn = descriptionEn;
-    this.descriptionZh = descriptionZh;
     this.category = category;
-    this.iconImageUrl = iconImageUrl;
   }
 
   public void updatePrice(Integer price) {

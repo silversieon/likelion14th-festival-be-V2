@@ -307,7 +307,6 @@ public class BoothServiceImpl implements BoothService {
     // S3 이미지 정리
     deleteImageQuietly(booth.getThumbnailUrl());
     detailImages.forEach(detailImage -> deleteImageQuietly(detailImage.getImageUrl()));
-    menus.forEach(menu -> deleteImageQuietly(menu.getIconImageUrl()));
 
     // 부스 연관 데이터 삭제
     boothDetailImageRepository.deleteByBoothId(boothId);

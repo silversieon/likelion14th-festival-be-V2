@@ -21,11 +21,7 @@ import com.skulikelion.festival.domain.booth.dto.response.booth.BoothBusinessInf
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothDetailImageResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
-import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuResponse;
-import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuSummaryGroupResponse;
-import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuSummaryResponse;
-import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoothMenuGroupResponse;
-import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoothMenuResponse;
+import com.skulikelion.festival.domain.booth.dto.response.menu.*;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothDetailImage;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
@@ -68,20 +64,22 @@ public class BoothMapper {
         .build();
   }
 
-  public BoothMenu toBoothMenu(Booth booth, BoothMenuRequest request, String iconImageUrl) {
+  public BoothMenu toBoothMenu(
+      Booth booth,
+      BoothMenuRequest request,
+      BoothMenuTranslationResponse boothMenuTranslationResponse) {
     return BoothMenu.builder()
         .booth(booth)
         .nameKo(request.getNameKo())
-        .nameEn(request.getNameEn())
-        .nameZh(request.getNameZh())
+        .nameEn(boothMenuTranslationResponse.nameEn())
+        .nameZh(boothMenuTranslationResponse.nameZh())
         .price(request.getPrice())
         .timeType(request.getTimeType())
         .isSoldOut(Boolean.TRUE.equals(request.getSoldOut()))
         .descriptionKo(request.getDescriptionKo())
-        .descriptionEn(request.getDescriptionEn())
-        .descriptionZh(request.getDescriptionZh())
+        .descriptionEn(boothMenuTranslationResponse.descriptionEn())
+        .descriptionZh(boothMenuTranslationResponse.descriptionZh())
         .category(request.getCategory())
-        .iconImageUrl(iconImageUrl)
         .build();
   }
 
@@ -165,7 +163,6 @@ public class BoothMapper {
         .descriptionEn(menu.getDescriptionEn())
         .descriptionZh(menu.getDescriptionZh())
         .category(menu.getCategory())
-        .iconImageUrl(menu.getIconImageUrl())
         .build();
   }
 
@@ -243,7 +240,6 @@ public class BoothMapper {
       BoothMenu menu, Language language) {
     return OrderAvailableBoothMenuResponse.builder()
         .menuId(menu.getId())
-        .iconImageUrl(menu.getIconImageUrl())
         .name(language.getMenuName(menu))
         .description(language.getMenuDescription(menu))
         .price(menu.getPrice())

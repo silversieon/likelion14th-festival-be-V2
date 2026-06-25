@@ -28,7 +28,7 @@ public class AnthropicClient {
 
   private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
   private static final String ANTHROPIC_VERSION = "2023-06-01";
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   private final AiProperties aiProperties;
   private final RestTemplate restTemplate;
@@ -46,12 +46,18 @@ public class AnthropicClient {
       body.put("system", systemPrompt);
       body.put("messages", List.of(Map.of("role", "user", "content", userPrompt)));
 
-      HttpEntity<String> request =
-          new HttpEntity<>(OBJECT_MAPPER.writeValueAsString(body), headers);
+      HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);
       ResponseEntity<String> response =
           restTemplate.postForEntity(ANTHROPIC_URL, request, String.class);
 
-      JsonNode root = OBJECT_MAPPER.readTree(response.getBody());
+      JsonNode root = objectMapper.readTree(response.getBody());
+
+      JsonNode usage = root.path("usage");
+      log.debug(
+          "[AI] 토큰 사용량 - input: {}, output: {}",
+          usage.path("input_tokens").asInt(),
+          usage.path("output_tokens").asInt());
+
       String responseContent = root.path("content").get(0).path("text").asText();
       return stripMarkdownCodeBlock(responseContent);
     } catch (Exception e) {

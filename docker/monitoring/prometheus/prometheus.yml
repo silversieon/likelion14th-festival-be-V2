@@ -10,18 +10,6 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: "spring-actuator-dev"
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 10s
-    static_configs:
-      - targets: ['52.79.50.148:8080', '52.79.50.148:8081']
-
-  - job_name: "spring-actuator-prod"
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['3.36.138.107:8080', '3.36.138.107:8081']
-
   - job_name: "spring-actuator-local"
     metrics_path: '/actuator/prometheus'
     scrape_interval: 5s

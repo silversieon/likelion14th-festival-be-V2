@@ -21,6 +21,7 @@ import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.exception.model.BaseErrorCode;
 
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
 
 @Slf4j
 @RestControllerAdvice
@@ -84,6 +85,13 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AsyncRequestTimeoutException.class)
   public void handleAsyncTimeout(AsyncRequestTimeoutException e) {
     log.warn("[SSE] AsyncRequestTimeoutException 발생 - SSE 타임아웃");
+  }
+
+  @ExceptionHandler(JacksonException.class)
+  public ResponseEntity<BaseResponse<Object>> handleJacksonException(JacksonException e) {
+    log.error("JacksonException 오류 발생: {}", e.getMessage());
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(BaseResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
   }
 
   // 예상치 못한 예외

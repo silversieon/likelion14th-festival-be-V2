@@ -5,6 +5,7 @@ package com.skulikelion.festival.domain.order.service.idempotency;
 
 import java.time.Duration;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,8 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OrderIdempotencyServiceImpl implements OrderIdempotencyService {
+@ConditionalOnProperty(name = "order.idempotency.store", havingValue = "redis")
+public class RedisOrderIdempotencyService implements OrderIdempotencyService {
 
   private final RedisTemplate<String, String> redisTemplate;
   private final ObjectMapper objectMapper;

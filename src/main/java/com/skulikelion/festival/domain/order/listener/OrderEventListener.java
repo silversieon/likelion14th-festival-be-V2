@@ -11,7 +11,6 @@ import com.skulikelion.festival.domain.order.dto.payload.CanceledOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.CompletedOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.OrderIdempotencyPayload;
 import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
 import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
@@ -91,15 +90,5 @@ public class OrderEventListener {
         dismissOrderPayload.booth(),
         dismissOrderPayload.currentOrderStatus().toSseSubscribeType(),
         dismissOrderPayload.orderId());
-  }
-
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  public void handleIdempotentOrderEvent(OrderIdempotencyPayload orderIdempotencyPayload) {
-    try {
-      orderIdempotencyService.saveResponse(
-          orderIdempotencyPayload.idempotencyKey(), orderIdempotencyPayload.orderResponse());
-    } catch (Exception e) {
-      orderIdempotencyService.deleteKey(orderIdempotencyPayload.idempotencyKey());
-    }
   }
 }

@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.order.service.idempotency;
 
 import java.time.Duration;
+import java.util.function.Supplier;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -28,7 +29,23 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
   private static final String ORDER_PROCESSING = "processing";
 
   @Override
-  public boolean isNewRequest(String idempotencyKey) {
+  public <T> T executeIdempotent(
+      String idempotencyKey, Supplier<T> processor, Class<T> responseType) {
+
+    if (isNewRequest(idempotencyKey)) {
+      try {
+        T response = processor.get();
+        saveResponse(idempotencyKey, response);
+        return response;
+      } catch (Exception e) {
+        deleteKey(idempotencyKey);
+        throw e;
+      }
+    }
+    return getCachedResponse(idempotencyKey, responseType);
+  }
+
+  private boolean isNewRequest(String idempotencyKey) {
     boolean isNew =
         Boolean.TRUE.equals(
             redisTemplate
@@ -36,29 +53,24 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
                 .setIfAbsent(
                     IDEMPOTENCY_PREFIX + idempotencyKey, ORDER_PROCESSING, Duration.ofMinutes(1)));
     if (!isNew) {
-      log.warn("[OrderIdempotencyService] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
+      log.warn("[OrderIdempotency] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
     }
     return isNew;
   }
 
-  @Override
-  public <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
+  private <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
     String cached = redisTemplate.opsForValue().get(IDEMPOTENCY_PREFIX + idempotencyKey);
     if (ORDER_PROCESSING.equals(cached)) {
-      log.warn("[OrderIdempotencyService] 처리 중인 요청 재시도 감지 - idempotencyKey: {}", idempotencyKey);
       throw new CustomException(OrderErrorCode.ORDER_ALREADY_PROCESSING);
     }
     if (cached == null) {
-      log.warn(
-          "[OrderIdempotencyService] 만료된 idempotencyKey 조회 - idempotencyKey: {}", idempotencyKey);
       throw new CustomException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_EXPIRED);
     }
     log.debug("[OrderIdempotencyService] 캐싱된 응답 반환 - idempotencyKey: {}", idempotencyKey);
     return objectMapper.readValue(cached, responseType);
   }
 
-  @Override
-  public void saveResponse(String idempotencyKey, Object response) {
+  private void saveResponse(String idempotencyKey, Object response) {
     redisTemplate
         .opsForValue()
         .set(
@@ -68,8 +80,7 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
     log.debug("[OrderIdempotencyService] 응답 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
   }
 
-  @Override
-  public void deleteKey(String idempotencyKey) {
+  private void deleteKey(String idempotencyKey) {
     redisTemplate.delete(IDEMPOTENCY_PREFIX + idempotencyKey);
     log.debug(
         "[OrderIdempotencyService] idempotencyKey 삭제 완료 - idempotencyKey: {}", idempotencyKey);

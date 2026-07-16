@@ -2,14 +2,12 @@ name: Deploy Monitoring
 
 on:
   push:
-    branches:
-      - develop
-      - main
+    branches: [ "develop-temp" ]
     paths:
       - '.github/workflows/cd-monitoring.yml'
-      - 'docker/monitoring/docker-compose-monitoring.yml'
-      - 'docker/monitoring/grafana/**'
-      - 'docker/monitoring/prometheus/**'
+      - '../../../lieklion14th-homepage-be/docker/sieon/monitoring/docker-compose-monitoring.yml'
+      - '../../../lieklion14th-homepage-be/docker/sieon/monitoring/grafana/**'
+      - '../../../lieklion14th-homepage-be/docker/sieon/monitoring/prometheus/**'
 
 jobs:
   deploy:

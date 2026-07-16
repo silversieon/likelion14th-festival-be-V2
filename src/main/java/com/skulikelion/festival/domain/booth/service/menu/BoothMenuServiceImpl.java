@@ -6,7 +6,6 @@ package com.skulikelion.festival.domain.booth.service.menu;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,13 +62,16 @@ public class BoothMenuServiceImpl implements BoothMenuService {
     Booth booth = getBooth(boothId);
 
     List<BoothMenu> boothMenus =
-        requests.stream().map(boothMenuRequest -> {
-                BoothMenuTranslationResponse boothMenuTranslationResponse =
-                    boothTranslationService.translateBoothMenu(
-                        new BoothMenuTranslationRequest(
-                            boothMenuRequest.getNameKo(), boothMenuRequest.getDescriptionKo()));
-                return boothMapper.toBoothMenu(booth, boothMenuRequest, boothMenuTranslationResponse);
-            })
+        requests.stream()
+            .map(
+                boothMenuRequest -> {
+                  BoothMenuTranslationResponse boothMenuTranslationResponse =
+                      boothTranslationService.translateBoothMenu(
+                          new BoothMenuTranslationRequest(
+                              boothMenuRequest.getNameKo(), boothMenuRequest.getDescriptionKo()));
+                  return boothMapper.toBoothMenu(
+                      booth, boothMenuRequest, boothMenuTranslationResponse);
+                })
             .toList();
     List<BoothMenu> savedBoothMenus = boothMenuRepository.saveAll(boothMenus);
     log.info(

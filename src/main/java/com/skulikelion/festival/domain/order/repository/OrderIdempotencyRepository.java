@@ -7,15 +7,15 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
+
 public interface OrderIdempotencyRepository extends JpaRepository<OrderIdempotency, UUID> {
 
-    @Modifying(clearAutomatically = true)
-    @Query("delete from OrderIdempotency oi where oi.createdAt < :threshold")
-    int deleteByCreatedAtBefore(@Param("threshold") LocalDateTime threshold);
+  @Modifying(clearAutomatically = true)
+  @Query("delete from OrderIdempotency oi where oi.createdAt < :threshold")
+  int deleteByCreatedAtBefore(@Param("threshold") LocalDateTime threshold);
 }

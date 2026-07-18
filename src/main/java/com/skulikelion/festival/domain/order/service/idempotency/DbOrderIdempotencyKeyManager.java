@@ -3,6 +3,7 @@
  */
 package com.skulikelion.festival.domain.order.service.idempotency;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -55,5 +56,11 @@ public class DbOrderIdempotencyKeyManager {
     return repository
         .findById(idempotencyKey)
         .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_EXPIRED));
+  }
+
+  @Transactional
+  public void deleteExpiredIdempotencyKeys(LocalDateTime threshold) {
+    int rowCount = repository.deleteByCreatedAtBefore(threshold);
+    log.info("[OrderIdempotency] 오래된 멱등성 키 제거 - count: {}", rowCount);
   }
 }

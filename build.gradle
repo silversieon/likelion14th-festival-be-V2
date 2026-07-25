@@ -74,6 +74,12 @@ dependencies {
     // webp
     implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
     implementation("com.sksamuel.scrimage:scrimage-webp:4.2.0")
+
+    // Testcontainers (Spring Boot 4.0 → Testcontainers 2.0)
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-mysql'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 }
 
 tasks.named('test') {

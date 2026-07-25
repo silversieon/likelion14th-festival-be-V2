@@ -25,11 +25,11 @@ import lombok.extern.slf4j.Slf4j;
 public class DbOrderIdempotencyKeyManager {
 
   private final OrderIdempotencyRepository repository;
+  private final DbOrderIdempotencyInserter inserter;
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean isNewRequest(UUID idempotencyKey) {
     try {
-      repository.saveAndFlush(OrderIdempotency.processing(idempotencyKey));
+      inserter.insertProcessing(idempotencyKey);
       return true;
     } catch (DataIntegrityViolationException e) {
       log.warn("[OrderIdempotency] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);

@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
 import com.skulikelion.festival.global.exception.CustomException;
 
@@ -26,7 +27,6 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
   private final RedisTemplate<String, String> redisTemplate;
   private final ObjectMapper objectMapper;
   private static final String IDEMPOTENCY_PREFIX = "IDEMPOTENCY:";
-  private static final String ORDER_PROCESSING = "processing";
 
   @Override
   public <T> T executeIdempotent(
@@ -51,7 +51,9 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
             redisTemplate
                 .opsForValue()
                 .setIfAbsent(
-                    IDEMPOTENCY_PREFIX + idempotencyKey, ORDER_PROCESSING, Duration.ofMinutes(1)));
+                    IDEMPOTENCY_PREFIX + idempotencyKey,
+                    IdempotencyStatus.PROCESSING.name(),
+                    Duration.ofMinutes(1)));
     if (!isNew) {
       log.warn("[OrderIdempotency] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
     }
@@ -60,7 +62,7 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
 
   private <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
     String cached = redisTemplate.opsForValue().get(IDEMPOTENCY_PREFIX + idempotencyKey);
-    if (ORDER_PROCESSING.equals(cached)) {
+    if (IdempotencyStatus.PROCESSING.name().equals(cached)) {
       throw new CustomException(OrderErrorCode.ORDER_ALREADY_PROCESSING);
     }
     if (cached == null) {

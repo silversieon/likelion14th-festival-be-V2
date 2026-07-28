@@ -3,9 +3,9 @@
  */
 package com.skulikelion.festival.domain.order.service.idempotency;
 
+import static com.skulikelion.festival.domain.order.service.OrderFixture.dummyResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -17,29 +17,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.repository.OrderIdempotencyRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
+import com.skulikelion.festival.domain.support.IntegrationTestSupport;
 
-@SpringBootTest
-@Testcontainers
-public class DbOrderIdempotencyServiceIntegrationTest {
-
-  @Container static MySQLContainer mysql = new MySQLContainer("mysql:8.0");
-
-  @DynamicPropertySource
-  static void configureMySQL(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", mysql::getJdbcUrl);
-    registry.add("spring.datasource.password", mysql::getPassword);
-    registry.add("spring.datasource.username", mysql::getUsername);
-  }
+public class DbOrderIdempotencyServiceIntegrationTest extends IntegrationTestSupport {
 
   @Autowired DbOrderIdempotencyService idempotencyService;
 
@@ -132,18 +116,13 @@ public class DbOrderIdempotencyServiceIntegrationTest {
           });
     }
 
-    startLatch.countDown(); // 20개 일제히 출발!
+    startLatch.countDown(); // 20개 일제히 출발
     doneLatch.await(); // 20개 다 끝날 때까지 대기
     executor.shutdown();
 
     // then
-    assertThat(callCount.get()).isEqualTo(1); // ★ 핵심: processor는 딱 1번만 실행
+    assertThat(callCount.get()).isEqualTo(1);
     System.out.println(
         "실행: " + callCount.get() + ", 성공: " + successCount.get() + ", 차단: " + blockedCount.get());
-  }
-
-  private OrderResponse dummyResponse() {
-    return new OrderResponse(
-        1L, "홍길동", "010-1234-5678", "20:00:00", List.of(), 24000, "우리은행", "김길동", "111111111");
   }
 }

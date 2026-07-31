@@ -6,6 +6,8 @@ package com.skulikelion.festival.domain.order.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -115,7 +117,7 @@ public class OrderController {
   public ResponseEntity<BaseResponse<OrderResponse>> createOrder(
       @PathVariable Long boothId,
       @RequestHeader("Idempotency-Key") String idempotencyKey,
-      @RequestBody OrderCreateRequest request) {
+      @Valid @RequestBody OrderCreateRequest request) {
     OrderResponse orderResponse = orderService.createOrder(boothId, idempotencyKey, request);
     return ResponseEntity.status(201)
         .body(BaseResponse.success(201, "주문 요청에 성공했습니다.", orderResponse));

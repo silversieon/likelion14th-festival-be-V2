@@ -5,32 +5,21 @@ package com.skulikelion.festival.domain.order.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.booth.entity.BoothMenu;
-import com.skulikelion.festival.domain.booth.entity.BoothOperation;
-import com.skulikelion.festival.domain.booth.enums.BoothStatus;
-import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
-import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
-import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
-import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
-import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
@@ -38,13 +27,11 @@ import com.skulikelion.festival.domain.order.dto.response.CompletedOrderItemResp
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderItemUnitResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
-import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.Order;
-import com.skulikelion.festival.domain.order.entity.OrderItem;
 import com.skulikelion.festival.domain.order.entity.OrderItemUnit;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
@@ -55,9 +42,9 @@ import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
 import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
+import com.skulikelion.festival.domain.order.service.processor.OrderProcessor;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.exception.GlobalErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +56,6 @@ public class OrderServiceImpl implements OrderService {
 
   private final OrderRepository orderRepository;
   private final OrderMapper orderMapper;
-  private final BoothMenuRepository boothMenuRepository;
   private final OrderItemRepository orderItemRepository;
   private final BoothRepository boothRepository;
   private final ApplicationEventPublisher eventPublisher;
@@ -77,90 +63,21 @@ public class OrderServiceImpl implements OrderService {
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
   private final OrderIdempotencyService orderIdempotencyService;
-  private final BoothOperationRepository boothOperationRepository;
+  private final OrderProcessor orderProcessor;
 
   @Override
-  @Transactional
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
     return orderIdempotencyService.executeIdempotent(
-        idempotencyKey, () -> processOrder(boothId, request), OrderResponse.class);
-  }
-
-  protected OrderResponse processOrder(Long boothId, OrderCreateRequest request) {
-    Booth booth = validateBoothExists(boothId);
-    validateBoothUsesOrder(booth);
-    validateBoothStatusIsOpen(booth);
-
-    List<Long> boothMenuIds =
-        request.getOrderItems().stream().map(OrderItemCreateRequest::getBoothMenuId).toList();
-    List<BoothMenu> boothMenus = boothMenuRepository.findAllById(boothMenuIds);
-    validateBoothMenusExistence(boothMenus.size(), boothMenuIds.size());
-
-    LocalDate today = LocalDate.now();
-    BoothOperation boothOperation =
-        boothOperationRepository
-            .findByBoothIdAndOperationDate(boothId, today)
-            .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_TIME_BOOTH_NOT_FOUND));
-    validateBoothMenusOrderable(boothMenus, boothOperation);
-
-    Map<Long, BoothMenu> boothMenuMap =
-        boothMenus.stream().collect(Collectors.toMap(BoothMenu::getId, Function.identity()));
-    validateMenuPrice(request.getOrderItems(), boothMenuMap);
-    validateTotalPrice(request);
-
-    Order order = orderMapper.createOrderFromOrderCreateRequest(request);
-    Order savedOrder = orderRepository.save(order);
-
-    List<OrderItem> orderItems =
-        request.getOrderItems().stream()
-            .map(
-                orderItemCreateRequest -> {
-                  BoothMenu boothMenu = boothMenuMap.get(orderItemCreateRequest.getBoothMenuId());
-                  return orderMapper.createOrderItemFromOrderItemCreateRequest(
-                      orderItemCreateRequest, savedOrder, boothMenu);
-                })
-            .toList();
-    List<OrderItem> savedOrderItems = orderItemRepository.saveAll(orderItems);
-
-    List<OrderItemUnit> orderItemUnits =
-        savedOrderItems.stream()
-            .flatMap(
-                orderItem ->
-                    IntStream.range(0, orderItem.getQuantity())
-                        .mapToObj(i -> orderMapper.createOrderItemUnitFromOrderItem(orderItem)))
-            .toList();
-
-    orderItemUnitRepository.saveAll(orderItemUnits);
-
-    List<OrderItemResponse> orderItemResponses =
-        orderMapper.toOrderItemResponseList(savedOrderItems, request.getLanguage());
-    OrderResponse orderResponse =
-        orderMapper.toOrderResponse(savedOrder, booth, orderItemResponses);
-
-    WaitingOrderResponse waitingOrderResponse =
-        orderMapper.toWaitingOrderResponse(savedOrder, savedOrderItems);
-
-    WaitingOrderPayload waitingOrderPayload =
-        orderEventMapper.toWaitingOrderPayload(booth, waitingOrderResponse);
-    eventPublisher.publishEvent(waitingOrderPayload);
-
-    log.info(
-        "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 학과명: {}, 주문자명: {}, 총 주문 금액: {}",
-        order.getId(),
-        booth.getDepartment().getDescription(),
-        order.getCustomerName(),
-        order.getTotalOrderPrice());
-
-    return orderResponse;
+        idempotencyKey, () -> orderProcessor.processOrder(boothId, request), OrderResponse.class);
   }
 
   @Override
   @Transactional(readOnly = true)
   public List<WaitingOrderResponse> getWaitingOrders(String departmentName) {
-    Booth booth = validateBoothExists(departmentName);
+    Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
-    validateBoothManager(departmentName, booth);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<WaitingOrderResponse> waitingOrders = orderRepository.findWaitingOrdersByBoothId(boothId);
     List<Long> orderIds = waitingOrders.stream().map(WaitingOrderResponse::getOrderId).toList();
@@ -183,9 +100,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public List<CookingOrderResponse> getCookingOrders(String departmentName) {
-    Booth booth = validateBoothExists(departmentName);
+    Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
-    validateBoothManager(departmentName, booth);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<CookingOrderResponse> cookingOrders = orderRepository.findCookingOrdersByBoothId(boothId);
     List<Long> orderIds = cookingOrders.stream().map(CookingOrderResponse::getOrderId).toList();
@@ -214,9 +131,9 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public List<CompletedOrderResponse> getCompletedOrders(
       String departmentName, LocalDate orderDate, String keyword) {
-    Booth booth = validateBoothExists(departmentName);
+    Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
-    validateBoothManager(departmentName, booth);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<CompletedOrderResponse> completedOrders =
         orderRepository.findCompletedOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
@@ -241,9 +158,9 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public List<CanceledOrderResponse> getCanceledOrders(
       String departmentName, LocalDate orderDate, String keyword) {
-    Booth booth = validateBoothExists(departmentName);
+    Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
-    validateBoothManager(departmentName, booth);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<CanceledOrderResponse> canceledOrders =
         orderRepository.findCanceledOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
@@ -267,9 +184,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public SalesResponse getSales(String departmentName, LocalDate date) {
-    Booth booth = validateBoothExists(departmentName);
+    Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
-    validateBoothManager(departmentName, booth);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
 
     if (date == null) {
       return orderRepository.findCompletedOrderTotalAmountByBoothId(boothId);
@@ -284,9 +201,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void updateOrderStatus(String departmentName, Long orderId, OrderStatus newOrderStatus) {
-    Booth booth = validateBoothExists(departmentName);
-    validateBoothManager(departmentName, booth);
-    Order order = validateOrderExists(orderId);
+    Booth booth = getBoothOrThrow(departmentName);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
+    Order order = getOrderOrThrow(orderId);
 
     OrderStatus previousStatus = order.getOrderStatus();
     order.changeOrderStatus(newOrderStatus);
@@ -355,9 +272,9 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public void cancelOrder(
       String departmentName, Long orderId, OrderCancelReason orderCancelReason) {
-    Booth booth = validateBoothExists(departmentName);
-    validateBoothManager(departmentName, booth);
-    Order order = validateOrderExists(orderId);
+    Booth booth = getBoothOrThrow(departmentName);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
+    Order order = getOrderOrThrow(orderId);
 
     OrderStatus previousStatus = order.getOrderStatus();
     if (previousStatus == OrderStatus.CANCELED) {
@@ -401,10 +318,10 @@ public class OrderServiceImpl implements OrderService {
   @Transactional
   public void updateServedStatus(
       String departmentName, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
-    Booth booth = validateBoothExists(departmentName);
-    validateBoothManager(departmentName, booth);
+    Booth booth = getBoothOrThrow(departmentName);
+    validateBoothManagerBelongsToBooth(departmentName, booth);
     validateOrderIsCooking(orderItemUnitId);
-    OrderItemUnit orderItemUnit = validateOrderItemUnitExists(orderItemUnitId);
+    OrderItemUnit orderItemUnit = getOrderItemUnitOrThrow(orderItemUnitId);
 
     boolean previousServed = orderItemUnit.isServed();
     orderItemUnit.updateServedStatus(request.isServed());
@@ -428,57 +345,7 @@ public class OrderServiceImpl implements OrderService {
     log.debug("[OrderService] 서빙 상태 변경 이벤트 발행 - 주문 항목 단위 식별자: {}", orderItemUnitId);
   }
 
-  private void validateTotalPrice(OrderCreateRequest request) {
-    int sum =
-        request.getOrderItems().stream()
-            .mapToInt(
-                item -> {
-                  if (item.getMenuPrice() * item.getQuantity() != item.getTotalOrderItemPrice()) {
-                    log.warn(
-                        "[OrderService] 주문 항목 총 가격 불일치 - 메뉴 가격: {}, 수량: {}, 요청 총 가격: {}",
-                        item.getMenuPrice(),
-                        item.getQuantity(),
-                        item.getTotalOrderItemPrice());
-                    throw new CustomException(OrderErrorCode.ORDER_ITEM_TOTAL_PRICE_MISMATCH);
-                  }
-                  return item.getTotalOrderItemPrice();
-                })
-            .sum();
-    if (request.getTotalOrderPrice() != sum) {
-      log.warn(
-          "[OrderService] 주문 총 가격 불일치 - 요청 총 가격: {}, 계산된 총 가격: {}",
-          request.getTotalOrderPrice(),
-          sum);
-      throw new CustomException(OrderErrorCode.ORDER_TOTAL_PRICE_MISMATCH);
-    }
-  }
-
-  private void validateMenuPrice(
-      List<OrderItemCreateRequest> orderItems, Map<Long, BoothMenu> boothMenuMap) {
-    orderItems.forEach(
-        item -> {
-          BoothMenu boothMenu = boothMenuMap.get(item.getBoothMenuId());
-          if (!boothMenu.getPrice().equals(item.getMenuPrice())) {
-            log.warn(
-                "[OrderService] 주문한 메뉴 가격이 실제 가격과 일치하지 않습니다 - 주문 메뉴 가격: {}, 실제 메뉴 가격: {}",
-                item.getMenuPrice(),
-                boothMenu.getPrice());
-            throw new CustomException(OrderErrorCode.ORDER_MENU_PRICE_MISMATCH);
-          }
-        });
-  }
-
-  private void validateBoothMenusExistence(int boothMenuSize, int boothMenuIdsSize) {
-    if (boothMenuSize != boothMenuIdsSize) {
-      log.warn(
-          "[OrderService] 존재하지 않는 부스 메뉴 포함 - 요청 메뉴 수: {}, 실제 메뉴 수: {}",
-          boothMenuIdsSize,
-          boothMenuSize);
-      throw new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND);
-    }
-  }
-
-  private Booth validateBoothExists(Long boothId) {
+  private Booth getBoothOrThrow(Long boothId) {
     return boothRepository
         .findById(boothId)
         .orElseThrow(
@@ -488,7 +355,7 @@ public class OrderServiceImpl implements OrderService {
             });
   }
 
-  private Booth validateBoothExists(String departmentName) {
+  private Booth getBoothOrThrow(String departmentName) {
     return boothRepository
         .findByDepartment(Department.valueOf(departmentName))
         .orElseThrow(
@@ -498,7 +365,7 @@ public class OrderServiceImpl implements OrderService {
             });
   }
 
-  private void validateBoothManager(String departmentName, Booth booth) {
+  private void validateBoothManagerBelongsToBooth(String departmentName, Booth booth) {
     Department department = Department.valueOf(departmentName);
     Manager currentManager =
         managerRepository
@@ -517,7 +384,7 @@ public class OrderServiceImpl implements OrderService {
     }
   }
 
-  private Order validateOrderExists(Long orderId) {
+  private Order getOrderOrThrow(Long orderId) {
     return orderRepository
         .findById(orderId)
         .orElseThrow(
@@ -546,7 +413,7 @@ public class OrderServiceImpl implements OrderService {
     }
   }
 
-  private OrderItemUnit validateOrderItemUnitExists(Long orderItemUnitId) {
+  public OrderItemUnit getOrderItemUnitOrThrow(Long orderItemUnitId) {
     return orderItemUnitRepository
         .findById(orderItemUnitId)
         .orElseThrow(
@@ -554,50 +421,5 @@ public class OrderServiceImpl implements OrderService {
               log.warn("[OrderService] 주문 항목 단위를 찾을 수 없습니다 - 주문 항목 단위 식별자: {}", orderItemUnitId);
               return new CustomException(OrderErrorCode.ORDER_ITEM_UNIT_NOT_FOUND);
             });
-  }
-
-  private void validateBoothUsesOrder(Booth booth) {
-    if (!booth.isOrderEnabled()) {
-      log.warn("[OrderService] 주문 미사용 부스에 주문 요청 - 학과명: {}", booth.getDepartment().getDescription());
-      throw new CustomException(OrderErrorCode.ORDER_NOT_USED_BOOTH);
-    }
-  }
-
-  private void validateBoothStatusIsOpen(Booth booth) {
-    BoothStatus boothStatus = booth.getBoothStatus();
-    if (boothStatus != BoothStatus.OPEN) {
-      log.warn(
-          "[OrderService] 영업 중 외 주문 요청 - 학과명: {}, 부스 상태: {}",
-          booth.getDepartment().getDescription(),
-          boothStatus);
-      throw new CustomException(OrderErrorCode.NOT_TIME_TO_ORDER);
-    }
-  }
-
-  private void validateBoothMenusOrderable(
-      List<BoothMenu> boothMenus, BoothOperation boothOperation) {
-    validateBoothMenuTimeType(boothMenus, boothOperation);
-    validateBoothMenusSoldOut(boothMenus);
-  }
-
-  private void validateBoothMenusSoldOut(List<BoothMenu> boothMenus) {
-    boolean hasSoldOut = boothMenus.stream().anyMatch(BoothMenu::getIsSoldOut);
-    if (hasSoldOut) {
-      log.warn("[OrderService] 품절 메뉴 포함 주문 요청");
-      throw new CustomException(OrderErrorCode.ORDER_MENU_SOLD_OUT);
-    }
-  }
-
-  private void validateBoothMenuTimeType(List<BoothMenu> boothMenus, BoothOperation operation) {
-    TimeType currentTimeType = operation.getOrderableTimeType(LocalTime.now());
-    List<TimeType> allowedTypes = TimeType.forQuery(currentTimeType);
-
-    boolean hasInvalidMenu =
-        boothMenus.stream().anyMatch(menu -> !allowedTypes.contains(menu.getTimeType()));
-
-    if (hasInvalidMenu) {
-      log.warn("[OrderService] 현재 시간대에 주문 불가한 메뉴 포함 - 현재 시간 타입: {}", currentTimeType);
-      throw new CustomException(OrderErrorCode.ORDER_MENU_TIME_TYPE_NOT_AVAILABLE);
-    }
   }
 }

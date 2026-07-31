@@ -18,8 +18,10 @@ import jakarta.persistence.Table;
 import com.skulikelion.festival.domain.booth.converter.IntegerListJsonConverter;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.enums.BoothStatus;
+import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 import com.skulikelion.festival.global.enums.Department;
+import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -93,5 +95,10 @@ public class Booth extends BaseTimeEntity {
 
   public void changeStatus(BoothStatus newStatus) {
     this.boothStatus = newStatus;
+  }
+
+  public void validateOrderable() {
+    if (!orderEnabled) throw new CustomException(BoothErrorCode.BOOTH_NOT_USING_ORDER);
+    if (boothStatus != BoothStatus.OPEN) throw new CustomException(BoothErrorCode.BOOTH_NOT_OPEN);
   }
 }

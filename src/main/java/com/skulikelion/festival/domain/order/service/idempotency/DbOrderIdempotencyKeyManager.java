@@ -8,7 +8,6 @@ import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
@@ -46,7 +45,7 @@ public class DbOrderIdempotencyKeyManager {
     entity.markDone(response);
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
   public void deleteKey(UUID idempotencyKey) {
     repository.deleteById(idempotencyKey);
   }

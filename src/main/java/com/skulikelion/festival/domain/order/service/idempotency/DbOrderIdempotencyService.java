@@ -26,6 +26,7 @@ public class DbOrderIdempotencyService implements OrderIdempotencyService {
 
   private final DbOrderIdempotencyKeyManager idempotencyKeyManager;
   private final ObjectMapper objectMapper;
+  private final DbOrderIdempotencyExecutor idempotencyExecutor;
 
   @Override
   public <T> T executeIdempotent(
@@ -37,9 +38,7 @@ public class DbOrderIdempotencyService implements OrderIdempotencyService {
     }
 
     try {
-      T response = processor.get();
-      idempotencyKeyManager.saveDoneResponse(key, objectMapper.writeValueAsString(response));
-      return response;
+      return idempotencyExecutor.runAndMark(key, processor);
     } catch (Exception e) {
       idempotencyKeyManager.deleteKey(key);
       throw e;

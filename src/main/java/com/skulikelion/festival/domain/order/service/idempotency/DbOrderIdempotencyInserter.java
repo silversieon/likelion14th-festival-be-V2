@@ -6,6 +6,7 @@ package com.skulikelion.festival.domain.order.service.idempotency;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
@@ -19,7 +20,7 @@ public class DbOrderIdempotencyInserter {
 
   private final OrderIdempotencyRepository repository;
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRED)
   public void insertProcessing(UUID idempotencyKey) {
     repository.saveAndFlush(OrderIdempotency.processing(idempotencyKey));
   }

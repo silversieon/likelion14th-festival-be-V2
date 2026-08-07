@@ -20,7 +20,7 @@ public class DbOrderIdempotencyInserter {
 
   private final OrderIdempotencyRepository repository;
 
-  @Transactional(propagation = Propagation.REQUIRED)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void insertProcessing(UUID idempotencyKey) {
     repository.saveAndFlush(OrderIdempotency.processing(idempotencyKey));
   }

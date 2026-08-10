@@ -19,8 +19,6 @@ import lombok.*;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderIdempotency extends BaseTimeEntity implements Persistable<UUID> {
 

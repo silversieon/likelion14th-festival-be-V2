@@ -33,7 +33,9 @@ public enum BoothErrorCode implements BaseErrorCode {
   BOOTH_OPERATION_NOT_FOUND("BOOTH_4043", "부스 운영 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   BOOTH_MENU_NOT_FOUND("BOOTH_4044", "부스 메뉴 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
-  BOOTH_ALREADY_EXISTS("BOOTH_4091", "이미 해당 학과의 부스가 존재합니다.", HttpStatus.CONFLICT);
+  BOOTH_ALREADY_EXISTS("BOOTH_4091", "이미 해당 학과의 부스가 존재합니다.", HttpStatus.CONFLICT),
+  BOOTH_NOT_USING_ORDER("BOOTH_40010", "해당 부스는 주문 기능을 사용하지 않습니다.", HttpStatus.BAD_REQUEST),
+  BOOTH_NOT_OPEN("BOOTH_4092", "해당 부스는 현재 주문을 받지 않는 상태입니다.", HttpStatus.CONFLICT);
 
   private final String code;
   private final String message;

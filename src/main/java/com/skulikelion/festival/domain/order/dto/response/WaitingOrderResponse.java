@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,6 +44,8 @@ public class WaitingOrderResponse {
   @Schema(description = "주문한 메뉴 상세 목록")
   private List<WaitingOrderItemResponse> orderItems;
 
+  @JsonIgnore private LocalDateTime createdAt;
+
   public WaitingOrderResponse(
       Long orderId,
       Integer tableNumber,
@@ -57,6 +61,7 @@ public class WaitingOrderResponse {
     this.customerPhoneNumber = customerPhoneNumber;
     this.orderTime = orderTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     this.totalOrderPrice = totalOrderPrice;
+    this.createdAt = orderTime;
   }
 
   public void addOrderItems(List<WaitingOrderItemResponse> orderItems) {

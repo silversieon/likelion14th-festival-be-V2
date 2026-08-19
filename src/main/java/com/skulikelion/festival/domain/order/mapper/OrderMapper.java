@@ -5,13 +5,16 @@ package com.skulikelion.festival.domain.order.mapper;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Function;
 
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
+import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderItemResponse;
@@ -27,10 +30,18 @@ import com.skulikelion.festival.domain.order.entity.Order;
 import com.skulikelion.festival.domain.order.entity.OrderItem;
 import com.skulikelion.festival.domain.order.entity.OrderItemUnit;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
+import com.skulikelion.festival.global.common.pagenation.CursorCodec;
+import com.skulikelion.festival.global.common.pagenation.CursorPage;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.enums.Language;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class OrderMapper {
+
+  private final CursorCodec cursorCodec;
 
   public Order createOrderFromOrderCreateRequest(OrderCreateRequest request) {
     return Order.builder()
@@ -185,5 +196,30 @@ public class OrderMapper {
         .orderId(orderItemUnit.getOrderItem().getOrder().getId())
         .served(orderItemUnit.isServed())
         .build();
+  }
+
+  private <T, C> CursorPageResponse<T> toCursorPageResponse(CursorPage<T> cursorPage, Function<T, C> cursorExtractor) {
+    List<T> content = cursorPage.content();
+    if (content == null || content.isEmpty()) {
+      return CursorPageResponse.of(content, null, false, 0);
+    }
+
+    T last = content.getLast();
+    C nextCursor = cursorExtractor.apply(last);
+
+    return CursorPageResponse.of(
+            content,
+            cursorPage.hasNext() ? cursorCodec.encode(nextCursor) : null,
+            cursorPage.hasNext(),
+            cursorPage.content().size());
+  }
+
+  public CursorPageResponse<WaitingOrderResponse> toWaitingOrderResponseCursorPage(
+      CursorPage<WaitingOrderResponse> cursorPage) {
+    return toCursorPageResponse(cursorPage, item -> new WaitingOrderCursor(item.getCreatedAt(), item.getOrderId()));
+  }
+
+  public CursorPageResponse<CookingOrderResponse> toCookingOrderResponseCursorPage(CursorPage<CookingOrderResponse> cursorPage) {
+    return toCursorPageResponse(cursorPage, item -> new CookingOrderCursor(item.getModifiedAt(), item.getOrderId()));
   }
 }

@@ -3,9 +3,11 @@
  */
 package com.skulikelion.festival.domain.order.controller;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import jakarta.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,11 +15,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
+import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
@@ -30,6 +34,8 @@ import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.domain.order.service.sse.OrderSseService;
 import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.common.pagenation.CursorCodec;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +50,7 @@ import lombok.RequiredArgsConstructor;
  * @version latest: 1
  */
 @RestController
+@Validated
 @RequiredArgsConstructor
 @RequestMapping("/api")
 @Tag(name = "Order", description = "사용자 주문 관련 기능을 제공하는 API")
@@ -51,6 +58,7 @@ public class OrderController {
 
   private final OrderSseService orderSseService;
   private final OrderService orderService;
+  private final CursorCodec cursorCodec;
 
   @Operation(
       summary = "[ 부스 관리자 | 토큰 O | 주문 관리 탭별 구독 ]",
@@ -146,9 +154,13 @@ public class OrderController {
                   """)
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/waiting")
-  public ResponseEntity<BaseResponse<List<WaitingOrderResponse>>> getWaitingOrders(
-      @AuthenticationPrincipal String departmentName) {
-    List<WaitingOrderResponse> waitingOrders = orderService.getWaitingOrders(departmentName);
+  public ResponseEntity<BaseResponse<CursorPageResponse<WaitingOrderResponse>>> getWaitingOrders(
+      @AuthenticationPrincipal String departmentName,
+      @RequestParam(required = false) String encodedCursor,
+      @RequestParam(defaultValue = "20") Integer size) {
+    WaitingOrderCursor cursor = cursorCodec.decode(encodedCursor, WaitingOrderCursor.class);
+    CursorPageResponse<WaitingOrderResponse> waitingOrders =
+        orderService.getWaitingOrders(departmentName, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "대기 중인 주문 목록 조회에 성공했습니다.", waitingOrders));
   }
@@ -176,9 +188,12 @@ public class OrderController {
                  """)
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/cooking")
-  public ResponseEntity<BaseResponse<List<CookingOrderResponse>>> getCookingOrders(
-      @AuthenticationPrincipal String departmentName) {
-    List<CookingOrderResponse> cookingOrders = orderService.getCookingOrders(departmentName);
+  public ResponseEntity<BaseResponse<CursorPageResponse<CookingOrderResponse>>> getCookingOrders(
+      @AuthenticationPrincipal String departmentName,
+      @RequestParam(required = false) String encodedCursor,
+      @RequestParam(defaultValue = "20") Integer size) {
+    CookingOrderCursor cursor = cursorCodec.decode(encodedCursor, CookingOrderCursor.class);
+    CursorPageResponse<CookingOrderResponse> cookingOrders = orderService.getCookingOrders(departmentName, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "조리 중인 테이블별 주문 목록 조회에 성공했습니다.", cookingOrders));
   }

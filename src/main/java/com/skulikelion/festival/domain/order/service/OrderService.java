@@ -6,8 +6,10 @@ package com.skulikelion.festival.domain.order.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
+import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
@@ -16,6 +18,7 @@ import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 
 /**
  * 멋쟁이사자처럼 서경대학교 축제 페이지 주문 관련 처리 서비스입니다.
@@ -43,7 +46,8 @@ public interface OrderService {
    * @param departmentName 학과명
    * @return 대기 중 주문 목록
    */
-  List<WaitingOrderResponse> getWaitingOrders(String departmentName);
+  CursorPageResponse<WaitingOrderResponse> getWaitingOrders(
+      String departmentName, WaitingOrderCursor cursor, Integer size);
 
   /**
    * [ 조리 중 주문 목록 조회 메서드 ] 조리 중 주문 목록 조회
@@ -51,7 +55,7 @@ public interface OrderService {
    * @param departmentName 학과명
    * @return 조리 중 주문 목록
    */
-  List<CookingOrderResponse> getCookingOrders(String departmentName);
+  CursorPageResponse<CookingOrderResponse> getCookingOrders(String departmentName, CookingOrderCursor cursor, Integer size);
 
   /**
    * [ 완료된 주문 목록 조회 메서드 ] 완료된 주문 목록 조회

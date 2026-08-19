@@ -35,9 +35,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                 JOIN oi.boothMenu bm
                     WHERE bm.booth.id = :boothId
                         AND oi.order.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.WAITING
-                            ORDER BY oi.order.createdAt ASC
+                          AND ( :lastCreatedAt IS NULL OR
+                              o.createdAt > :lastCreatedAt
+                              OR (o.createdAt = :lastCreatedAt AND o.id > :lastOrderId))
+                            ORDER BY o.createdAt ASC
+                                LIMIT :sizePlusOne
     """)
-  List<WaitingOrderResponse> findWaitingOrdersByBoothId(@Param("boothId") Long boothId);
+  List<WaitingOrderResponse> findWaitingOrdersByBoothId(
+      @Param("boothId") Long boothId,
+      @Param("lastCreatedAt") LocalDateTime lastCreatedAt,
+      @Param("lastOrderId") Long lastOrderId,
+      @Param("sizePlusOne") Integer sizePlusOne);
 
   @Query(
       """
@@ -55,9 +63,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           JOIN oi.boothMenu bm
             WHERE bm.booth.id = :boothId
               AND oi.order.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COOKING
+                AND (:lastCreatedAt IS NULL OR
+                  o.modifiedAt > :lastModifiedAt
+                    OR (o.modifiedAt = :lastModifiedAt AND o.id > :lastOrderId))
                 ORDER BY oi.order.modifiedAt ASC
+                  LIMIT :sizePlusOne
   """)
-  List<CookingOrderResponse> findCookingOrdersByBoothId(@Param("boothId") Long boothId);
+  List<CookingOrderResponse> findCookingOrdersByBoothId(
+          @Param("boothId") Long boothId,
+          @Param("lastModifiedAt") LocalDateTime lastModifiedAt,
+          @Param("lastOrderId") Long lastOrderId,
+          @Param("sizePlusOne") Integer sizePlusOne);
 
   @Query(
       """
@@ -115,7 +131,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   @Query(
       """
     SELECT new com.skulikelion.festival.domain.order.dto.response.SalesResponse(
-        COALESCE(SUM(o.totalOrderPrice), 0)
+        SUM(o.totalOrderPrice)
     )
     FROM Order o
     WHERE o.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COMPLETED
@@ -132,7 +148,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   @Query(
       """
     SELECT new com.skulikelion.festival.domain.order.dto.response.SalesResponse(
-        COALESCE(SUM(o.totalOrderPrice), 0)
+        SUM(o.totalOrderPrice)
     )
     FROM Order o
     WHERE o.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COMPLETED

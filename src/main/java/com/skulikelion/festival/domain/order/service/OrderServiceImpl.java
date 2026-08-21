@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +19,9 @@ import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
 import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
@@ -91,9 +93,11 @@ public class OrderServiceImpl implements OrderService {
             cursor != null ? cursor.lastOrderId() : null,
             size + 1);
     CursorPage<WaitingOrderResponse> page = CursorPage.of(waitingOrders, size);
-    List<Long> orderIds = waitingOrders.stream().map(WaitingOrderResponse::getOrderId).toList();
-    if (orderIds.isEmpty()) return orderMapper.toWaitingOrderResponseCursorPage(page);
 
+    // early return
+    if (waitingOrders.isEmpty()) return orderMapper.toWaitingOrderResponseCursorPage(page);
+
+    List<Long> orderIds = waitingOrders.stream().map(WaitingOrderResponse::getOrderId).toList();
     List<WaitingOrderItemResponse> waitingOrderItems =
         orderItemRepository.findWaitingOrderItemsByOrderIds(orderIds);
     Map<Long, List<WaitingOrderItemResponse>> waitingItemMap =
@@ -110,21 +114,25 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResponse<CookingOrderResponse> getCookingOrders(String departmentName, CookingOrderCursor cursor, Integer size) {
+  public CursorPageResponse<CookingOrderResponse> getCookingOrders(
+      String departmentName, CookingOrderCursor cursor, Integer size) {
     Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
     validateBoothManagerBelongsToBooth(departmentName, booth);
 
-    List<CookingOrderResponse> cookingOrders = orderRepository.findCookingOrdersByBoothId(boothId,
+    List<CookingOrderResponse> cookingOrders =
+        orderRepository.findCookingOrdersByBoothId(
+            boothId,
             cursor != null ? cursor.lastModifiedAt() : null,
             cursor != null ? cursor.lastOrderId() : null,
             size + 1);
     CursorPage<CookingOrderResponse> page = CursorPage.of(cookingOrders, size);
+
+    // early return
+    if (cookingOrders.isEmpty()) return orderMapper.toCookingOrderResponseCursorPage(page);
+
     List<Long> orderIds = cookingOrders.stream().map(CookingOrderResponse::getOrderId).toList();
-    if (orderIds.isEmpty()) return orderMapper.toCookingOrderResponseCursorPage(page);
-
     List<Long> orderItemIds = orderItemRepository.findOrderItemIdsByOrderIds(orderIds);
-
     List<CookingOrderItemUnitResponse> cookingOrderItemUnits =
         orderItemUnitRepository.findCookingOrderItemUnitsByOrderItemIds(orderItemIds);
 
@@ -144,17 +152,30 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<CompletedOrderResponse> getCompletedOrders(
-      String departmentName, LocalDate orderDate, String keyword) {
+  public CursorPageResponse<CompletedOrderResponse> getCompletedOrders(
+      String departmentName,
+      LocalDate orderDate,
+      String keyword,
+      CompletedOrderCursor cursor,
+      Integer size) {
     Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
     validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<CompletedOrderResponse> completedOrders =
-        orderRepository.findCompletedOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
-    List<Long> orderIds = completedOrders.stream().map(CompletedOrderResponse::getOrderId).toList();
-    if (orderIds.isEmpty()) return completedOrders;
+        orderRepository.findCompletedOrdersByBoothIdAndDateAndKeyword(
+            boothId,
+            orderDate,
+            keyword,
+            cursor != null ? cursor.lastCompletedAt() : null,
+            cursor != null ? cursor.lastOrderId() : null,
+            size + 1);
+    CursorPage<CompletedOrderResponse> page = CursorPage.of(completedOrders, size);
 
+    // early return
+    if (completedOrders.isEmpty()) return orderMapper.toCompletedOrderResponseCursorPage(page);
+
+    List<Long> orderIds = completedOrders.stream().map(CompletedOrderResponse::getOrderId).toList();
     List<CompletedOrderItemResponse> completedOrderItems =
         orderItemRepository.findCompletedOrderItemsByOrderIds(orderIds);
     Map<Long, List<CompletedOrderItemResponse>> completedItemMap =
@@ -166,22 +187,35 @@ public class OrderServiceImpl implements OrderService {
 
     log.debug(
         "[OrderService] 완료 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, completedOrders.size());
-    return completedOrders;
+    return orderMapper.toCompletedOrderResponseCursorPage(page);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public List<CanceledOrderResponse> getCanceledOrders(
-      String departmentName, LocalDate orderDate, String keyword) {
+  public CursorPageResponse<CanceledOrderResponse> getCanceledOrders(
+      String departmentName,
+      LocalDate orderDate,
+      String keyword,
+      CanceledOrderCursor cursor,
+      Integer size) {
     Booth booth = getBoothOrThrow(departmentName);
     Long boothId = booth.getId();
     validateBoothManagerBelongsToBooth(departmentName, booth);
 
     List<CanceledOrderResponse> canceledOrders =
-        orderRepository.findCanceledOrdersByBoothIdAndDateAndKeyword(boothId, orderDate, keyword);
-    List<Long> orderIds = canceledOrders.stream().map(CanceledOrderResponse::getOrderId).toList();
-    if (orderIds.isEmpty()) return canceledOrders;
+        orderRepository.findCanceledOrdersByBoothIdAndDateAndKeyword(
+            boothId,
+            orderDate,
+            keyword,
+            cursor != null ? cursor.lastCanceledAt() : null,
+            cursor != null ? cursor.lastOrderId() : null,
+            size + 1);
+    CursorPage<CanceledOrderResponse> page = CursorPage.of(canceledOrders, size);
 
+    // early return
+    if (canceledOrders.isEmpty()) return orderMapper.toCanceledOrderResponseCursorPage(page);
+
+    List<Long> orderIds = canceledOrders.stream().map(CanceledOrderResponse::getOrderId).toList();
     List<CanceledOrderItemResponse> canceledOrderItems =
         orderItemRepository.findCanceledOrderItemsByOrderIds(orderIds);
     Map<Long, List<CanceledOrderItemResponse>> canceledItemMap =
@@ -193,7 +227,7 @@ public class OrderServiceImpl implements OrderService {
 
     log.debug(
         "[OrderService] 취소 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, canceledOrders.size());
-    return canceledOrders;
+    return orderMapper.toCanceledOrderResponseCursorPage(page);
   }
 
   @Override
@@ -358,16 +392,6 @@ public class OrderServiceImpl implements OrderService {
         orderEventMapper.toCookingOrderItemUnitPayload(
             booth, orderMapper.toOrderItemUnitStatusResponse(orderItemUnit)));
     log.debug("[OrderService] 서빙 상태 변경 이벤트 발행 - 주문 항목 단위 식별자: {}", orderItemUnitId);
-  }
-
-  private Booth getBoothOrThrow(Long boothId) {
-    return boothRepository
-        .findById(boothId)
-        .orElseThrow(
-            () -> {
-              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 부스 식별자: {}", boothId);
-              return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
-            });
   }
 
   private Booth getBoothOrThrow(String departmentName) {

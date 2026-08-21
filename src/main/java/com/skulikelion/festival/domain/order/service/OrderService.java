@@ -4,8 +4,9 @@
 package com.skulikelion.festival.domain.order.service;
 
 import java.time.LocalDate;
-import java.util.List;
 
+import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
@@ -55,7 +56,8 @@ public interface OrderService {
    * @param departmentName 학과명
    * @return 조리 중 주문 목록
    */
-  CursorPageResponse<CookingOrderResponse> getCookingOrders(String departmentName, CookingOrderCursor cursor, Integer size);
+  CursorPageResponse<CookingOrderResponse> getCookingOrders(
+      String departmentName, CookingOrderCursor cursor, Integer size);
 
   /**
    * [ 완료된 주문 목록 조회 메서드 ] 완료된 주문 목록 조회
@@ -65,8 +67,12 @@ public interface OrderService {
    * @param keyword 검색어 (이름, 전화번호)
    * @return 완료된 주문 목록
    */
-  List<CompletedOrderResponse> getCompletedOrders(
-      String departmentName, LocalDate orderDate, String keyword);
+  CursorPageResponse<CompletedOrderResponse> getCompletedOrders(
+      String departmentName,
+      LocalDate orderDate,
+      String keyword,
+      CompletedOrderCursor cursor,
+      Integer size);
 
   /**
    * [ 취소된 주문 조회 메서드 ] 취소된 주문 목록 조회
@@ -76,8 +82,12 @@ public interface OrderService {
    * @param keyword 검색어 (이름, 전화번호)
    * @return 취소된 주문 목록
    */
-  List<CanceledOrderResponse> getCanceledOrders(
-      String departmentName, LocalDate orderDate, String keyword);
+  CursorPageResponse<CanceledOrderResponse> getCanceledOrders(
+      String departmentName,
+      LocalDate orderDate,
+      String keyword,
+      CanceledOrderCursor cursor,
+      Integer size);
 
   /**
    * [ 매출액 조회 메서드 ] 날짜별 매출액 조회

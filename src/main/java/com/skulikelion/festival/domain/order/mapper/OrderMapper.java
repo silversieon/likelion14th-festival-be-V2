@@ -7,11 +7,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
 
-import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.entity.BoothMenu;
+import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
@@ -198,7 +200,8 @@ public class OrderMapper {
         .build();
   }
 
-  private <T, C> CursorPageResponse<T> toCursorPageResponse(CursorPage<T> cursorPage, Function<T, C> cursorExtractor) {
+  private <T, C> CursorPageResponse<T> toCursorPageResponse(
+      CursorPage<T> cursorPage, Function<T, C> cursorExtractor) {
     List<T> content = cursorPage.content();
     if (content == null || content.isEmpty()) {
       return CursorPageResponse.of(content, null, false, 0);
@@ -208,18 +211,33 @@ public class OrderMapper {
     C nextCursor = cursorExtractor.apply(last);
 
     return CursorPageResponse.of(
-            content,
-            cursorPage.hasNext() ? cursorCodec.encode(nextCursor) : null,
-            cursorPage.hasNext(),
-            cursorPage.content().size());
+        content,
+        cursorPage.hasNext() ? cursorCodec.encode(nextCursor) : null,
+        cursorPage.hasNext(),
+        cursorPage.content().size());
   }
 
   public CursorPageResponse<WaitingOrderResponse> toWaitingOrderResponseCursorPage(
       CursorPage<WaitingOrderResponse> cursorPage) {
-    return toCursorPageResponse(cursorPage, item -> new WaitingOrderCursor(item.getCreatedAt(), item.getOrderId()));
+    return toCursorPageResponse(
+        cursorPage, item -> new WaitingOrderCursor(item.getCreatedAt(), item.getOrderId()));
   }
 
-  public CursorPageResponse<CookingOrderResponse> toCookingOrderResponseCursorPage(CursorPage<CookingOrderResponse> cursorPage) {
-    return toCursorPageResponse(cursorPage, item -> new CookingOrderCursor(item.getModifiedAt(), item.getOrderId()));
+  public CursorPageResponse<CookingOrderResponse> toCookingOrderResponseCursorPage(
+      CursorPage<CookingOrderResponse> cursorPage) {
+    return toCursorPageResponse(
+        cursorPage, item -> new CookingOrderCursor(item.getModifiedAt(), item.getOrderId()));
+  }
+
+  public CursorPageResponse<CompletedOrderResponse> toCompletedOrderResponseCursorPage(
+      CursorPage<CompletedOrderResponse> cursorPage) {
+    return toCursorPageResponse(
+        cursorPage, item -> new CompletedOrderCursor(item.getCompletedAt(), item.getOrderId()));
+  }
+
+  public CursorPageResponse<CanceledOrderResponse> toCanceledOrderResponseCursorPage(
+      CursorPage<CanceledOrderResponse> cursorPage) {
+    return toCursorPageResponse(
+        cursorPage, item -> new CanceledOrderCursor(item.getCanceledAt(), item.getOrderId()));
   }
 }

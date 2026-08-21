@@ -5,9 +5,7 @@ package com.skulikelion.festival.domain.order.controller;
 
 import java.awt.*;
 import java.time.LocalDate;
-import java.util.List;
 
-import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import jakarta.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +17,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
+import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemUnitUpdateRequest;
 import com.skulikelion.festival.domain.order.dto.request.WaitingOrderCursor;
@@ -193,7 +194,8 @@ public class OrderController {
       @RequestParam(required = false) String encodedCursor,
       @RequestParam(defaultValue = "20") Integer size) {
     CookingOrderCursor cursor = cursorCodec.decode(encodedCursor, CookingOrderCursor.class);
-    CursorPageResponse<CookingOrderResponse> cookingOrders = orderService.getCookingOrders(departmentName, cursor, size);
+    CursorPageResponse<CookingOrderResponse> cookingOrders =
+        orderService.getCookingOrders(departmentName, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "조리 중인 테이블별 주문 목록 조회에 성공했습니다.", cookingOrders));
   }
@@ -228,12 +230,17 @@ public class OrderController {
                  """)
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/completed")
-  public ResponseEntity<BaseResponse<List<CompletedOrderResponse>>> getCompletedOrders(
-      @AuthenticationPrincipal String departmentName,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-      @RequestParam(required = false) String keyword) {
-    List<CompletedOrderResponse> completedOrders =
-        orderService.getCompletedOrders(departmentName, date, keyword);
+  public ResponseEntity<BaseResponse<CursorPageResponse<CompletedOrderResponse>>>
+      getCompletedOrders(
+          @AuthenticationPrincipal String departmentName,
+          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+              LocalDate date,
+          @RequestParam(required = false) String keyword,
+          @RequestParam(required = false) String encodedCursor,
+          @RequestParam(defaultValue = "20") Integer size) {
+    CompletedOrderCursor cursor = cursorCodec.decode(encodedCursor, CompletedOrderCursor.class);
+    CursorPageResponse<CompletedOrderResponse> completedOrders =
+        orderService.getCompletedOrders(departmentName, date, keyword, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "완료된 주문 목록 조회에 성공했습니다.", completedOrders));
   }
@@ -269,12 +276,15 @@ public class OrderController {
                  """)
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/canceled")
-  public ResponseEntity<BaseResponse<List<CanceledOrderResponse>>> getCanceledOrders(
+  public ResponseEntity<BaseResponse<CursorPageResponse<CanceledOrderResponse>>> getCanceledOrders(
       @AuthenticationPrincipal String departmentName,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-      @RequestParam(required = false) String keyword) {
-    List<CanceledOrderResponse> canceledOrders =
-        orderService.getCanceledOrders(departmentName, date, keyword);
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String encodedCursor,
+      @RequestParam(defaultValue = "20") Integer size) {
+    CanceledOrderCursor cursor = cursorCodec.decode(encodedCursor, CanceledOrderCursor.class);
+    CursorPageResponse<CanceledOrderResponse> canceledOrders =
+        orderService.getCanceledOrders(departmentName, date, keyword, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "취소된 주문 목록 조회에 성공했습니다.", canceledOrders));
   }

@@ -63,17 +63,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           JOIN oi.boothMenu bm
             WHERE bm.booth.id = :boothId
               AND oi.order.orderStatus = com.skulikelion.festival.domain.order.entity.enums.OrderStatus.COOKING
-                AND (:lastCreatedAt IS NULL OR
+                AND (:lastModifiedAt IS NULL OR
                   o.modifiedAt > :lastModifiedAt
                     OR (o.modifiedAt = :lastModifiedAt AND o.id > :lastOrderId))
                 ORDER BY oi.order.modifiedAt ASC
                   LIMIT :sizePlusOne
   """)
   List<CookingOrderResponse> findCookingOrdersByBoothId(
-          @Param("boothId") Long boothId,
-          @Param("lastModifiedAt") LocalDateTime lastModifiedAt,
-          @Param("lastOrderId") Long lastOrderId,
-          @Param("sizePlusOne") Integer sizePlusOne);
+      @Param("boothId") Long boothId,
+      @Param("lastModifiedAt") LocalDateTime lastModifiedAt,
+      @Param("lastOrderId") Long lastOrderId,
+      @Param("sizePlusOne") Integer sizePlusOne);
 
   @Query(
       """
@@ -94,12 +94,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     AND (:orderDate IS NULL OR FUNCTION('DATE', o.createdAt) = :orderDate)
     AND (:keyword IS NULL OR o.customerName LIKE CONCAT('%', :keyword, '%')
         OR o.customerPhoneNumber LIKE CONCAT('%', :keyword, '%'))
+    AND (:lastCompletedAt IS NULL OR
+       o.completedAt < :lastCompletedAt
+       OR (o.completedAt = :lastCompletedAt AND o.id < :lastOrderId))
     ORDER BY o.completedAt DESC
+    LIMIT :sizePlusOne
 """)
   List<CompletedOrderResponse> findCompletedOrdersByBoothIdAndDateAndKeyword(
       @Param("boothId") Long boothId,
       @Param("orderDate") LocalDate orderDate,
-      @Param("keyword") String keyword);
+      @Param("keyword") String keyword,
+      @Param("lastCompletedAt") LocalDateTime lastCompletedAt,
+      @Param("lastOrderId") Long lastOrderId,
+      @Param("sizePlusOne") Integer sizePlusOne);
 
   @Query(
       """
@@ -121,12 +128,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     AND (:orderDate IS NULL OR FUNCTION('DATE', o.createdAt) = :orderDate)
     AND (:keyword IS NULL OR o.customerName LIKE CONCAT('%', :keyword, '%')
         OR o.customerPhoneNumber LIKE CONCAT('%', :keyword, '%'))
+        AND (:lastCanceledAt IS NULL OR
+        o.canceledAt < :lastCanceledAt
+        OR (o.canceledAt = :lastCanceledAt AND o.id < :lastOrderId))
     ORDER BY o.canceledAt DESC
+    LIMIT :sizePlusOne
 """)
   List<CanceledOrderResponse> findCanceledOrdersByBoothIdAndDateAndKeyword(
       @Param("boothId") Long boothId,
       @Param("orderDate") LocalDate orderDate,
-      @Param("keyword") String keyword);
+      @Param("keyword") String keyword,
+      @Param("lastCanceledAt") LocalDateTime lastCanceledAt,
+      @Param("lastOrderId") Long lastOrderId,
+      @Param("sizePlusOne") Integer sizePlusOne);
 
   @Query(
       """

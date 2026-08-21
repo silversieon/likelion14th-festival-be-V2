@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,6 +50,8 @@ public class CompletedOrderResponse {
   @Schema(description = "주문한 메뉴 목록")
   private List<CompletedOrderItemResponse> orderItems;
 
+  @JsonIgnore private LocalDateTime completedAt;
+
   public CompletedOrderResponse(
       Long orderId,
       Integer tableNumber,
@@ -66,6 +70,7 @@ public class CompletedOrderResponse {
     this.orderDate = orderDateTime.format(DateTimeFormatter.ofPattern("M/d"));
     this.orderTime = orderDateTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     this.completeTime = completedTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+    this.completedAt = completedTime;
   }
 
   public void addOrderItems(List<CompletedOrderItemResponse> orderItems) {

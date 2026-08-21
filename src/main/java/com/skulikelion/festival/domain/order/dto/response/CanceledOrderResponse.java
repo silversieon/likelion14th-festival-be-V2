@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -53,6 +54,8 @@ public class CanceledOrderResponse {
   @Schema(description = "주문한 메뉴 목록")
   private List<CanceledOrderItemResponse> orderItems;
 
+  @JsonIgnore private LocalDateTime canceledAt;
+
   public CanceledOrderResponse(
       Long orderId,
       Integer tableNumber,
@@ -73,6 +76,7 @@ public class CanceledOrderResponse {
     this.orderTime = orderDateTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     this.cancelTime = canceledTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     this.orderCancelReason = orderCancelReason.getDescription();
+    this.canceledAt = canceledTime;
   }
 
   public void addOrderItems(List<CanceledOrderItemResponse> orderItems) {

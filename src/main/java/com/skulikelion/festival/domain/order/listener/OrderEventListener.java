@@ -3,6 +3,7 @@
  */
 package com.skulikelion.festival.domain.order.listener;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -15,7 +16,6 @@ import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayl
 import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.domain.order.service.sse.OrderSseService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,8 +34,8 @@ import lombok.RequiredArgsConstructor;
 public class OrderEventListener {
 
   private final OrderSseService orderSseService;
-  private final OrderIdempotencyService orderIdempotencyService;
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleWaitingOrderEvent(WaitingOrderPayload waitingOrderPayload) {
     orderSseService.sendWaitingOrderEvent(
@@ -46,6 +46,7 @@ public class OrderEventListener {
         waitingOrderPayload.waitingOrderResponse().getOrderId());
   }
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCookingOrderEvent(CookingOrderPayload cookingOrderPayload) {
     orderSseService.sendCookingOrderEvent(
@@ -60,6 +61,7 @@ public class OrderEventListener {
         cookingOrderPayload.cookingOrderResponse().getOrderId());
   }
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCompletedOrderEvent(CompletedOrderPayload completedOrderPayload) {
     orderSseService.sendCompletedOrderEvent(
@@ -70,12 +72,14 @@ public class OrderEventListener {
         completedOrderPayload.completedOrderResponse().getOrderId());
   }
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCanceledOrderEvent(CanceledOrderPayload canceledOrderPayload) {
     orderSseService.sendCanceledOrderEvent(
         canceledOrderPayload.booth(), canceledOrderPayload.canceledOrderResponse());
   }
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleOrderItemUnitStatusEvent(
       OrderItemUnitStatusPayload orderItemUnitStatusPayload) {
@@ -84,6 +88,7 @@ public class OrderEventListener {
         orderItemUnitStatusPayload.orderItemUnitStatusResponse());
   }
 
+  @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleDismissOrderEvent(DismissOrderPayload dismissOrderPayload) {
     orderSseService.sendOrderDismissNotification(

@@ -18,8 +18,8 @@ services:
       SPRING_DATA_REDIS_PASSWORD: 1234
 
       JAVA_OPTS: >-
-        -Xms256m
-        -Xmx768m
+        -Xms1g
+        -Xmx2g
         -XX:+UseG1GC
         -XX:MaxGCPauseMillis=200
         -Dfile.encoding=UTF-8
@@ -41,11 +41,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '2.0'
+          memory: 4G
 
     networks:
       - festival-network
@@ -110,14 +107,16 @@ services:
       retries: 10
       start_period: 10s
 
+    cpuset: "0,1"
+
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
           cpus: '0.5'
-          memory: 256M
+          memory: 384M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
     networks:
       - festival-network

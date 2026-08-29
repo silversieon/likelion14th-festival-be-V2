@@ -1,14 +1,14 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.annotation;
+package com.skulikelion.festival.global.util.timetrace.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.skulikelion.festival.global.aspect.TimeAspect;
+import com.skulikelion.festival.global.util.timetrace.aspect.TimeAspect;
 
 /**
  * 메서드를 수행하는 데 걸리는 시간을 로그로 출력할 때 사용하는 어노테이션입니다. <br>

@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.aspect;
+package com.skulikelion.festival.global.util.timetrace.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -9,7 +9,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.annotation.TimeTrace;
+import com.skulikelion.festival.global.util.timetrace.annotation.TimeTrace;
 
 import lombok.extern.slf4j.Slf4j;
 

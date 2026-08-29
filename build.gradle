@@ -80,6 +80,9 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+
+    // Resilience4j
+    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
 }
 
 tasks.named('test') {

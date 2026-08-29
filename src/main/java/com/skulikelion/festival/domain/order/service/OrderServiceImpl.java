@@ -45,7 +45,7 @@ import com.skulikelion.festival.domain.order.mapper.OrderMapper;
 import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
+import com.skulikelion.festival.domain.order.service.idempotency.IdempotencyService;
 import com.skulikelion.festival.domain.order.service.processor.OrderProcessor;
 import com.skulikelion.festival.global.common.pagenation.CursorPage;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
@@ -68,13 +68,13 @@ public class OrderServiceImpl implements OrderService {
   private final OrderEventMapper orderEventMapper;
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
-  private final OrderIdempotencyService orderIdempotencyService;
+  private final IdempotencyService idempotencyService;
   private final OrderProcessor orderProcessor;
 
   @Override
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
-    return orderIdempotencyService.executeIdempotent(
+    return idempotencyService.executeIdempotent(
         idempotencyKey, () -> orderProcessor.processOrder(boothId, request), OrderResponse.class);
   }
 

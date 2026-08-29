@@ -9,19 +9,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
-import com.skulikelion.festival.domain.order.repository.OrderIdempotencyRepository;
+import com.skulikelion.festival.domain.order.entity.Idempotency;
+import com.skulikelion.festival.domain.order.repository.IdempotencyRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class DbOrderIdempotencyInserter {
+public class DbIdempotencyInserter {
 
-  private final OrderIdempotencyRepository repository;
+  private final IdempotencyRepository repository;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void insertProcessing(UUID idempotencyKey) {
-    repository.saveAndFlush(OrderIdempotency.processing(idempotencyKey));
+  public void insertProcessing(UUID key) {
+    repository.saveAndFlush(Idempotency.processing(key));
   }
 }

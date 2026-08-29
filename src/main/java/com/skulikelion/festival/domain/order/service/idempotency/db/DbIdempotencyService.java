@@ -8,30 +8,24 @@ import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
 
-import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
-import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
-import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
-import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.domain.order.service.idempotency.IdempotencyService;
 
 import lombok.RequiredArgsConstructor;
-import tools.jackson.databind.ObjectMapper;
 
-@Service("dbOrderIdempotencyService")
+@Service("dbIdempotencyService")
 @RequiredArgsConstructor
-public class DbOrderIdempotencyService implements OrderIdempotencyService {
+public class DbIdempotencyService implements IdempotencyService {
 
-  private final DbOrderIdempotencyKeyManager idempotencyKeyManager;
-  private final ObjectMapper objectMapper;
-  private final DbOrderIdempotencyExecutor idempotencyExecutor;
+  private final DbIdempotencyKeyManager idempotencyKeyManager;
+  private final DbIdempotencyExecutor idempotencyExecutor;
 
   @Override
   public <T> T executeIdempotent(
       String idempotencyKey, Supplier<T> processor, Class<T> responseType) {
     UUID key = UUID.fromString(idempotencyKey);
 
-    if (!idempotencyKeyManager.isNewRequest(key)) {
-      return handleExisting(key, responseType);
+    if (!idempotencyKeyManager.tryAcquire(key)) {
+      return idempotencyKeyManager.handleExisting(key, responseType);
     }
 
     try {
@@ -40,14 +34,5 @@ public class DbOrderIdempotencyService implements OrderIdempotencyService {
       idempotencyKeyManager.deleteKey(key);
       throw e;
     }
-  }
-
-  private <T> T handleExisting(UUID key, Class<T> responseType) {
-    OrderIdempotency found = idempotencyKeyManager.findOrThrow(key);
-
-    if (found.getIdempotencyStatus() == IdempotencyStatus.PROCESSING) {
-      throw new CustomException(OrderErrorCode.ORDER_ALREADY_PROCESSING);
-    }
-    return objectMapper.readValue(found.getResponseBody(), responseType);
   }
 }

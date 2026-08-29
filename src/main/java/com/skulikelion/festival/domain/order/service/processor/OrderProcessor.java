@@ -58,7 +58,6 @@ public class OrderProcessor {
   private final BoothOperationRepository boothOperationRepository;
   private final OrderRepository orderRepository;
   private final OrderValidator orderValidator;
-
   @Transactional
   public OrderResponse processOrder(Long boothId, OrderCreateRequest request) {
     Booth booth =

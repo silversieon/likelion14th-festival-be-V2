@@ -14,9 +14,9 @@ import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
-public class DbOrderIdempotencyExecutor {
+public class DbIdempotencyExecutor {
 
-  private final DbOrderIdempotencyKeyManager idempotencyKeyManager;
+  private final DbIdempotencyKeyManager idempotencyKeyManager;
   private final ObjectMapper objectMapper;
 
   @Transactional

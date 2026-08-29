@@ -26,7 +26,7 @@ import com.skulikelion.festival.domain.order.service.idempotency.redis.RedisIdem
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
 
 @TestPropertySource(properties = "order.idempotency.store=redis")
-public class RedisIdempotencyServiceIntegrationTest extends IntegrationTestSupport {
+public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
   @Autowired RedisIdempotencyService idempotencyService;
 

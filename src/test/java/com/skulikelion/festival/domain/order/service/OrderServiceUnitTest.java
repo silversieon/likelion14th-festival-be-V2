@@ -19,13 +19,13 @@ import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
+import com.skulikelion.festival.domain.order.service.idempotency.IdempotencyService;
 import com.skulikelion.festival.global.enums.Language;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceUnitTest {
 
-  @Mock OrderIdempotencyService orderIdempotencyService;
+  @Mock IdempotencyService idempotencyService;
 
   @InjectMocks OrderServiceImpl orderService;
 
@@ -53,15 +53,14 @@ public class OrderServiceUnitTest {
             "111111111");
 
     // when
-    when(orderIdempotencyService.executeIdempotent(
-            eq(idempotencyKey), any(), eq(OrderResponse.class)))
+    when(idempotencyService.executeIdempotent(eq(idempotencyKey), any(), eq(OrderResponse.class)))
         .thenReturn(expected);
 
     OrderResponse result = orderService.createOrder(boothId, idempotencyKey, request);
 
     // then
     assertThat(result).isEqualTo(expected);
-    verify(orderIdempotencyService)
+    verify(idempotencyService)
         .executeIdempotent(eq(idempotencyKey), any(), eq(OrderResponse.class));
   }
 }

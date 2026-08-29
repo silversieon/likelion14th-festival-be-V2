@@ -24,7 +24,7 @@ import com.skulikelion.festival.domain.order.repository.OrderRepository;
 import com.skulikelion.festival.domain.order.service.idempotency.db.DbIdempotencyService;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
 
-public class DbIdempotencyServiceIntegrationTest extends IntegrationTestSupport {
+public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
   @Autowired DbIdempotencyService idempotencyService;
 

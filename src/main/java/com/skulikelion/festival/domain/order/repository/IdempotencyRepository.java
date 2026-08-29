@@ -11,11 +11,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
+import com.skulikelion.festival.domain.order.entity.Idempotency;
 
-public interface OrderIdempotencyRepository extends JpaRepository<OrderIdempotency, UUID> {
+public interface IdempotencyRepository extends JpaRepository<Idempotency, UUID> {
 
   @Modifying(clearAutomatically = true)
-  @Query("delete from OrderIdempotency oi where oi.createdAt < :threshold")
+  @Query("delete from Idempotency oi where oi.createdAt < :threshold")
   int deleteByCreatedAtBefore(@Param("threshold") LocalDateTime threshold);
 }

@@ -20,39 +20,39 @@ import lombok.*;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OrderIdempotency extends BaseTimeEntity implements Persistable<UUID> {
+public class Idempotency extends BaseTimeEntity implements Persistable<UUID> {
 
   @Id
   @JdbcTypeCode(SqlTypes.BINARY)
   @Column(name = "idempotency_key", length = 16)
-  private UUID idempotencyKey;
+  private UUID idempotency_key;
 
   @Column(name = "response_body", columnDefinition = "json")
   private String responseBody;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "idempotency_status", nullable = false, length = 20)
-  private IdempotencyStatus idempotencyStatus;
+  @Column(name = "status", nullable = false, length = 20)
+  private IdempotencyStatus status;
 
-  public static OrderIdempotency processing(UUID key) {
-    OrderIdempotency e = new OrderIdempotency();
-    e.idempotencyKey = key;
-    e.idempotencyStatus = IdempotencyStatus.PROCESSING;
+  public static Idempotency processing(UUID key) {
+    Idempotency e = new Idempotency();
+    e.idempotency_key = key;
+    e.status = IdempotencyStatus.PROCESSING;
     return e;
   }
 
   public void markDone(String responseBody) {
-    this.idempotencyStatus = IdempotencyStatus.DONE;
+    this.status = IdempotencyStatus.DONE;
     this.responseBody = responseBody;
   }
 
   @Override
   public @Nullable UUID getId() {
-    return idempotencyKey;
+    return idempotency_key;
   }
 
   @Override
   public boolean isNew() {
-    return this.idempotencyStatus == IdempotencyStatus.PROCESSING && this.responseBody == null;
+    return this.status == IdempotencyStatus.PROCESSING && this.responseBody == null;
   }
 }

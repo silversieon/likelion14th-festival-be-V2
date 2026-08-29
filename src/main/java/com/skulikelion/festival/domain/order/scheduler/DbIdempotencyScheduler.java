@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.domain.order.service.idempotency.DbOrderIdempotencyKeyManager;
+import com.skulikelion.festival.domain.order.service.idempotency.db.DbIdempotencyKeyManager;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DbOrderIdempotencyScheduler {
 
-  private final DbOrderIdempotencyKeyManager idempotencyKeyManager;
+  private final DbIdempotencyKeyManager idempotencyKeyManager;
 
   @Scheduled(cron = "0 0 1 * * *")
   public void cleanupIdempotencyKeys() {

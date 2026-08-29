@@ -1,17 +1,17 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency;
+package com.skulikelion.festival.domain.order.service.idempotency.redis;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
+import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -19,9 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
-@Service
+@Service("redisOrderIdempotencyService")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "order.idempotency.store", havingValue = "redis")
 public class RedisOrderIdempotencyService implements OrderIdempotencyService {
 
   private final RedisTemplate<String, String> redisTemplate;

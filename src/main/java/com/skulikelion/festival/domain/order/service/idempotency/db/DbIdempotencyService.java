@@ -1,25 +1,24 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency;
+package com.skulikelion.festival.domain.order.service.idempotency.db;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.skulikelion.festival.domain.order.entity.OrderIdempotency;
 import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
+import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
 
-@Service
+@Service("dbOrderIdempotencyService")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "order.idempotency.store", havingValue = "db")
 public class DbOrderIdempotencyService implements OrderIdempotencyService {
 
   private final DbOrderIdempotencyKeyManager idempotencyKeyManager;

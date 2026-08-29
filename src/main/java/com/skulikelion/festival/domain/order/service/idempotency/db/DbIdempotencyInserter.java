@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency;
+package com.skulikelion.festival.domain.order.service.idempotency.db;
 
 import java.util.UUID;
 

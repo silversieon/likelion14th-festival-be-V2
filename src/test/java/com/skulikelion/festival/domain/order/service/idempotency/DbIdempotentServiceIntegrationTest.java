@@ -6,7 +6,6 @@ package com.skulikelion.festival.domain.order.service.idempotency;
 import static com.skulikelion.festival.domain.order.service.OrderFixture.dummyResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -18,25 +17,25 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.test.context.TestPropertySource;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
+import com.skulikelion.festival.domain.order.repository.IdempotencyRepository;
+import com.skulikelion.festival.domain.order.repository.OrderRepository;
+import com.skulikelion.festival.domain.order.service.idempotency.db.DbIdempotencyService;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
 
-@TestPropertySource(properties = "order.idempotency.store=redis")
-public class RedisOrderIdempotencyServiceIntegrationTest extends IntegrationTestSupport {
+public class DbIdempotencyServiceIntegrationTest extends IntegrationTestSupport {
 
-  @Autowired RedisOrderIdempotencyService idempotencyService;
+  @Autowired DbIdempotencyService idempotencyService;
 
-  @Autowired RedisTemplate<String, String> redisTemplate;
+  @Autowired OrderRepository orderRepository;
+
+  @Autowired IdempotencyRepository idempotencyRepository;
 
   @AfterEach
   void tearDown() {
-    Objects.requireNonNull(redisTemplate.getConnectionFactory())
-        .getConnection()
-        .serverCommands()
-        .flushDb();
+    orderRepository.deleteAll();
+    idempotencyRepository.deleteAll();
   }
 
   @Test
@@ -51,6 +50,7 @@ public class RedisOrderIdempotencyServiceIntegrationTest extends IntegrationTest
           callCount.incrementAndGet();
           return dummyResponse();
         };
+
     // when
     idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
 
@@ -59,7 +59,7 @@ public class RedisOrderIdempotencyServiceIntegrationTest extends IntegrationTest
   }
 
   @Test
-  @DisplayName("같은 키로 두 번 요청하면 실제 처리는 한 번만 수행되고 동일한 응답을 반환한다")
+  @DisplayName("같은 멱등키로 두 번 요청하면 주문은 한 건만 생성된다")
   void sameKey_twice_onlyOneOrder() {
     // given
     String key = UUID.randomUUID().toString();
@@ -78,7 +78,7 @@ public class RedisOrderIdempotencyServiceIntegrationTest extends IntegrationTest
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
-    assertThat(first).usingRecursiveComparison().isEqualTo(second);
+    assertThat(second).usingRecursiveComparison().isEqualTo(first);
   }
 
   @Test
@@ -87,38 +87,38 @@ public class RedisOrderIdempotencyServiceIntegrationTest extends IntegrationTest
     // given
     int threadCount = 20;
     String key = UUID.randomUUID().toString();
-    AtomicInteger callCount = new AtomicInteger(0);
-    AtomicInteger successCount = new AtomicInteger(0);
-    AtomicInteger blockedCount = new AtomicInteger(0);
+    AtomicInteger callCount = new AtomicInteger(0); // processor 실행 횟수
+    AtomicInteger successCount = new AtomicInteger(0); // 정상 응답 받은 횟수
+    AtomicInteger blockedCount = new AtomicInteger(0); // 중복으로 막힌 횟수
 
-    Supplier<OrderResponse> supplier =
+    Supplier<OrderResponse> processor =
         () -> {
           callCount.incrementAndGet();
           return dummyResponse();
         };
 
     ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-    CountDownLatch startLatch = new CountDownLatch(1);
-    CountDownLatch doneLatch = new CountDownLatch(threadCount);
+    CountDownLatch startLatch = new CountDownLatch(1); // 출발 신호
+    CountDownLatch doneLatch = new CountDownLatch(threadCount); // 완료 카운터
 
-    // when
+    // when — 20개 스레드를 출발선에 세워두고 일제히 발사
     for (int i = 0; i < threadCount; i++) {
       executor.submit(
           () -> {
             try {
-              startLatch.await();
-              idempotencyService.executeIdempotent(key, supplier, OrderResponse.class);
+              startLatch.await(); // 모든 스레드가 여기서 대기
+              idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
               successCount.incrementAndGet();
             } catch (Exception e) {
-              blockedCount.incrementAndGet();
+              blockedCount.incrementAndGet(); // ALREADY_PROCESSING 등 중복 예외
             } finally {
               doneLatch.countDown();
             }
           });
     }
 
-    startLatch.countDown();
-    doneLatch.await();
+    startLatch.countDown(); // 20개 일제히 출발
+    doneLatch.await(); // 20개 다 끝날 때까지 대기
     executor.shutdown();
 
     // then

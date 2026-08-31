@@ -1,28 +1,25 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency.redis;
+package com.skulikelion.festival.global.util.idempotency.strategy.redis;
 
 import java.util.function.Supplier;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.domain.order.service.idempotency.IdempotencyService;
+import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-@Service("redisIdempotencyService")
+@Component
 @RequiredArgsConstructor
-public class RedisIdempotencyService implements IdempotencyService {
+public class RedisIdempotencyInterceptor implements IdempotencyInterceptor {
 
   private final RedisIdempotencyKeyManager idempotencyKeyManager;
 
   @Override
   public <T> T executeIdempotent(
       String idempotencyKey, Supplier<T> processor, Class<T> responseType) {
-
     if (idempotencyKeyManager.tryAcquire(idempotencyKey)) {
       try {
         T response = processor.get();

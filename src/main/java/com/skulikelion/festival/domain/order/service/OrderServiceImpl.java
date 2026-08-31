@@ -45,12 +45,13 @@ import com.skulikelion.festival.domain.order.mapper.OrderMapper;
 import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
-import com.skulikelion.festival.domain.order.service.idempotency.IdempotencyService;
 import com.skulikelion.festival.domain.order.service.processor.OrderProcessor;
 import com.skulikelion.festival.global.common.pagenation.CursorPage;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,14 +69,13 @@ public class OrderServiceImpl implements OrderService {
   private final OrderEventMapper orderEventMapper;
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
-  private final IdempotencyService idempotencyService;
   private final OrderProcessor orderProcessor;
 
   @Override
+  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyStrategy.FALLBACK)
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
-    return idempotencyService.executeIdempotent(
-        idempotencyKey, () -> orderProcessor.processOrder(boothId, request), OrderResponse.class);
+    return orderProcessor.processOrder(boothId, request);
   }
 
   @Override
@@ -262,7 +262,7 @@ public class OrderServiceImpl implements OrderService {
       return;
     }
 
-    log.info(
+    log.debug(
         "[OrderService] 주문 상태 변경 - 학과명: {}, 주문 식별자: {}, 변경 전: {}, 변경 후: {}",
         departmentName,
         orderId,

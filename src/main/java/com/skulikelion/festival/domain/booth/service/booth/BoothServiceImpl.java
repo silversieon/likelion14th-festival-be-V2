@@ -441,6 +441,12 @@ public class BoothServiceImpl implements BoothService {
     boothRepository.updateBoothStatusToClosed(today, now);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Booth getRequiredBooth(String departmentName) {
+    return validateBoothExists(departmentName);
+  }
+
   private Booth getBooth(Long boothId) {
     return boothRepository
         .findById(boothId)

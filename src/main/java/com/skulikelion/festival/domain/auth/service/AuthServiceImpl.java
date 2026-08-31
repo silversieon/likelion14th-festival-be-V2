@@ -20,6 +20,7 @@ import com.skulikelion.festival.domain.auth.dto.response.TokenResponse;
 import com.skulikelion.festival.domain.auth.exception.AuthErrorCode;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
+import com.skulikelion.festival.global.annotation.TimeTrace;
 import com.skulikelion.festival.global.config.property.AuthProperties;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
@@ -27,7 +28,6 @@ import com.skulikelion.festival.global.infra.redis.RefreshTokenRepository;
 import com.skulikelion.festival.global.security.jwt.JwtProvider;
 import com.skulikelion.festival.global.security.jwt.TokenType;
 import com.skulikelion.festival.global.security.jwt.internal.GeneratedRefreshTokenPayload;
-import com.skulikelion.festival.global.util.timetrace.annotation.TimeTrace;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

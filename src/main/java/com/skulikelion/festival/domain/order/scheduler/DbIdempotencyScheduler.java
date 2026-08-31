@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class DbIdempotencyScheduler {
+public class DbOrderIdempotencyScheduler {
 
   private final DbIdempotencyKeyManager idempotencyKeyManager;
 

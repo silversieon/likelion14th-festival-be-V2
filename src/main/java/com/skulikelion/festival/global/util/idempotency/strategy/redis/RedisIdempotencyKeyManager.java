@@ -1,50 +1,31 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency.redis;
+package com.skulikelion.festival.global.util.idempotency.strategy.redis;
 
 import java.time.Duration;
-import java.util.function.Supplier;
 
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.entity.IdempotencyStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
-@Service("redisOrderIdempotencyService")
+@Component
 @RequiredArgsConstructor
-public class RedisOrderIdempotencyService implements OrderIdempotencyService {
+public class RedisIdempotencyKeyManager {
 
   private final RedisTemplate<String, String> redisTemplate;
   private final ObjectMapper objectMapper;
   private static final String IDEMPOTENCY_PREFIX = "IDEMPOTENCY:";
 
-  @Override
-  public <T> T executeIdempotent(
-      String idempotencyKey, Supplier<T> processor, Class<T> responseType) {
-
-    if (isNewRequest(idempotencyKey)) {
-      try {
-        T response = processor.get();
-        saveResponse(idempotencyKey, response);
-        return response;
-      } catch (Exception e) {
-        deleteKey(idempotencyKey);
-        throw e;
-      }
-    }
-    return getCachedResponse(idempotencyKey, responseType);
-  }
-
-  private boolean isNewRequest(String idempotencyKey) {
+  public boolean tryAcquire(String idempotencyKey) {
     boolean isNew =
         Boolean.TRUE.equals(
             redisTemplate
@@ -59,7 +40,7 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
     return isNew;
   }
 
-  private <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
+  public <T> T getCachedResponse(String idempotencyKey, Class<T> responseType) {
     String cached = redisTemplate.opsForValue().get(IDEMPOTENCY_PREFIX + idempotencyKey);
     if (IdempotencyStatus.PROCESSING.name().equals(cached)) {
       throw new CustomException(OrderErrorCode.ORDER_ALREADY_PROCESSING);
@@ -71,7 +52,7 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
     return objectMapper.readValue(cached, responseType);
   }
 
-  private void saveResponse(String idempotencyKey, Object response) {
+  public void saveResponse(String idempotencyKey, Object response) {
     redisTemplate
         .opsForValue()
         .set(
@@ -81,7 +62,17 @@ public class RedisOrderIdempotencyService implements OrderIdempotencyService {
     log.debug("[OrderIdempotencyService] 응답 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
   }
 
-  private void deleteKey(String idempotencyKey) {
+  public void saveResponseIfAbsent(String idempotencyKey, Object response) {
+    redisTemplate
+        .opsForValue()
+        .setIfAbsent(
+            IDEMPOTENCY_PREFIX + idempotencyKey,
+            objectMapper.writeValueAsString(response),
+            Duration.ofMinutes(10));
+    log.debug("[OrderIdempotencyService] DB 저장 내용 캐싱 완료 - idempotencyKey: {}", idempotencyKey);
+  }
+
+  public void deleteKey(String idempotencyKey) {
     redisTemplate.delete(IDEMPOTENCY_PREFIX + idempotencyKey);
     log.debug(
         "[OrderIdempotencyService] idempotencyKey 삭제 완료 - idempotencyKey: {}", idempotencyKey);

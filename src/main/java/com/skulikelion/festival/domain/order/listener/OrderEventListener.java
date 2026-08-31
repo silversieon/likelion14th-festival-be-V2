@@ -14,9 +14,9 @@ import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
 import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.domain.order.service.sse.OrderSseNotifier;
+import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
 
 import lombok.RequiredArgsConstructor;
 

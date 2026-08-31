@@ -14,7 +14,6 @@ import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.order.dto.event.DismissOrderIdEvent;
 import com.skulikelion.festival.domain.order.dto.event.OrderCountNotification;
 import com.skulikelion.festival.domain.order.dto.response.*;
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
 import com.skulikelion.festival.domain.order.service.sse.store.LocalOrderSseEmitterStore;
 import com.skulikelion.festival.global.exception.CustomException;

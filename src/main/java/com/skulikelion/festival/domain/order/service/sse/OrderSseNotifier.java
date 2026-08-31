@@ -5,7 +5,6 @@ package com.skulikelion.festival.domain.order.service.sse;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.order.dto.response.*;
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
 
 /**

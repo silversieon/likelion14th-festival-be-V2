@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.enums;
+package com.skulikelion.festival.domain.order.service.sse;
 
 import java.util.Optional;
 

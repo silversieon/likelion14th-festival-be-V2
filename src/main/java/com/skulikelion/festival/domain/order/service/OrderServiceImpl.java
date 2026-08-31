@@ -45,12 +45,13 @@ import com.skulikelion.festival.domain.order.mapper.OrderMapper;
 import com.skulikelion.festival.domain.order.repository.OrderItemRepository;
 import com.skulikelion.festival.domain.order.repository.OrderItemUnitRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
-import com.skulikelion.festival.domain.order.service.idempotency.OrderIdempotencyService;
 import com.skulikelion.festival.domain.order.service.processor.OrderProcessor;
 import com.skulikelion.festival.global.common.pagenation.CursorPage;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,14 +69,13 @@ public class OrderServiceImpl implements OrderService {
   private final OrderEventMapper orderEventMapper;
   private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
-  private final OrderIdempotencyService orderIdempotencyService;
   private final OrderProcessor orderProcessor;
 
   @Override
+  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyStrategy.FALLBACK)
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
-    return orderIdempotencyService.executeIdempotent(
-        idempotencyKey, () -> orderProcessor.processOrder(boothId, request), OrderResponse.class);
+    return orderProcessor.processOrder(boothId, request);
   }
 
   @Override

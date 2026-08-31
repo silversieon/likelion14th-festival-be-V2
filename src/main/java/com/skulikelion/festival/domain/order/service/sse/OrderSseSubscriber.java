@@ -5,8 +5,6 @@ package com.skulikelion.festival.domain.order.service.sse;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
-
 public interface OrderSseSubscriber {
 
   /**

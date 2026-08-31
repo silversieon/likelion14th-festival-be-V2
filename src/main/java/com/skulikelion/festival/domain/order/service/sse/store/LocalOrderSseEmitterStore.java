@@ -12,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
+import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
 
 @Component
 public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, OrderSseEmitterFinder {

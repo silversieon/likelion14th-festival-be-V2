@@ -5,7 +5,6 @@ package com.skulikelion.festival.domain.order.service.sse;
 
 import java.io.IOException;
 
-import com.skulikelion.festival.domain.order.service.sse.store.OrderSseEmitterRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -14,9 +13,8 @@ import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.service.ManagerService;
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
-import com.skulikelion.festival.domain.order.service.sse.store.LocalOrderSseEmitterStore;
+import com.skulikelion.festival.domain.order.service.sse.store.OrderSseEmitterRegistry;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -44,23 +42,23 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
         () -> {
           log.debug(
               "[OrderSseService] SSE 연결 종료 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
-            registry.remove(boothId, subscribeType, emitter);
+          registry.remove(boothId, subscribeType, emitter);
         });
     emitter.onTimeout(
         () -> {
           log.debug(
               "[OrderSseService] SSE 타임아웃 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
-            registry.remove(boothId, subscribeType, emitter);
+          registry.remove(boothId, subscribeType, emitter);
           emitter.complete();
         });
     emitter.onError(
         e -> {
           log.warn("[OrderSseService] SSE 에러 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
-            registry.remove(boothId, subscribeType, emitter);
+          registry.remove(boothId, subscribeType, emitter);
           emitter.complete();
         });
 
-      registry.register(boothId, subscribeType, emitter);
+    registry.register(boothId, subscribeType, emitter);
 
     try {
       emitter.send(SseEmitter.event().name("connect").data("connected order subscribe"));
@@ -70,7 +68,7 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
           "[OrderSseService] SSE 초기 연결 이벤트 전송 실패 - 학과명: {}, 구독 타입: {}",
           departmentName,
           subscribeType);
-        registry.remove(boothId, subscribeType, emitter);
+      registry.remove(boothId, subscribeType, emitter);
     }
 
     return emitter;

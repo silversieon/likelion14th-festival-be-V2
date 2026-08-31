@@ -3,7 +3,7 @@
  */
 package com.skulikelion.festival.global.util.idempotency;
 
-public enum IdempotencyStrategy {
+public enum IdempotencyType {
   DB,
   REDIS,
   WRITETHROUGH,

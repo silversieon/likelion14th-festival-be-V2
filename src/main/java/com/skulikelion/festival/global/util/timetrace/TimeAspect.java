@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.timetrace.aspect;
+package com.skulikelion.festival.global.util.timetrace;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

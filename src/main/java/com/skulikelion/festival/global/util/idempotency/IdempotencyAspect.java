@@ -3,6 +3,7 @@
  */
 package com.skulikelion.festival.global.util.idempotency.aspect;
 
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategyFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -12,12 +13,12 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
 import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.fallback.FallbackIdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.fallback.FallbackIdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyStrategy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class IdempotencyAspect {
 
-  private final DbIdempotencyInterceptor dbIdempotencyInterceptor;
-  private final RedisIdempotencyInterceptor redisIdempotencyInterceptor;
-  private final WriteThroughIdempotencyInterceptor writeThroughIdempotencyInterceptor;
-  private final FallbackIdempotencyInterceptor fallbackIdempotencyInterceptor;
+  private final IdempotencyStrategyFactory strategyFactory;
 
   @Around("@annotation(idempotent)")
   public Object doIdempotency(ProceedingJoinPoint joinPoint, Idempotent idempotent) {
@@ -45,14 +43,9 @@ public class IdempotencyAspect {
 
     Class<?> returnType = signature.getReturnType();
 
-    IdempotencyInterceptor interceptor =
-        switch (idempotent.strategy()) {
-          case DB -> dbIdempotencyInterceptor;
-          case REDIS -> redisIdempotencyInterceptor;
-          case WRITETHROUGH -> writeThroughIdempotencyInterceptor;
-          case FALLBACK -> fallbackIdempotencyInterceptor;
-        };
-    return interceptor.executeIdempotent(
+    IdempotencyStrategy strategy = strategyFactory.getStrategy(idempotent.strategy());
+
+    return strategy.executeIdempotent(
         idempotencyKey,
         () -> {
           try {

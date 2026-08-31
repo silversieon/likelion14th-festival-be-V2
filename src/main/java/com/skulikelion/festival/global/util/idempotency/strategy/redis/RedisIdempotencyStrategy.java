@@ -7,13 +7,14 @@ import java.util.function.Supplier;
 
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class RedisIdempotencyInterceptor implements IdempotencyInterceptor {
+public class RedisIdempotencyStrategy implements IdempotencyStrategy {
 
   private final RedisIdempotencyKeyManager idempotencyKeyManager;
 
@@ -31,5 +32,10 @@ public class RedisIdempotencyInterceptor implements IdempotencyInterceptor {
       }
     }
     return idempotencyKeyManager.getCachedResponse(idempotencyKey, responseType);
+  }
+
+  @Override
+  public IdempotencyType getType() {
+    return IdempotencyType.REDIS;
   }
 }

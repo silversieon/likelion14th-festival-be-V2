@@ -22,11 +22,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
-import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyStrategy;
 
 public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
-  @Autowired RedisIdempotencyInterceptor interceptor;
+  @Autowired RedisIdempotencyStrategy strategy;
 
   @Autowired RedisTemplate<String, String> redisTemplate;
 
@@ -51,7 +51,7 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
           return dummyResponse();
         };
     // when
-    interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    strategy.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -71,8 +71,8 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
         };
 
     // when
-    OrderResponse first = interceptor.executeIdempotent(key, processor, OrderResponse.class);
-    OrderResponse second = interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse first = strategy.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse second = strategy.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -105,7 +105,7 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
           () -> {
             try {
               startLatch.await();
-              interceptor.executeIdempotent(key, supplier, OrderResponse.class);
+              strategy.executeIdempotent(key, supplier, OrderResponse.class);
               successCount.incrementAndGet();
             } catch (Exception e) {
               blockedCount.incrementAndGet();

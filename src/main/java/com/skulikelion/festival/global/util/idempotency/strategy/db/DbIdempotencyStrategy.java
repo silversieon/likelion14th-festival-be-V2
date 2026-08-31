@@ -7,13 +7,14 @@ import java.util.function.Supplier;
 
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class DbIdempotencyInterceptor implements IdempotencyInterceptor {
+public class DbIdempotencyStrategy implements IdempotencyStrategy {
 
   private final DbIdempotencyKeyManager idempotencyKeyManager;
   private final DbIdempotencyExecutor idempotencyExecutor;
@@ -32,5 +33,10 @@ public class DbIdempotencyInterceptor implements IdempotencyInterceptor {
       idempotencyKeyManager.deleteKey(idempotencyKey);
       throw e;
     }
+  }
+
+  @Override
+  public IdempotencyType getType() {
+    return IdempotencyType.DB;
   }
 }

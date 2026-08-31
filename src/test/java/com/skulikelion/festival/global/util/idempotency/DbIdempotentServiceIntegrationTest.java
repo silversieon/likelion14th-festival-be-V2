@@ -21,12 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyStrategy;
 import com.skulikelion.festival.global.util.idempotency.strategy.db.repository.IdempotencyRepository;
 
 public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
-  @Autowired DbIdempotencyInterceptor interceptor;
+  @Autowired DbIdempotencyStrategy strategy;
 
   @Autowired OrderRepository orderRepository;
 
@@ -52,7 +52,7 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
         };
 
     // when
-    interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    strategy.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -72,8 +72,8 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
         };
 
     // when
-    OrderResponse first = interceptor.executeIdempotent(key, processor, OrderResponse.class);
-    OrderResponse second = interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse first = strategy.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse second = strategy.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -106,7 +106,7 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
           () -> {
             try {
               startLatch.await(); // 모든 스레드가 여기서 대기
-              interceptor.executeIdempotent(key, processor, OrderResponse.class);
+              strategy.executeIdempotent(key, processor, OrderResponse.class);
               successCount.incrementAndGet();
             } catch (Exception e) {
               blockedCount.incrementAndGet(); // ALREADY_PROCESSING 등 중복 예외

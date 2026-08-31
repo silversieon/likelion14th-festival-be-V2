@@ -50,8 +50,8 @@ import com.skulikelion.festival.global.common.pagenation.CursorPage;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
 import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +72,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderProcessor orderProcessor;
 
   @Override
-  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyStrategy.FALLBACK)
+  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyType.FALLBACK)
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
     return orderProcessor.processOrder(boothId, request);

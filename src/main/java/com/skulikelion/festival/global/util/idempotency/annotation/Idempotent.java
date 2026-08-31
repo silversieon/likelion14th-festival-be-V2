@@ -8,7 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 
 /** */
 @Target(ElementType.METHOD)
@@ -17,5 +17,5 @@ public @interface Idempotent {
 
   String idempotencyKey();
 
-  IdempotencyStrategy strategy() default IdempotencyStrategy.DB;
+  IdempotencyType strategy() default IdempotencyType.DB;
 }

@@ -8,9 +8,10 @@ import java.util.function.Supplier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyStrategy;
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -21,16 +22,16 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class FallbackIdempotencyInterceptor implements IdempotencyInterceptor {
+public class FallbackIdempotencyStrategy implements IdempotencyStrategy {
 
-  private final WriteThroughIdempotencyInterceptor writeThrough;
-  private final DbIdempotencyInterceptor db;
+  private final WriteThroughIdempotencyStrategy writeThrough;
+  private final DbIdempotencyStrategy db;
   private final CircuitBreaker circuitBreaker;
   private final Retry retry;
 
-  public FallbackIdempotencyInterceptor(
-      WriteThroughIdempotencyInterceptor writeThrough,
-      DbIdempotencyInterceptor db,
+  public FallbackIdempotencyStrategy(
+      WriteThroughIdempotencyStrategy writeThrough,
+      DbIdempotencyStrategy db,
       CircuitBreakerRegistry cbRegistry,
       RetryRegistry retryRegistry) {
     this.db = db;
@@ -55,5 +56,10 @@ public class FallbackIdempotencyInterceptor implements IdempotencyInterceptor {
           "Redis 처리 실패({}), DB로 fallback. key={}", e.getClass().getSimpleName(), idempotencyKey, e);
       return db.executeIdempotent(idempotencyKey, processor, responseType);
     }
+  }
+
+  @Override
+  public IdempotencyType getType() {
+    return IdempotencyType.FALLBACK;
   }
 }

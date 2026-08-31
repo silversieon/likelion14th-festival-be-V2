@@ -7,7 +7,8 @@ import java.util.function.Supplier;
 
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyExecutor;
 import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyKeyManager;
 import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyKeyManager;
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class WriteThroughIdempotencyInterceptor implements IdempotencyInterceptor {
+public class WriteThroughIdempotencyStrategy implements IdempotencyStrategy {
 
   private final DbIdempotencyKeyManager dbIdempotencyKeyManager;
   private final RedisIdempotencyKeyManager redisIdempotencyKeyManager;
@@ -43,5 +44,10 @@ public class WriteThroughIdempotencyInterceptor implements IdempotencyIntercepto
       redisIdempotencyKeyManager.deleteKey(idempotencyKey);
       throw e;
     }
+  }
+
+  @Override
+  public IdempotencyType getType() {
+    return IdempotencyType.WRITETHROUGH;
   }
 }

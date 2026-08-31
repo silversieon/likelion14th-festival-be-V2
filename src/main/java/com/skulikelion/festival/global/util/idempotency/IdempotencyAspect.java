@@ -1,9 +1,8 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.idempotency.aspect;
+package com.skulikelion.festival.global.util.idempotency;
 
-import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategyFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -13,12 +12,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyStrategy;
 import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyStrategy;
-import com.skulikelion.festival.global.util.idempotency.strategy.fallback.FallbackIdempotencyStrategy;
-import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyStrategy;
-import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
+import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategyFactory;
 
 import lombok.RequiredArgsConstructor;
 

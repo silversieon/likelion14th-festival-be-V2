@@ -89,4 +89,17 @@ public class ManagerServiceImpl implements ManagerService {
         "[ManagerService] 관리자 본인 정보 조회 발생 - 관리자 학과명: {}", manager.getDepartment().getDescription());
     return managerMapper.toManagerResponse(manager);
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Manager getRequiredManager(String departmentName) {
+    Department department = Department.valueOf(departmentName);
+    return managerRepository
+        .findByDepartment(department)
+        .orElseThrow(
+            () -> {
+              log.warn("[OrderSseService] 해당 학과의 매니저를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
+            });
+  }
 }

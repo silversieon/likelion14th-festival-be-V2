@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerPasswordRequest;
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
+import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 
 /**
@@ -53,8 +54,16 @@ public interface ManagerService {
   /**
    * [ 관리자 본인 정보 조회 메서드 ]
    *
-   * @param username 사용자 아이디
+   * @param departmentName 사용자 아이디
    * @return
    */
   ManagerResponse getMyInfo(String departmentName);
+
+  /**
+   * [ 관리자 조회 메서드 ] 학과명으로 관리자 조회
+   *
+   * @param departmentName 학과명
+   * @return 관리자 엔티티
+   */
+  Manager getRequiredManager(String departmentName);
 }

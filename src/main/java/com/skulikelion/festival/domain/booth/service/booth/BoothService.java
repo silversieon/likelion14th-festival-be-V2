@@ -17,6 +17,7 @@ import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListRespons
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothOperationResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothResponse;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothThumbnailResponse;
+import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.global.enums.Language;
@@ -150,4 +151,12 @@ public interface BoothService {
 
   /** [ 마감 시간인 부스 상태 변경 메서드 ] 영업 종료로 변경 */
   void updateBoothStatusToClose(LocalDate today, LocalTime now);
+
+  /**
+   * [ 부스 정보 조회 메서드 ] 필요한 학과명으로 부스 조회
+   *
+   * @param departmentName 학과명
+   * @return 부스 엔티티
+   */
+  Booth getRequiredBooth(String departmentName);
 }

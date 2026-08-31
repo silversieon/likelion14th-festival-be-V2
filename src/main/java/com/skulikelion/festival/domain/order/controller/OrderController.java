@@ -9,13 +9,11 @@ import java.time.LocalDate;
 import jakarta.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
@@ -31,9 +29,7 @@ import com.skulikelion.festival.domain.order.dto.response.SalesResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
 import com.skulikelion.festival.domain.order.service.OrderService;
-import com.skulikelion.festival.domain.order.service.sse.OrderSseService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.common.pagenation.CursorCodec;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
@@ -57,28 +53,8 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Order", description = "사용자 주문 관련 기능을 제공하는 API")
 public class OrderController {
 
-  private final OrderSseService orderSseService;
   private final OrderService orderService;
   private final CursorCodec cursorCodec;
-
-  @Operation(
-      summary = "[ 부스 관리자 | 토큰 O | 주문 관리 탭별 구독 ]",
-      description =
-          """
-                  **Parameters**  \n
-                  sseSubscribeType: 구독 타입(관리 탭 명칭)
-                  \n
-                  **Returns** \n
-                  EVENT NAME: connect \n
-                  EVENT DATA: connected order subscribe
-                  """)
-  @PreAuthorize("hasRole('BOOTH_MANAGER')")
-  @GetMapping(value = "/orders/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public SseEmitter subscribeOrders(
-      @AuthenticationPrincipal String departmentName,
-      @RequestParam("sseSubscribeType") SseSubscribeType sseSubscribeType) {
-    return orderSseService.subscribeOrder(departmentName, sseSubscribeType);
-  }
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | 주문 생성 요청 ]",

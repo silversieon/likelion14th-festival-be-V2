@@ -3,7 +3,7 @@
  */
 package com.skulikelion.festival.domain.order.entity.enums;
 
-import com.skulikelion.festival.domain.order.enums.SseSubscribeType;
+import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;

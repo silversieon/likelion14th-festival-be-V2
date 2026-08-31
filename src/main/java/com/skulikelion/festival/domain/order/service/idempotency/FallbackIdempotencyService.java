@@ -1,16 +1,16 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.idempotency.strategy.fallback;
+package com.skulikelion.festival.domain.order.service.idempotency;
 
 import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import com.skulikelion.festival.global.util.idempotency.IdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyInterceptor;
-import com.skulikelion.festival.global.util.idempotency.strategy.writethrough.WriteThroughIdempotencyInterceptor;
+import com.skulikelion.festival.domain.order.service.idempotency.db.DbIdempotencyService;
+import com.skulikelion.festival.domain.order.service.idempotency.writethrough.WriteThroughIdempotencyService;
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -20,17 +20,17 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
-public class FallbackIdempotencyInterceptor implements IdempotencyInterceptor {
+@Service("fallbackIdempotencyService")
+public class FallbackIdempotencyService implements IdempotencyService {
 
-  private final WriteThroughIdempotencyInterceptor writeThrough;
-  private final DbIdempotencyInterceptor db;
+  private final DbIdempotencyService db;
+  private final WriteThroughIdempotencyService writeThrough;
   private final CircuitBreaker circuitBreaker;
   private final Retry retry;
 
-  public FallbackIdempotencyInterceptor(
-      WriteThroughIdempotencyInterceptor writeThrough,
-      DbIdempotencyInterceptor db,
+  public FallbackIdempotencyService(
+      @Qualifier("writeThroughIdempotencyService") WriteThroughIdempotencyService writeThrough,
+      @Qualifier("dbIdempotencyService") DbIdempotencyService db,
       CircuitBreakerRegistry cbRegistry,
       RetryRegistry retryRegistry) {
     this.db = db;

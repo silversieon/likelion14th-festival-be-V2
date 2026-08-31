@@ -1,16 +1,16 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.idempotency.strategy.redis;
+package com.skulikelion.festival.domain.order.service.idempotency.redis;
 
 import java.time.Duration;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
 import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.entity.IdempotencyStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

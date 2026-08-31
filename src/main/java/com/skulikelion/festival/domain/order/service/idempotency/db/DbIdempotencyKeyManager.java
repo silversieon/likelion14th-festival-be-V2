@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.idempotency.strategy.db;
+package com.skulikelion.festival.domain.order.service.idempotency.db;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -10,12 +10,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.skulikelion.festival.domain.order.entity.Idempotency;
+import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
+import com.skulikelion.festival.domain.order.repository.IdempotencyRepository;
 import com.skulikelion.festival.global.exception.CustomException;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.converter.DbKeyConverter;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.entity.Idempotency;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.entity.IdempotencyStatus;
-import com.skulikelion.festival.global.util.idempotency.strategy.db.repository.IdempotencyRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,44 +29,41 @@ public class DbIdempotencyKeyManager {
   private final DbIdempotencyInserter inserter;
   private final ObjectMapper objectMapper;
 
-  public boolean tryAcquire(String idempotencyKey) {
+  public boolean tryAcquire(UUID key) {
     try {
-      inserter.insertProcessing(idempotencyKey);
+      inserter.insertProcessing(key);
       return true;
     } catch (DataIntegrityViolationException e) {
-      log.debug("[OrderIdempotency] 중복 요청 감지 - idempotencyKey: {}", idempotencyKey);
+      log.warn("[OrderIdempotency] 중복 요청 감지 - idempotencyKey: {}", key);
       return false;
     }
   }
 
   @Transactional
-  public <T> void saveDoneResponse(String idempotencyKey, T response) {
-    UUID keyAsUuid = DbKeyConverter.convertKeyToDbKey(idempotencyKey);
+  public void saveDoneResponse(UUID key, String response) {
     Idempotency entity =
         repository
-            .findById(keyAsUuid)
+            .findById(key)
             .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_EXPIRED));
-    entity.markDone(objectMapper.writeValueAsString(response));
+    entity.markDone(response);
   }
 
   @Transactional
-  public void deleteKey(String idempotencyKey) {
-    UUID keyAsUuid = DbKeyConverter.convertKeyToDbKey(idempotencyKey);
-    repository.deleteById(keyAsUuid);
+  public void deleteKey(UUID key) {
+    repository.deleteById(key);
   }
 
   @Transactional
   public void deleteExpiredIdempotencyKeys(LocalDateTime threshold) {
     int rowCount = repository.deleteByCreatedAtBefore(threshold);
-    log.debug("[OrderIdempotency] 오래된 멱등성 키 제거 - count: {}", rowCount);
+    log.info("[OrderIdempotency] 오래된 멱등성 키 제거 - count: {}", rowCount);
   }
 
   @Transactional(readOnly = true)
-  public <T> T handleExisting(String idempotencyKey, Class<T> responseType) {
-    UUID keyAsUuid = DbKeyConverter.convertKeyToDbKey(idempotencyKey);
+  public <T> T handleExisting(UUID key, Class<T> responseType) {
     Idempotency found =
         repository
-            .findById(keyAsUuid)
+            .findById(key)
             .orElseThrow(() -> new CustomException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_EXPIRED));
 
     if (found.getStatus() == IdempotencyStatus.PROCESSING) {

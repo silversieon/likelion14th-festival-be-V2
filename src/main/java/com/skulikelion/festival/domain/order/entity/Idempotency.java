@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.global.util.idempotency.strategy.db.entity;
+package com.skulikelion.festival.domain.order.entity;
 
 import java.util.UUID;
 
@@ -12,6 +12,7 @@ import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Persistable;
 
+import com.skulikelion.festival.domain.order.entity.enums.IdempotencyStatus;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
 
 import lombok.*;

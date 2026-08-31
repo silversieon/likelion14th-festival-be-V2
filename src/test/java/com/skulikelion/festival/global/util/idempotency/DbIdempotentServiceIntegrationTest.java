@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency;
+package com.skulikelion.festival.global.util.idempotency;
 
 import static com.skulikelion.festival.domain.order.service.OrderFixture.dummyResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -19,14 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
-import com.skulikelion.festival.domain.order.repository.IdempotencyRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
-import com.skulikelion.festival.domain.order.service.idempotency.db.DbIdempotencyService;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.DbIdempotencyInterceptor;
+import com.skulikelion.festival.global.util.idempotency.strategy.db.repository.IdempotencyRepository;
 
 public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
-  @Autowired DbIdempotencyService idempotencyService;
+  @Autowired DbIdempotencyInterceptor interceptor;
 
   @Autowired OrderRepository orderRepository;
 
@@ -52,7 +52,7 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
         };
 
     // when
-    idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
+    interceptor.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -72,9 +72,8 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
         };
 
     // when
-    OrderResponse first = idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
-    OrderResponse second =
-        idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse first = interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse second = interceptor.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -107,7 +106,7 @@ public class DbIdempotentServiceIntegrationTest extends IntegrationTestSupport {
           () -> {
             try {
               startLatch.await(); // 모든 스레드가 여기서 대기
-              idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
+              interceptor.executeIdempotent(key, processor, OrderResponse.class);
               successCount.incrementAndGet();
             } catch (Exception e) {
               blockedCount.incrementAndGet(); // ALREADY_PROCESSING 등 중복 예외

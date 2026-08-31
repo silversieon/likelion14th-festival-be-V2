@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.idempotency;
+package com.skulikelion.festival.global.util.idempotency;
 
 import static com.skulikelion.festival.domain.order.service.OrderFixture.dummyResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -19,16 +19,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.test.context.TestPropertySource;
 
 import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
-import com.skulikelion.festival.domain.order.service.idempotency.redis.RedisIdempotencyService;
 import com.skulikelion.festival.domain.support.IntegrationTestSupport;
+import com.skulikelion.festival.global.util.idempotency.strategy.redis.RedisIdempotencyInterceptor;
 
-@TestPropertySource(properties = "order.idempotency.store=redis")
 public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSupport {
 
-  @Autowired RedisIdempotencyService idempotencyService;
+  @Autowired RedisIdempotencyInterceptor interceptor;
 
   @Autowired RedisTemplate<String, String> redisTemplate;
 
@@ -53,7 +51,7 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
           return dummyResponse();
         };
     // when
-    idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
+    interceptor.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -73,9 +71,8 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
         };
 
     // when
-    OrderResponse first = idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
-    OrderResponse second =
-        idempotencyService.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse first = interceptor.executeIdempotent(key, processor, OrderResponse.class);
+    OrderResponse second = interceptor.executeIdempotent(key, processor, OrderResponse.class);
 
     // then
     assertThat(callCount.get()).isEqualTo(1);
@@ -108,7 +105,7 @@ public class RedisIdempotentServiceIntegrationTest extends IntegrationTestSuppor
           () -> {
             try {
               startLatch.await();
-              idempotencyService.executeIdempotent(key, supplier, OrderResponse.class);
+              interceptor.executeIdempotent(key, supplier, OrderResponse.class);
               successCount.incrementAndGet();
             } catch (Exception e) {
               blockedCount.incrementAndGet();

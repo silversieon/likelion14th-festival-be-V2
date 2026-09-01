@@ -1,11 +1,10 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse;
+package com.skulikelion.festival.domain.order.sse.local;
 
 import java.io.IOException;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
@@ -14,14 +13,15 @@ import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.service.ManagerService;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
-import com.skulikelion.festival.domain.order.service.sse.store.OrderSseEmitterRegistry;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
+import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterRegistry;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class LocalOrderSseSubscriber implements OrderSseSubscriber {
 
@@ -30,7 +30,8 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
   private final OrderSseEmitterRegistry registry;
 
   @Override
-  public SseEmitter subscribeOrderStatus(String departmentName, SseSubscribeType subscribeType) {
+  public SseEmitter subscribeOrderStatus(
+      String departmentName, OrderSseSubscribeType subscribeType) {
     Booth booth = boothService.getRequiredBooth(departmentName);
     Manager manager = managerService.getRequiredManager(departmentName);
     validateBoothManagerAuthority(booth, manager);

@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse;
+package com.skulikelion.festival.domain.order.sse.redis;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,7 +12,8 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.order.service.sse.store.LocalOrderSseEmitterStore;
+import com.skulikelion.festival.domain.order.sse.dto.SseEventMessage;
+import com.skulikelion.festival.domain.order.sse.store.LocalOrderSseEmitterStore;
 
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;

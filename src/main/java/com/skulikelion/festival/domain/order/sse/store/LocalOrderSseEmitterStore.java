@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse.store;
+package com.skulikelion.festival.domain.order.sse.store;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,16 +12,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 
 @Component
 public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, OrderSseEmitterFinder {
 
-  private final Map<Long, Map<SseSubscribeType, List<SseEmitter>>> emitters =
+  private final Map<Long, Map<OrderSseSubscribeType, List<SseEmitter>>> emitters =
       new ConcurrentHashMap<>();
 
   @Override
-  public void register(Long boothId, SseSubscribeType subscribeType, SseEmitter emitter) {
+  public void register(Long boothId, OrderSseSubscribeType subscribeType, SseEmitter emitter) {
     emitters
         .computeIfAbsent(boothId, k -> new ConcurrentHashMap<>())
         .computeIfAbsent(subscribeType, k -> new CopyOnWriteArrayList<>())
@@ -29,8 +29,8 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
   }
 
   @Override
-  public void remove(Long boothId, SseSubscribeType subscribeType, SseEmitter emitter) {
-    Map<SseSubscribeType, List<SseEmitter>> subscribeTypeMap = emitters.get(boothId);
+  public void remove(Long boothId, OrderSseSubscribeType subscribeType, SseEmitter emitter) {
+    Map<OrderSseSubscribeType, List<SseEmitter>> subscribeTypeMap = emitters.get(boothId);
     if (subscribeTypeMap == null) return;
 
     List<SseEmitter> emitterList = subscribeTypeMap.get(subscribeType);
@@ -42,15 +42,15 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
   }
 
   @Override
-  public Map<SseSubscribeType, List<SseEmitter>> findByBoothId(Long boothId) {
+  public Map<OrderSseSubscribeType, List<SseEmitter>> findByBoothId(Long boothId) {
     return emitters.getOrDefault(boothId, Collections.emptyMap());
   }
 
   @Override
   public List<SseEmitter> findByBoothIdAndSubscribeType(
-      Long boothId, SseSubscribeType sseSubscribeType) {
+      Long boothId, OrderSseSubscribeType orderSseSubscribeType) {
     return emitters
         .getOrDefault(boothId, Collections.emptyMap())
-        .getOrDefault(sseSubscribeType, Collections.emptyList());
+        .getOrDefault(orderSseSubscribeType, Collections.emptyList());
   }
 }

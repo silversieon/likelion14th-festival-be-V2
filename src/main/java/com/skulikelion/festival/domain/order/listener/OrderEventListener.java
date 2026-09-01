@@ -15,8 +15,8 @@ import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
 import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
 import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.service.OrderService;
-import com.skulikelion.festival.domain.order.service.sse.OrderSseNotifier;
-import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
+import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,7 +42,7 @@ public class OrderEventListener {
         waitingOrderPayload.booth(), waitingOrderPayload.waitingOrderResponse());
     notifier.sendOrderIncrementNotification(
         waitingOrderPayload.booth(),
-        SseSubscribeType.WAITING,
+        OrderSseSubscribeType.WAITING,
         waitingOrderPayload.waitingOrderResponse().getOrderId());
   }
 

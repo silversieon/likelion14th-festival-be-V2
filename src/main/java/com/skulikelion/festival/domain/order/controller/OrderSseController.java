@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.order.service.sse.OrderSseSubscriber;
-import com.skulikelion.festival.domain.order.service.sse.SseSubscribeType;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
+import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class OrderSseController {
       description =
           """
                             **Parameters**  \n
-                            sseSubscribeType: 구독 타입(관리 탭 명칭)
+                            orderSseSubscribeType: 구독 타입(관리 탭 명칭)
                             \n
                             **Returns** \n
                             EVENT NAME: connect \n
@@ -48,7 +48,7 @@ public class OrderSseController {
   @GetMapping(value = "/orders/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribeOrders(
       @AuthenticationPrincipal String departmentName,
-      @RequestParam("sseSubscribeType") SseSubscribeType sseSubscribeType) {
-    return subscriber.subscribeOrderStatus(departmentName, sseSubscribeType);
+      @RequestParam("orderSseSubscribeType") OrderSseSubscribeType orderSseSubscribeType) {
+    return subscriber.subscribeOrderStatus(departmentName, orderSseSubscribeType);
   }
 }

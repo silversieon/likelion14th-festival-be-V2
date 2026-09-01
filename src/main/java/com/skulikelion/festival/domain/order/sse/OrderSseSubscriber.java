@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse;
+package com.skulikelion.festival.domain.order.sse;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -14,5 +14,5 @@ public interface OrderSseSubscriber {
    * @param subscribeType 구독 타입(주문 상태)
    * @return SseEmitter 객체
    */
-  SseEmitter subscribeOrderStatus(String departmentName, SseSubscribeType subscribeType);
+  SseEmitter subscribeOrderStatus(String departmentName, OrderSseSubscribeType subscribeType);
 }

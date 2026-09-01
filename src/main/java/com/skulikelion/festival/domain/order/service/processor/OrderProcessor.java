@@ -120,6 +120,7 @@ public class OrderProcessor {
 
     WaitingOrderPayload waitingOrderPayload =
         orderEventMapper.toWaitingOrderPayload(booth, waitingOrderResponse);
+
     eventPublisher.publishEvent(waitingOrderPayload);
 
     log.info(

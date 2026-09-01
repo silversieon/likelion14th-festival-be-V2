@@ -1,8 +1,10 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse;
+package com.skulikelion.festival.domain.order.sse;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
@@ -14,12 +16,16 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 @Schema(description = "SSE 구독 타입")
-public enum SseSubscribeType {
+public enum OrderSseSubscribeType {
   WAITING,
   COOKING,
   COMPLETED,
   CANCELED,
   PRODUCT;
+
+  public static List<OrderSseSubscribeType> exclude(OrderSseSubscribeType excluded) {
+    return Arrays.stream(values()).filter(type -> type != excluded).toList();
+  }
 
   public Optional<OrderStatus> toOrderStatus() {
     return switch (this) {

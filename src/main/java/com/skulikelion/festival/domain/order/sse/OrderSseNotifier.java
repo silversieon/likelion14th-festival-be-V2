@@ -1,17 +1,16 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.service.sse;
+package com.skulikelion.festival.domain.order.sse;
 
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.order.dto.response.*;
-import com.skulikelion.festival.domain.order.service.OrderService;
 
 /**
  * 멋쟁이사자처럼 서경대학교 축제 페이지 주문 관련 SSE 전송 알림 클래스입니다.
  *
  * @since 2026.04.29
- * @see OrderService
+ * @see com.skulikelion.festival.domain.order.listener.OrderEventListener
  * @author Keum Si Eon
  * @version latest: 1
  */
@@ -25,7 +24,7 @@ public interface OrderSseNotifier {
    * @param orderId 이벤트가 발생된 주문 식별자
    */
   void sendOrderIncrementNotification(
-      Booth booth, SseSubscribeType currentSubscribeType, Long orderId);
+      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId);
 
   /**
    * [ 주문 알림 숫자 감소 전송 메서드 ] 대기 -> 조리, 조리 -> 완료 등의 주문 이벤트 시에 다른 탭의 관리자들이 -1 알림을 받을 수 있도록 전송
@@ -35,7 +34,7 @@ public interface OrderSseNotifier {
    * @param orderId 이벤트가 발생된 주문 식별자
    */
   void sendOrderDecrementNotification(
-      Booth booth, SseSubscribeType currentSubscribeType, Long orderId);
+      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId);
 
   /**
    * [ 주문 탭 이탈 알림 전송 메서드 ] 주문 상태 변경으로 인해 동일 구독 타입의 구독자에게 해당 주문이 현재 탭에서 제외됨을 알림
@@ -45,7 +44,7 @@ public interface OrderSseNotifier {
    * @param orderId 탭에서 제외될 주문 ID
    */
   void sendOrderDismissNotification(
-      Booth booth, SseSubscribeType currentSubscribeType, Long orderId);
+      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId);
 
   /**
    * [ 대기 중 주문 전송 메서드 ] (주문 생성 요청) 대기 중 주문 내역을 전송

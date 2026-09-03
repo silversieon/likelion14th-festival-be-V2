@@ -1,52 +1,14 @@
 # 로컬 개발 환경에서 테스트 목적으로 사용되는 Compose 파일
 services:
-  festival-app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile-local
-    container_name: festival-app
+  nginx:
+    image: nginx:latest
+    container_name: nginx
     ports:
-      - "8080:8080"
-    environment:
-      TZ: Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/festival2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 1234
-
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_PASSWORD: 1234
-
-      JAVA_OPTS: >-
-        -Xms1g
-        -Xmx2g
-        -XX:+UseG1GC
-        -XX:MaxGCPauseMillis=200
-        -Dfile.encoding=UTF-8
-        -Duser.timezone=Asia/Seoul
-
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
-
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-
+      - "8888:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
     networks:
       - festival-network
-    restart: no
 
   mysql:
     image: mysql:8.0
@@ -133,8 +95,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=7d'
-    depends_on:
-      - festival-app
     networks:
       - festival-network
     restart: unless-stopped

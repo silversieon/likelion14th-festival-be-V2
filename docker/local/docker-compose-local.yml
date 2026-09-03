@@ -121,7 +121,7 @@ services:
 networks:
   festival-network:
     driver: bridge
-    external: false
+    external: true
 
 volumes:
   mysql-data:

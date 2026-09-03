@@ -49,4 +49,5 @@ services:
 
 networks:
   festival-network:
+    driver: bridge
     external: true

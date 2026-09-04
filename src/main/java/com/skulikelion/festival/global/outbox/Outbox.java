@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.outbox;
+package com.skulikelion.festival.global.outbox;
 
 import java.time.LocalDateTime;
 

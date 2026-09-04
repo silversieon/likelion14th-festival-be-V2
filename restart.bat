@@ -10,6 +10,9 @@ REM   restart.bat 02
 REM   restart.bat 03
 REM ============================================================
 
+echo "Building..."
+./gradlew build -x test
+
 set TARGET=%1
 
 if "%TARGET%"=="" (
@@ -44,7 +47,7 @@ REM ============================================================
 echo [1/6] Removing %APP% from traffic...
 
 (
-    echo upstream festival_app {
+    echo upstream festival-app {
     if "%TARGET%"=="01" echo     server festival-app-01:8080 down;
     if "%TARGET%"=="02" echo     server festival-app-02:8080 down;
     if "%TARGET%"=="03" echo     server festival-app-03:8080 down;
@@ -157,7 +160,7 @@ echo.
 echo [4/6] Starting Canary traffic...
 
 (
-    echo upstream festival_app {
+    echo upstream festival-app {
     if "%TARGET%"=="01" echo     server festival-app-01:8080 weight=2;
     if "%TARGET%"=="02" echo     server festival-app-02:8080 weight=2;
     if "%TARGET%"=="03" echo     server festival-app-03:8080 weight=2;
@@ -219,7 +222,7 @@ echo.
 echo [6/6] Restoring normal traffic...
 
 (
-    echo upstream festival_app {
+    echo upstream festival-app {
     echo     server festival-app-01:8080;
     echo     server festival-app-02:8080;
     echo     server festival-app-03:8080;

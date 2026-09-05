@@ -3,11 +3,10 @@
  */
 package com.skulikelion.festival.domain.order.dto.payload;
 
-import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemUnitStatusResponse;
 
 import lombok.Builder;
 
 @Builder
 public record OrderItemUnitStatusPayload(
-    Booth booth, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {}
+    Long boothId, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {}

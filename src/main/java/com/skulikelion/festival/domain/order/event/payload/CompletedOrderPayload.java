@@ -3,15 +3,14 @@
  */
 package com.skulikelion.festival.domain.order.dto.payload;
 
-import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
+import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
 
 import lombok.Builder;
 
 @Builder
-public record CookingOrderPayload(
-    Booth booth,
-    CookingOrderResponse cookingOrderResponse,
+public record CompletedOrderPayload(
+    Long boothId,
+    CompletedOrderResponse completedOrderResponse,
     OrderStatus previousStatus,
     OrderStatus currentStatus) {}

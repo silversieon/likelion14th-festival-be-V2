@@ -16,7 +16,6 @@ import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayl
 import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
-import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,20 +28,20 @@ import lombok.RequiredArgsConstructor;
  * @author Keum Si Eon
  * @version latest: 1
  */
-@Component
 @RequiredArgsConstructor
-public class OrderEventListener {
+public class OrderDirectEventListener implements OrderEventListener {
 
   private final OrderSseNotifier notifier;
+
+  // 비동기 실행
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleWaitingOrderEvent(WaitingOrderPayload waitingOrderPayload) {
-    notifier.sendWaitingOrderEvent(
-        waitingOrderPayload.booth(), waitingOrderPayload.waitingOrderResponse());
+    notifier.sendWaitingOrderEvent(waitingOrderPayload);
     notifier.sendOrderIncrementNotification(
-        waitingOrderPayload.booth(),
-        OrderSseSubscribeType.WAITING,
+        waitingOrderPayload.boothId(),
+        waitingOrderPayload.waitingStatus().toSseSubscribeType(),
         waitingOrderPayload.waitingOrderResponse().getOrderId());
   }
 
@@ -50,13 +49,13 @@ public class OrderEventListener {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCookingOrderEvent(CookingOrderPayload cookingOrderPayload) {
     notifier.sendCookingOrderEvent(
-        cookingOrderPayload.booth(), cookingOrderPayload.cookingOrderResponse());
+        cookingOrderPayload);
     notifier.sendOrderIncrementNotification(
-        cookingOrderPayload.booth(),
+        cookingOrderPayload.boothId(),
         cookingOrderPayload.currentStatus().toSseSubscribeType(),
         cookingOrderPayload.cookingOrderResponse().getOrderId());
     notifier.sendOrderDecrementNotification(
-        cookingOrderPayload.booth(),
+        cookingOrderPayload.boothId(),
         cookingOrderPayload.previousStatus().toSseSubscribeType(),
         cookingOrderPayload.cookingOrderResponse().getOrderId());
   }
@@ -64,10 +63,9 @@ public class OrderEventListener {
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCompletedOrderEvent(CompletedOrderPayload completedOrderPayload) {
-    notifier.sendCompletedOrderEvent(
-        completedOrderPayload.booth(), completedOrderPayload.completedOrderResponse());
+    notifier.sendCompletedOrderEvent(completedOrderPayload);
     notifier.sendOrderDecrementNotification(
-        completedOrderPayload.booth(),
+        completedOrderPayload.boothId(),
         completedOrderPayload.previousStatus().toSseSubscribeType(),
         completedOrderPayload.completedOrderResponse().getOrderId());
   }
@@ -75,25 +73,19 @@ public class OrderEventListener {
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCanceledOrderEvent(CanceledOrderPayload canceledOrderPayload) {
-    notifier.sendCanceledOrderEvent(
-        canceledOrderPayload.booth(), canceledOrderPayload.canceledOrderResponse());
+    notifier.sendCanceledOrderEvent(canceledOrderPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleOrderItemUnitStatusEvent(
       OrderItemUnitStatusPayload orderItemUnitStatusPayload) {
-    notifier.sendOrderItemUnitStatusEvent(
-        orderItemUnitStatusPayload.booth(),
-        orderItemUnitStatusPayload.orderItemUnitStatusResponse());
+    notifier.sendOrderItemUnitStatusEvent(orderItemUnitStatusPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleDismissOrderEvent(DismissOrderPayload dismissOrderPayload) {
-    notifier.sendOrderDismissNotification(
-        dismissOrderPayload.booth(),
-        dismissOrderPayload.currentOrderStatus().toSseSubscribeType(),
-        dismissOrderPayload.orderId());
+    notifier.sendOrderDismissNotification(dismissOrderPayload);
   }
 }

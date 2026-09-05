@@ -7,17 +7,15 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.skulikelion.festival.domain.order.entity.enums.OrderCancelReason;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
-@AllArgsConstructor
 @Schema(title = "CanceledOrderResponse: 취소된 주문 응답 DTO")
 public class CanceledOrderResponse {
 
@@ -55,6 +53,32 @@ public class CanceledOrderResponse {
   private List<CanceledOrderItemResponse> orderItems;
 
   @JsonIgnore private LocalDateTime canceledAt;
+
+  @JsonCreator
+  public CanceledOrderResponse(
+      @JsonProperty("orderId") Long orderId,
+      @JsonProperty("tableNumber") Integer tableNumber,
+      @JsonProperty("numOfPeople") Integer numOfPeople,
+      @JsonProperty("customerName") String customerName,
+      @JsonProperty("customerPhoneNumber") String customerPhoneNumber,
+      @JsonProperty("totalOrderPrice") Integer totalOrderPrice,
+      @JsonProperty("orderDate") String orderDate,
+      @JsonProperty("orderTime") String orderTime,
+      @JsonProperty("cancelTime") String cancelTime,
+      @JsonProperty("orderCancelReason") String orderCancelReason,
+      @JsonProperty("orderItems") List<CanceledOrderItemResponse> orderItems) {
+    this.orderId = orderId;
+    this.tableNumber = tableNumber;
+    this.numOfPeople = numOfPeople;
+    this.customerName = customerName;
+    this.customerPhoneNumber = customerPhoneNumber;
+    this.totalOrderPrice = totalOrderPrice;
+    this.orderDate = orderDate;
+    this.orderTime = orderTime;
+    this.cancelTime = cancelTime;
+    this.orderCancelReason = orderCancelReason;
+    this.orderItems = orderItems;
+  }
 
   public CanceledOrderResponse(
       Long orderId,

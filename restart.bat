@@ -11,7 +11,7 @@ REM   restart.bat 03
 REM ============================================================
 
 echo "Building..."
-./gradlew build -x test
+call gradlew.bat build -x test
 
 set TARGET=%1
 
@@ -84,6 +84,8 @@ REM ============================================================
 echo.
 echo [2/6] Rebuilding %APP%...
 
+cd docker/local
+
 docker compose ^
   --compatibility ^
   -f docker-compose-local.yml ^
@@ -110,9 +112,9 @@ echo [3/6] Health checking %APP%...
 
 set PORT=
 
-if "%TARGET%"=="01" set PORT=8081
-if "%TARGET%"=="02" set PORT=8082
-if "%TARGET%"=="03" set PORT=8083
+if "%TARGET%"=="01" set PORT=8080
+if "%TARGET%"=="02" set PORT=8081
+if "%TARGET%"=="03" set PORT=8082
 
 set HEALTH_OK=0
 

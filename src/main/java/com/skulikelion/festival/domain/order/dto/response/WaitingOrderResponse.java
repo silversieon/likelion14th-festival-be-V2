@@ -7,16 +7,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
-@AllArgsConstructor
 @Schema(title = "WaitingOrderResponse: 대기 중인 주문 응답 DTO")
 public class WaitingOrderResponse {
 
@@ -45,6 +43,26 @@ public class WaitingOrderResponse {
   private List<WaitingOrderItemResponse> orderItems;
 
   @JsonIgnore private LocalDateTime createdAt;
+
+  @JsonCreator
+  public WaitingOrderResponse(
+      @JsonProperty("orderId") Long orderId,
+      @JsonProperty("tableNumber") Integer tableNumber,
+      @JsonProperty("numOfPeople") Integer numOfPeople,
+      @JsonProperty("customerName") String customerName,
+      @JsonProperty("customerPhoneNumber") String customerPhoneNumber,
+      @JsonProperty("orderTime") String orderTime,
+      @JsonProperty("totalOrderPrice") Integer totalOrderPrice,
+      @JsonProperty("orderItems") List<WaitingOrderItemResponse> orderItems) {
+    this.orderId = orderId;
+    this.tableNumber = tableNumber;
+    this.numOfPeople = numOfPeople;
+    this.customerName = customerName;
+    this.customerPhoneNumber = customerPhoneNumber;
+    this.orderTime = orderTime;
+    this.totalOrderPrice = totalOrderPrice;
+    this.orderItems = orderItems;
+  }
 
   public WaitingOrderResponse(
       Long orderId,

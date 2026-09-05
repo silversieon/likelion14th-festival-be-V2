@@ -5,89 +5,75 @@ package com.skulikelion.festival.domain.order.mapper;
 
 import org.springframework.stereotype.Component;
 
-import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.order.dto.payload.CanceledOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.CompletedOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.OrderIdempotencyPayload;
-import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
-import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.response.CanceledOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CompletedOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.CookingOrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemUnitStatusResponse;
-import com.skulikelion.festival.domain.order.dto.response.OrderResponse;
 import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.enums.OrderStatus;
+import com.skulikelion.festival.domain.order.event.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.event.payload.WaitingOrderPayload;
 
 @Component
 public class OrderEventMapper {
 
   public WaitingOrderPayload toWaitingOrderPayload(
-      Booth booth, WaitingOrderResponse waitingOrderResponse) {
-    return WaitingOrderPayload.builder()
-        .waitingOrderResponse(waitingOrderResponse)
-        .booth(booth)
-        .build();
+      Long boothId, WaitingOrderResponse waitingOrderResponse) {
+    return WaitingOrderPayload.of(boothId, waitingOrderResponse);
   }
 
   public CookingOrderPayload toCookingOrderPayload(
-      Booth booth,
+      Long boothId,
       CookingOrderResponse cookingOrderResponse,
       OrderStatus previousStatus,
       OrderStatus currentStatus) {
     return CookingOrderPayload.builder()
         .cookingOrderResponse(cookingOrderResponse)
-        .booth(booth)
+        .boothId(boothId)
         .previousStatus(previousStatus)
         .currentStatus(currentStatus)
         .build();
   }
 
   public CompletedOrderPayload toCompletedOrderPayload(
-      Booth booth,
+      Long boothId,
       CompletedOrderResponse completedOrderResponse,
       OrderStatus previousStatus,
       OrderStatus currentStatus) {
     return CompletedOrderPayload.builder()
         .completedOrderResponse(completedOrderResponse)
-        .booth(booth)
+        .boothId(boothId)
         .previousStatus(previousStatus)
         .currentStatus(currentStatus)
         .build();
   }
 
   public CanceledOrderPayload toCanceledOrderPayload(
-      Booth booth, CanceledOrderResponse canceledOrderResponse) {
+      Long boothId, CanceledOrderResponse canceledOrderResponse) {
     return CanceledOrderPayload.builder()
         .canceledOrderResponse(canceledOrderResponse)
-        .booth(booth)
+        .boothId(boothId)
         .build();
   }
 
   public OrderItemUnitStatusPayload toCookingOrderItemUnitPayload(
-      Booth booth, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {
+      Long boothId, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {
     return OrderItemUnitStatusPayload.builder()
-        .booth(booth)
+        .boothId(boothId)
         .orderItemUnitStatusResponse(orderItemUnitStatusResponse)
         .build();
   }
 
   public DismissOrderPayload toDismissOrderPayload(
-      Booth booth, OrderStatus orderStatus, Long orderId) {
+      Long boothId, OrderStatus orderStatus, Long orderId) {
     return DismissOrderPayload.builder()
-        .booth(booth)
+        .boothId(boothId)
         .currentOrderStatus(orderStatus)
         .orderId(orderId)
-        .build();
-  }
-
-  public OrderIdempotencyPayload toOrderIdempotencyPayload(
-      String idempotencyKey, OrderResponse orderResponse) {
-    return OrderIdempotencyPayload.builder()
-        .idempotencyKey(idempotencyKey)
-        .orderResponse(orderResponse)
         .build();
   }
 }

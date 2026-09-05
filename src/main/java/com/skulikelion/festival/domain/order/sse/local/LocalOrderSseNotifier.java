@@ -9,8 +9,12 @@ import java.util.Map;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.order.dto.response.*;
+import com.skulikelion.festival.domain.order.event.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.event.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.sse.OrderSseEventType;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
@@ -29,9 +33,9 @@ public class LocalOrderSseNotifier implements OrderSseNotifier {
 
   @Override
   public void sendOrderIncrementNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
+      Long boothId, OrderSseSubscribeType currentSubscribeType, Long orderId) {
     sendOrderCountNotification(
-        booth,
+        boothId,
         currentSubscribeType,
         orderId,
         OrderSseEventType.ORDER_INCREMENT_NOTIFICATION.getEventName());
@@ -39,94 +43,87 @@ public class LocalOrderSseNotifier implements OrderSseNotifier {
 
   @Override
   public void sendOrderDecrementNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
+      Long boothId, OrderSseSubscribeType currentSubscribeType, Long orderId) {
     sendOrderCountNotification(
-        booth,
+        boothId,
         currentSubscribeType,
         orderId,
         OrderSseEventType.ORDER_DECREMENT_NOTIFICATION.getEventName());
   }
 
   @Override
-  public void sendOrderDismissNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
+  public void sendOrderDismissNotification(DismissOrderPayload payload) {
     sendOrderEventNotification(
-        booth,
-        currentSubscribeType,
+        payload.boothId(),
+        payload.currentOrderStatus().toSseSubscribeType(),
         OrderSseEventType.DISMISS_NOTIFICATION.getEventName(),
-        DismissOrderIdNotification.of(orderId));
+        DismissOrderIdNotification.of(payload.orderId()));
   }
 
   @Override
-  public void sendWaitingOrderEvent(Booth booth, WaitingOrderResponse waitingOrderResponse) {
+  public void sendWaitingOrderEvent(WaitingOrderPayload payload) {
     sendOrderEventNotification(
-        booth,
+        payload.boothId(),
         OrderSseSubscribeType.WAITING,
         OrderSseEventType.WAITING_ORDER_EVENT.getEventName(),
-        waitingOrderResponse);
+        payload.waitingOrderResponse());
   }
 
   @Override
-  public void sendCookingOrderEvent(Booth booth, CookingOrderResponse cookingOrderResponse) {
+  public void sendCookingOrderEvent(CookingOrderPayload payload) {
     sendOrderEventNotification(
-        booth,
+        payload.boothId(),
         OrderSseSubscribeType.COOKING,
         OrderSseEventType.COOKING_ORDER_EVENT.getEventName(),
-        cookingOrderResponse);
+        payload.cookingOrderResponse());
   }
 
   @Override
-  public void sendCompletedOrderEvent(Booth booth, CompletedOrderResponse completedOrderResponse) {
+  public void sendCompletedOrderEvent(CompletedOrderPayload payload) {
     sendOrderEventNotification(
-        booth,
+        payload.boothId(),
         OrderSseSubscribeType.COMPLETED,
         OrderSseEventType.COMPLETED_ORDER_EVENT.getEventName(),
-        completedOrderResponse);
+        payload.completedOrderResponse());
   }
 
   @Override
-  public void sendCanceledOrderEvent(Booth booth, CanceledOrderResponse canceledOrderResponse) {
+  public void sendCanceledOrderEvent(CanceledOrderPayload payload) {
     sendOrderEventNotification(
-        booth,
+        payload.boothId(),
         OrderSseSubscribeType.CANCELED,
         OrderSseEventType.CANCELED_ORDER_EVENT.getEventName(),
-        canceledOrderResponse);
+        payload.canceledOrderResponse());
   }
 
   @Override
-  public void sendOrderItemUnitStatusEvent(
-      Booth booth, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {
+  public void sendOrderItemUnitStatusEvent(OrderItemUnitStatusPayload payload) {
     sendOrderEventNotification(
-        booth,
+        payload.boothId(),
         OrderSseSubscribeType.COOKING,
         OrderSseEventType.ORDER_ITEM_UNIT_STATUS_EVENT.getEventName(),
-        orderItemUnitStatusResponse);
+        payload.orderItemUnitStatusResponse());
   }
 
   private void sendOrderEventNotification(
-      Booth booth, OrderSseSubscribeType orderSseSubscribeType, String eventName, Object data) {
+      Long boothId, OrderSseSubscribeType orderSseSubscribeType, String eventName, Object data) {
     List<SseEmitter> emitterList =
-        store.findByBoothIdAndSubscribeType(booth.getId(), orderSseSubscribeType);
+        store.findByBoothIdAndSubscribeType(boothId, orderSseSubscribeType);
+    log.info("[OrderSseNotifier] sending order event notification!");
     for (SseEmitter emitter : emitterList) {
       try {
         emitter.send(SseEmitter.event().name(eventName).data(data));
-        log.debug(
-            "[OrderSseService] 주문 이벤트 전송 성공 - 학과명: {}, 이벤트: {}",
-            booth.getDepartment().getDescription(),
-            eventName);
+        log.debug("[OrderSseService] 주문 이벤트 전송 성공 - 부스 식별자: {}, 이벤트: {}", boothId, eventName);
       } catch (IOException e) {
-        log.warn(
-            "[OrderSseService] 주문 이벤트 전송 실패 - 학과명: {}, 이벤트: {}",
-            booth.getDepartment().getDescription(),
-            eventName);
-        store.remove(booth.getId(), orderSseSubscribeType, emitter);
+        log.warn("[OrderSseService] 주문 이벤트 전송 실패 - 부스 식별자: {}, 이벤트: {}", boothId, eventName);
+        store.remove(boothId, orderSseSubscribeType, emitter);
       }
     }
   }
 
   private void sendOrderCountNotification(
-      Booth booth, OrderSseSubscribeType excludedType, Long orderId, String eventName) {
-    Map<OrderSseSubscribeType, List<SseEmitter>> statusMap = store.findByBoothId(booth.getId());
+      Long boothId, OrderSseSubscribeType excludedType, Long orderId, String eventName) {
+    Map<OrderSseSubscribeType, List<SseEmitter>> statusMap = store.findByBoothId(boothId);
     OrderCountNotification orderCountNotification =
         OrderCountNotification.of(excludedType, orderId);
 
@@ -143,18 +140,18 @@ public class LocalOrderSseNotifier implements OrderSseNotifier {
                           emitter.send(
                               SseEmitter.event().name(eventName).data(orderCountNotification));
                           log.debug(
-                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 성공 - 학과명: {}, 이벤트명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
-                              booth.getDepartment().getDescription(),
+                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 성공 - 부스 식별자: {}, 이벤트명: {}, 수신 제외된 타입: {}, 수신된 타입: {}",
+                              boothId,
                               eventName,
                               excludedType,
                               subscribedType);
                         } catch (IOException e) {
                           log.warn(
-                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 실패 - 학과명: {}, 이벤트명: {}, 수신되었어야 할 타입: {}",
-                              booth.getDepartment().getDescription(),
+                              "[OrderSseService] 주문 상태 변경에 의한 감소 알림 전송 실패 - 부스 식별자: {}, 이벤트명: {}, 수신되었어야 할 타입: {}",
+                              boothId,
                               eventName,
                               subscribedType);
-                          store.remove(booth.getId(), subscribedType, emitter);
+                          store.remove(boothId, subscribedType, emitter);
                         }
                       });
             });

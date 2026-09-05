@@ -7,16 +7,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
-@AllArgsConstructor
 @Schema(title = "CompletedOrderResponse: 완료된 주문 응답 DTO")
 public class CompletedOrderResponse {
 
@@ -51,6 +49,30 @@ public class CompletedOrderResponse {
   private List<CompletedOrderItemResponse> orderItems;
 
   @JsonIgnore private LocalDateTime completedAt;
+
+  @JsonCreator
+  public CompletedOrderResponse(
+      @JsonProperty("orderId") Long orderId,
+      @JsonProperty("tableNumber") Integer tableNumber,
+      @JsonProperty("numOfPeople") Integer numOfPeople,
+      @JsonProperty("customerName") String customerName,
+      @JsonProperty("customerPhoneNumber") String customerPhoneNumber,
+      @JsonProperty("totalOrderPrice") Integer totalOrderPrice,
+      @JsonProperty("orderDate") String orderDate,
+      @JsonProperty("orderTime") String orderTime,
+      @JsonProperty("completeTime") String completeTime,
+      @JsonProperty("orderItems") List<CompletedOrderItemResponse> orderItems) {
+    this.orderId = orderId;
+    this.tableNumber = tableNumber;
+    this.numOfPeople = numOfPeople;
+    this.customerName = customerName;
+    this.customerPhoneNumber = customerPhoneNumber;
+    this.totalOrderPrice = totalOrderPrice;
+    this.orderDate = orderDate;
+    this.orderTime = orderTime;
+    this.completeTime = completeTime;
+    this.orderItems = orderItems;
+  }
 
   public CompletedOrderResponse(
       Long orderId,

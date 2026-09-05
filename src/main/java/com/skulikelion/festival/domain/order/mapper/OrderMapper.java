@@ -102,16 +102,15 @@ public class OrderMapper {
   }
 
   public WaitingOrderResponse toWaitingOrderResponse(Order order, List<OrderItem> orderItems) {
-    return WaitingOrderResponse.builder()
-        .orderId(order.getId())
-        .tableNumber(order.getTableNumber())
-        .numOfPeople(order.getNumOfPeople())
-        .customerName(order.getCustomerName())
-        .customerPhoneNumber(order.getCustomerPhoneNumber())
-        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .totalOrderPrice(order.getTotalOrderPrice())
-        .orderItems(toWaitingOrderItemResponseList(orderItems))
-        .build();
+    return new WaitingOrderResponse(
+        order.getId(),
+        order.getTableNumber(),
+        order.getNumOfPeople(),
+        order.getCustomerName(),
+        order.getCustomerPhoneNumber(),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        order.getTotalOrderPrice(),
+        toWaitingOrderItemResponseList(orderItems));
   }
 
   private List<WaitingOrderItemResponse> toWaitingOrderItemResponseList(
@@ -131,65 +130,61 @@ public class OrderMapper {
 
   public WaitingOrderResponse toWaitingOrderResponseFromDto(
       Order order, List<WaitingOrderItemResponse> orderItems) {
-    return WaitingOrderResponse.builder()
-        .orderId(order.getId())
-        .tableNumber(order.getTableNumber())
-        .numOfPeople(order.getNumOfPeople())
-        .customerName(order.getCustomerName())
-        .customerPhoneNumber(order.getCustomerPhoneNumber())
-        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .totalOrderPrice(order.getTotalOrderPrice())
-        .orderItems(orderItems)
-        .build();
+    return new WaitingOrderResponse(
+        order.getId(),
+        order.getTableNumber(),
+        order.getNumOfPeople(),
+        order.getCustomerName(),
+        order.getCustomerPhoneNumber(),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        order.getTotalOrderPrice(),
+        orderItems);
   }
 
   public CookingOrderResponse toCookingOrderResponseFromDto(
       Order order, List<CookingOrderItemUnitResponse> orderItemUnits) {
-    return CookingOrderResponse.builder()
-        .orderId(order.getId())
-        .tableNumber(order.getTableNumber())
-        .numOfPeople(order.getNumOfPeople())
-        .customerName(order.getCustomerName())
-        .customerPhoneNumber(order.getCustomerPhoneNumber())
-        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .totalOrderPrice(order.getTotalOrderPrice())
-        .orderItemUnits(orderItemUnits)
-        .build();
+    return new CookingOrderResponse(
+        order.getId(),
+        order.getTableNumber(),
+        order.getNumOfPeople(),
+        order.getCustomerName(),
+        order.getCustomerPhoneNumber(),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        order.getTotalOrderPrice(),
+        orderItemUnits);
   }
 
   public CompletedOrderResponse toCompletedOrderResponseFromDto(
       Order order, List<CompletedOrderItemResponse> orderItems) {
-    return CompletedOrderResponse.builder()
-        .orderId(order.getId())
-        .tableNumber(order.getTableNumber())
-        .numOfPeople(order.getNumOfPeople())
-        .customerName(order.getCustomerName())
-        .customerPhoneNumber(order.getCustomerPhoneNumber())
-        .orderDate(order.getCreatedAt().format(DateTimeFormatter.ofPattern("M/d")))
-        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .completeTime(order.getCompletedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .totalOrderPrice(order.getTotalOrderPrice())
-        .orderItems(orderItems)
-        .build();
+    return new CompletedOrderResponse(
+        order.getId(),
+        order.getTableNumber(),
+        order.getNumOfPeople(),
+        order.getCustomerName(),
+        order.getCustomerPhoneNumber(),
+        order.getTotalOrderPrice(),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("M/d")),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        order.getCompletedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        orderItems);
   }
 
   public CanceledOrderResponse toCanceledOrderResponseFromDto(
       Order order,
       List<CanceledOrderItemResponse> orderItems,
       OrderCancelReason orderCancelReason) {
-    return CanceledOrderResponse.builder()
-        .orderId(order.getId())
-        .tableNumber(order.getTableNumber())
-        .numOfPeople(order.getNumOfPeople())
-        .customerName(order.getCustomerName())
-        .customerPhoneNumber(order.getCustomerPhoneNumber())
-        .totalOrderPrice(order.getTotalOrderPrice())
-        .orderDate(order.getCreatedAt().format(DateTimeFormatter.ofPattern("M/d")))
-        .orderTime(order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .cancelTime(order.getCanceledAt().format(DateTimeFormatter.ofPattern("HH:mm")))
-        .orderCancelReason(orderCancelReason.getDescription())
-        .orderItems(orderItems)
-        .build();
+    return new CanceledOrderResponse(
+        order.getId(),
+        order.getTableNumber(),
+        order.getNumOfPeople(),
+        order.getCustomerName(),
+        order.getCustomerPhoneNumber(),
+        order.getTotalOrderPrice(),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("M/d")),
+        order.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        order.getCanceledAt().format(DateTimeFormatter.ofPattern("HH:mm")),
+        orderCancelReason.getDescription(),
+        orderItems);
   }
 
   public OrderItemUnitStatusResponse toOrderItemUnitStatusResponse(OrderItemUnit orderItemUnit) {

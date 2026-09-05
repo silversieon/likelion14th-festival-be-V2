@@ -3,6 +3,8 @@
  */
 package com.skulikelion.festival.domain.order.sse;
 
+import java.util.Arrays;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -19,4 +21,11 @@ public enum OrderSseEventType {
   ORDER_ITEM_UNIT_STATUS_EVENT("orderItemUnitStatusEvent");
 
   private final String eventName;
+
+  public static OrderSseEventType fromEventName(String eventName) {
+    return Arrays.stream(values())
+        .filter(type -> type.eventName.equals(eventName))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("알 수 없는 이벤트 타입: " + eventName));
+  }
 }

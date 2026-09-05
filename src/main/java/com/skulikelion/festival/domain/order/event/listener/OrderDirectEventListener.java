@@ -1,23 +1,23 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skulikelion.festival.domain.order.listener;
+package com.skulikelion.festival.domain.order.event.listener;
 
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.skulikelion.festival.domain.order.dto.payload.CanceledOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.CompletedOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.CookingOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.DismissOrderPayload;
-import com.skulikelion.festival.domain.order.dto.payload.OrderItemUnitStatusPayload;
-import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
+import com.skulikelion.festival.domain.order.event.OrderEventDispatcher;
+import com.skulikelion.festival.domain.order.event.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.event.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
 
-import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 멋쟁이사자처럼 서경대학교 축제 페이지 주문 관련 EventListener 입니다.
@@ -28,64 +28,48 @@ import lombok.RequiredArgsConstructor;
  * @author Keum Si Eon
  * @version latest: 1
  */
-@RequiredArgsConstructor
-public class OrderDirectEventListener implements OrderEventListener {
+public class OrderDirectEventListener extends OrderEventDispatcher implements OrderEventListener {
 
-  private final OrderSseNotifier notifier;
+  public OrderDirectEventListener(OrderSseNotifier notifier, ObjectMapper objectMapper) {
+    super(notifier, objectMapper);
+  }
 
   // 비동기 실행
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleWaitingOrderEvent(WaitingOrderPayload waitingOrderPayload) {
-    notifier.sendWaitingOrderEvent(waitingOrderPayload);
-    notifier.sendOrderIncrementNotification(
-        waitingOrderPayload.boothId(),
-        waitingOrderPayload.waitingStatus().toSseSubscribeType(),
-        waitingOrderPayload.waitingOrderResponse().getOrderId());
+    super.handleWaitingOrderEvent(waitingOrderPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCookingOrderEvent(CookingOrderPayload cookingOrderPayload) {
-    notifier.sendCookingOrderEvent(
-        cookingOrderPayload);
-    notifier.sendOrderIncrementNotification(
-        cookingOrderPayload.boothId(),
-        cookingOrderPayload.currentStatus().toSseSubscribeType(),
-        cookingOrderPayload.cookingOrderResponse().getOrderId());
-    notifier.sendOrderDecrementNotification(
-        cookingOrderPayload.boothId(),
-        cookingOrderPayload.previousStatus().toSseSubscribeType(),
-        cookingOrderPayload.cookingOrderResponse().getOrderId());
+    super.handleCookingOrderEvent(cookingOrderPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCompletedOrderEvent(CompletedOrderPayload completedOrderPayload) {
-    notifier.sendCompletedOrderEvent(completedOrderPayload);
-    notifier.sendOrderDecrementNotification(
-        completedOrderPayload.boothId(),
-        completedOrderPayload.previousStatus().toSseSubscribeType(),
-        completedOrderPayload.completedOrderResponse().getOrderId());
+    super.handleCompletedOrderEvent(completedOrderPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleCanceledOrderEvent(CanceledOrderPayload canceledOrderPayload) {
-    notifier.sendCanceledOrderEvent(canceledOrderPayload);
+    super.handleCanceledOrderEvent(canceledOrderPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleOrderItemUnitStatusEvent(
       OrderItemUnitStatusPayload orderItemUnitStatusPayload) {
-    notifier.sendOrderItemUnitStatusEvent(orderItemUnitStatusPayload);
+    super.handleOrderItemUnitStatusEvent(orderItemUnitStatusPayload);
   }
 
   @Async("eventExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleDismissOrderEvent(DismissOrderPayload dismissOrderPayload) {
-    notifier.sendOrderDismissNotification(dismissOrderPayload);
+    super.handleDismissOrderEvent(dismissOrderPayload);
   }
 }

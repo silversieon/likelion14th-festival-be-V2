@@ -3,8 +3,12 @@
  */
 package com.skulikelion.festival.domain.order.sse.redis;
 
-import com.skulikelion.festival.domain.booth.entity.Booth;
-import com.skulikelion.festival.domain.order.dto.response.*;
+import com.skulikelion.festival.domain.order.event.payload.CanceledOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CompletedOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.CookingOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.DismissOrderPayload;
+import com.skulikelion.festival.domain.order.event.payload.OrderItemUnitStatusPayload;
+import com.skulikelion.festival.domain.order.event.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.sse.OrderSseEventType;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
@@ -22,13 +26,13 @@ public class DistributedOrderSseNotifier implements OrderSseNotifier {
 
   @Override
   public void sendOrderIncrementNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
+      Long boothId, OrderSseSubscribeType currentSubscribeType, Long orderId) {
     OrderCountNotification notification = OrderCountNotification.of(currentSubscribeType, orderId);
     OrderSseSubscribeType.exclude(currentSubscribeType)
         .forEach(
             targetType ->
                 publisher.publish(
-                    booth.getId(),
+                    boothId,
                     targetType,
                     OrderSseEventType.ORDER_INCREMENT_NOTIFICATION.getEventName(),
                     notification));
@@ -36,72 +40,69 @@ public class DistributedOrderSseNotifier implements OrderSseNotifier {
 
   @Override
   public void sendOrderDecrementNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
+      Long boothId, OrderSseSubscribeType currentSubscribeType, Long orderId) {
     OrderCountNotification notification = OrderCountNotification.of(currentSubscribeType, orderId);
     OrderSseSubscribeType.exclude(currentSubscribeType)
         .forEach(
             targetType ->
                 publisher.publish(
-                    booth.getId(),
+                    boothId,
                     targetType,
                     OrderSseEventType.ORDER_DECREMENT_NOTIFICATION.getEventName(),
                     notification));
   }
 
   @Override
-  public void sendOrderDismissNotification(
-      Booth booth, OrderSseSubscribeType currentSubscribeType, Long orderId) {
-    DismissOrderIdNotification notification = DismissOrderIdNotification.of(orderId);
+  public void sendOrderDismissNotification(DismissOrderPayload payload) {
     publisher.publish(
-        booth.getId(),
-        currentSubscribeType,
+        payload.boothId(),
+        payload.currentOrderStatus().toSseSubscribeType(),
         OrderSseEventType.DISMISS_NOTIFICATION.getEventName(),
-        notification);
+        DismissOrderIdNotification.of(payload.orderId()));
   }
 
   @Override
-  public void sendWaitingOrderEvent(Booth booth, WaitingOrderResponse waitingOrderResponse) {
+  public void sendWaitingOrderEvent(WaitingOrderPayload payload) {
     publisher.publish(
-        booth.getId(),
+        payload.boothId(),
         OrderSseSubscribeType.WAITING,
         OrderSseEventType.WAITING_ORDER_EVENT.getEventName(),
-        waitingOrderResponse);
+        payload.waitingOrderResponse());
   }
 
   @Override
-  public void sendCookingOrderEvent(Booth booth, CookingOrderResponse cookingOrderResponse) {
+  public void sendCookingOrderEvent(CookingOrderPayload payload) {
     publisher.publish(
-        booth.getId(),
+        payload.boothId(),
         OrderSseSubscribeType.COOKING,
         OrderSseEventType.COOKING_ORDER_EVENT.getEventName(),
-        cookingOrderResponse);
+        payload.cookingOrderResponse());
   }
 
   @Override
-  public void sendCompletedOrderEvent(Booth booth, CompletedOrderResponse completedOrderResponse) {
+  public void sendCompletedOrderEvent(CompletedOrderPayload payload) {
     publisher.publish(
-        booth.getId(),
+        payload.boothId(),
         OrderSseSubscribeType.COMPLETED,
         OrderSseEventType.COMPLETED_ORDER_EVENT.getEventName(),
-        completedOrderResponse);
+        payload.completedOrderResponse());
   }
 
   @Override
-  public void sendCanceledOrderEvent(Booth booth, CanceledOrderResponse canceledOrderResponse) {
+  public void sendCanceledOrderEvent(CanceledOrderPayload payload) {
     publisher.publish(
-        booth.getId(),
+        payload.boothId(),
         OrderSseSubscribeType.CANCELED,
         OrderSseEventType.CANCELED_ORDER_EVENT.getEventName(),
-        canceledOrderResponse);
+        payload.canceledOrderResponse());
   }
 
   @Override
-  public void sendOrderItemUnitStatusEvent(
-      Booth booth, OrderItemUnitStatusResponse orderItemUnitStatusResponse) {
+  public void sendOrderItemUnitStatusEvent(OrderItemUnitStatusPayload payload) {
     publisher.publish(
-        booth.getId(),
+        payload.boothId(),
         OrderSseSubscribeType.COOKING,
         OrderSseEventType.ORDER_ITEM_UNIT_STATUS_EVENT.getEventName(),
-        orderItemUnitStatusResponse);
+        payload.orderItemUnitStatusResponse());
   }
 }

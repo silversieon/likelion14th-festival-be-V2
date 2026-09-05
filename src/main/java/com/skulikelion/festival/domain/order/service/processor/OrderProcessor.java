@@ -21,7 +21,6 @@ import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
-import com.skulikelion.festival.domain.order.dto.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.dto.request.OrderCreateRequest;
 import com.skulikelion.festival.domain.order.dto.request.OrderItemCreateRequest;
 import com.skulikelion.festival.domain.order.dto.response.OrderItemResponse;
@@ -30,6 +29,7 @@ import com.skulikelion.festival.domain.order.dto.response.WaitingOrderResponse;
 import com.skulikelion.festival.domain.order.entity.Order;
 import com.skulikelion.festival.domain.order.entity.OrderItem;
 import com.skulikelion.festival.domain.order.entity.OrderItemUnit;
+import com.skulikelion.festival.domain.order.event.payload.WaitingOrderPayload;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
 import com.skulikelion.festival.domain.order.mapper.OrderEventMapper;
 import com.skulikelion.festival.domain.order.mapper.OrderMapper;
@@ -119,7 +119,7 @@ public class OrderProcessor {
         orderMapper.toWaitingOrderResponse(savedOrder, savedOrderItems);
 
     WaitingOrderPayload waitingOrderPayload =
-        orderEventMapper.toWaitingOrderPayload(booth, waitingOrderResponse);
+        orderEventMapper.toWaitingOrderPayload(booth.getId(), waitingOrderResponse);
 
     eventPublisher.publishEvent(waitingOrderPayload);
 

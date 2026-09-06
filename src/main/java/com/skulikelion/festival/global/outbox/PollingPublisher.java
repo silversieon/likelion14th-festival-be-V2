@@ -23,7 +23,7 @@ public class PollingPublisher {
   @Scheduled(fixedDelay = 200)
   @Transactional
   public void publishPendingEvents() {
-    List<Outbox> pendingEvents = repository.findPendingEvents();
+    List<Outbox> pendingEvents = repository.findPendingEvents(1);
     for (Outbox outbox : pendingEvents) {
       if (outbox.getAggregateType().equals(AggregateType.ORDER)) {
         log.info("Publishing pending events");

@@ -83,6 +83,9 @@ dependencies {
 
     // Resilience4j
     implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+
+    // apache pool
+    implementation 'org.apache.commons:commons-pool2'
 }
 
 tasks.named('test') {

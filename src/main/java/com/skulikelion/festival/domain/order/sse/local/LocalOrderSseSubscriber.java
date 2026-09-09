@@ -39,40 +39,39 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
     Long boothId = booth.getId();
     SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
 
+    registry.register(boothId, subscribeType, emitter);
+    registerUnsubscribeCallback(emitter, boothId, subscribeType);
+    connectCheck(emitter, boothId, subscribeType);
+    return emitter;
+  }
+
+  private void registerUnsubscribeCallback(
+      SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType) {
     emitter.onCompletion(
         () -> {
-          log.debug(
-              "[OrderSseService] SSE 연결 종료 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
+          log.debug("[OrderSseService] SSE 연결 종료 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
           registry.remove(boothId, subscribeType, emitter);
         });
     emitter.onTimeout(
         () -> {
-          log.debug(
-              "[OrderSseService] SSE 타임아웃 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
+          log.debug("[OrderSseService] SSE 타임아웃 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
           registry.remove(boothId, subscribeType, emitter);
           emitter.complete();
         });
     emitter.onError(
         e -> {
-          log.warn("[OrderSseService] SSE 에러 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
+          log.warn("[OrderSseService] SSE 에러 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
           registry.remove(boothId, subscribeType, emitter);
           emitter.complete();
         });
+  }
 
-    registry.register(boothId, subscribeType, emitter);
-
+  private void connectCheck(SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType) {
     try {
       emitter.send(SseEmitter.event().name("connect").data("connected order subscribe"));
-      log.debug("[OrderSseService] SSE 구독 성공 - 학과명: {}, 구독 타입: {}", departmentName, subscribeType);
     } catch (IOException e) {
-      log.warn(
-          "[OrderSseService] SSE 초기 연결 이벤트 전송 실패 - 학과명: {}, 구독 타입: {}",
-          departmentName,
-          subscribeType);
       registry.remove(boothId, subscribeType, emitter);
     }
-
-    return emitter;
   }
 
   private void validateBoothManagerAuthority(Booth booth, Manager manager) {

@@ -26,4 +26,9 @@ public interface OrderSseEmitterRegistry {
    * @param emitter Emitter 객체
    */
   void remove(Long boothId, OrderSseSubscribeType subscribeType, SseEmitter emitter);
+
+  boolean registerAndCheckFirst(
+      Long boothId, OrderSseSubscribeType subscribeType, SseEmitter emitter);
+
+  boolean removeAndCheckLast(Long boothId, OrderSseSubscribeType subscribeType, SseEmitter emitter);
 }

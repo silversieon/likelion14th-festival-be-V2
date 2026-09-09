@@ -26,7 +26,6 @@ public class PollingPublisher {
     List<Outbox> pendingEvents = repository.findPendingEvents(1);
     for (Outbox outbox : pendingEvents) {
       if (outbox.getAggregateType().equals(AggregateType.ORDER)) {
-        log.info("Publishing pending events");
         orderEventDispatcher.handleOrderEvent(outbox.getPayload(), outbox.getEventType());
       }
       outbox.markAsPublished();

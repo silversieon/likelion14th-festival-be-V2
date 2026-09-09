@@ -9,7 +9,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record OrderSseProperties(SseStrategy strategy, Redis redis) {
   public enum SseStrategy {
     LOCAL,
-    DISTRIBUTED
+    DISTRIBUTED,
+  }
+
+  public enum Mode {
+    PUBSUB,
+    STREAM
   }
 
   public enum SubscriptionMode {
@@ -17,7 +22,7 @@ public record OrderSseProperties(SseStrategy strategy, Redis redis) {
     DYNAMIC
   }
 
-  public record Redis(SubscriptionMode subscriptionMode) {}
+  public record Redis(Mode mode, SubscriptionMode subscriptionMode) {}
 
   public OrderSseProperties {
     if (strategy == SseStrategy.LOCAL && redis != null && redis.subscriptionMode() != null) {
@@ -27,7 +32,7 @@ public record OrderSseProperties(SseStrategy strategy, Redis redis) {
     }
     if (strategy != SseStrategy.DISTRIBUTED && redis != null && redis.subscriptionMode() != null) {
       throw new IllegalStateException(
-          "sse.strategy가 'distributed'가 아닐 때는 sse.redis.subscription-mode를 설정할 수 없습니다. "
+          "sse.strategy가 'pubsub'가 아닐 때는 sse.redis.subscription-mode를 설정할 수 없습니다. "
               + "설정을 제거하거나 sse.strategy를 'distributed'로 변경하세요.");
     }
   }

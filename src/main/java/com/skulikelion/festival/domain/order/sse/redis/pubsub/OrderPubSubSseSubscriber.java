@@ -16,13 +16,13 @@ import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterFinder;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RedisOrderSseSubscriber implements OrderSseSubscriber {
+public class OrderPubSubSseSubscriber implements OrderSseSubscriber {
 
   private final LocalOrderSseSubscriber localSubscriber;
   private final RedisMessageListenerContainer listenerContainer;
   private final OrderSseChannelResolver channelResolver;
   private final OrderSseEmitterFinder emitterFinder;
-  private final OrderSseRedisListener listener;
+  private final OrderPubSubListener listener;
   private final BoothService boothService;
 
   @Override

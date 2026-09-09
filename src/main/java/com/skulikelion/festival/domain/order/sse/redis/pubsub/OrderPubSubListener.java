@@ -20,7 +20,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
-public class OrderSseRedisListener implements MessageListener {
+public class OrderPubSubListener implements MessageListener {
 
   private final LocalOrderSseEmitterStore store;
   private final OrderSseChannelResolver channelResolver;

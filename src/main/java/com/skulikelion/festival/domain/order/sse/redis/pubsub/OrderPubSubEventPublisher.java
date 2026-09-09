@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
 
 @RequiredArgsConstructor
-public class RedisOrderSseEventPublisher implements OrderSseEventPublisher {
+public class OrderPubSubEventPublisher implements OrderEventPublisher {
 
   private final RedisTemplate<String, String> redisTemplate;
   private final OrderSseChannelResolver channelResolver;

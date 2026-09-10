@@ -55,7 +55,7 @@
 | 성능 개선 기법 선택 | 인덱스 전략, 캐싱 전략(키·TTL·무효화), 페이징 전략 변경 |
 | 저장소·구조 변경 | Read Replica 도입, CQRS 적용, MongoDB 등 신규 저장소 도입 |
 | 계약 변경 | `BaseResponse` 스키마 변경(에러 코드 필드 추가 등), SSE 이벤트 이름 체계 변경 |
-| 방침 변경 | `docs/policy/development-policy.md`의 어떤 절이든 바꿀 때 (policy 18장) |
+| 방침 변경 | `docs/policy/development-policy.md`의 어떤 절이든 바꿀 때 (policy 19장) |
 
 기존 결정 범위 안의 단순 작업이면 ADR을 생략할 수 있으나, **이슈에 생략 사유를 남긴다.**
 
@@ -88,7 +88,7 @@
 
 ## 관련 문서
 
-- 방침: [`../policy/development-policy.md`](../policy/development-policy.md) — policy 변경은 반드시 ADR을 거친다 (policy 18장)
+- 방침: [`../policy/development-policy.md`](../policy/development-policy.md) — policy 변경은 반드시 ADR을 거친다 (policy 19장)
 - 구현 설계: [`../lld/README.md`](../lld/README.md)
 - 스키마: [`../erd/erd-0001-initial-schema.md`](../erd/erd-0001-initial-schema.md)
 - 템플릿: [`../templates/adr.md`](../templates/adr.md)

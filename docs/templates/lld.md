@@ -328,7 +328,26 @@ sequenceDiagram
 - [ ] 예: `POST /api/booths/{boothId}/orders` 호출 시 201과 orderId를 반환한다
 - [ ] 예: 같은 `Idempotency-Key`로 두 번 요청하면 주문이 하나만 생성된다
 
-### 13.3 성능 측정 (성능 관련 작업이면 필수)
+### 13.3 분산 환경 검증 (SSE·이벤트·스케줄러·멱등성·Redis·스키마를 건드렸다면 필수)
+
+<!--
+  로컬은 Nginx + 앱 3대 구성이다 (실행 절차: AGENTS.md 6장 / 방침: policy 17장).
+  단일 인스턴스로는 재현되지 않는 문제를 여기서 확인한다. 해당 없으면 "해당 없음".
+  호출은 반드시 Nginx 진입점(:8888)으로 한다.
+-->
+
+| 항목 | 내용 |
+|---|---|
+| 기동 | `.\start.bat` (Win) / `./start.sh` (Mac) → `docker ps -a`로 **nginx가 Exited면 `docker start nginx`** |
+| 진입점 | `http://localhost:8888` (Nginx) — 인스턴스 직접 호출(`:8080~8082`)은 대조용으로만 |
+| 확인 방법 | `docker logs festival-app-01|02|03`, `docker exec mysql ...`, `docker exec redis redis-cli -a 1234 ...` |
+
+- [ ] 예: `:8080`과 `:8081`에 각각 SSE 구독 후 `:8082`로 주문 생성 시 **양쪽 모두** 이벤트를 받는다
+- [ ] 예: 3대의 로그를 합쳐 봐도 스케줄 작업이 **주기당 1회만** 실행된다
+- [ ] 예: 같은 `outbox.id`가 두 인스턴스에서 중복 발행되지 않는다 (`SKIP LOCKED` 검증)
+- [ ] 예: `restart.bat|sh 02` 실행 중에도 남은 2대로 서비스가 계속된다 (인스턴스 이탈·복귀 시험, policy 17.4)
+
+### 13.4 성능 측정 (성능 관련 작업이면 필수)
 
 <!-- 기능 테스트만으로는 이 프로젝트의 목표를 검증할 수 없다. 측정 방법을 여기에 못 박는다. -->
 

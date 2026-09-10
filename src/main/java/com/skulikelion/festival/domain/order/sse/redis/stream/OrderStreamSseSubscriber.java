@@ -44,10 +44,12 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
   private final Map<String, Subscription> activeSubscriptions = new ConcurrentHashMap<>();
 
   private String groupName;
+  private String consumerName;
 
   @PostConstruct
   public void init() {
     this.groupName = "sse-consumer-group-" + instanceId;
+    this.consumerName = "consumer-" + instanceId;
   }
 
   @Override
@@ -71,7 +73,7 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     createGroupIfNotExists(streamKey, groupName);
     Subscription subscription =
         listenerContainer.receive(
-            Consumer.from(groupName, "consumer-" + instanceId),
+            Consumer.from(groupName, consumerName),
             StreamOffset.create(streamKey, ReadOffset.lastConsumed()),
             orderStreamListener);
     activeSubscriptions.put(streamKey, subscription);

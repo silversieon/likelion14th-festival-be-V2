@@ -6,7 +6,6 @@ package com.skulikelion.festival.domain.order.sse.redis.stream;
 import java.util.Map;
 
 import org.springframework.data.redis.connection.stream.MapRecord;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
 

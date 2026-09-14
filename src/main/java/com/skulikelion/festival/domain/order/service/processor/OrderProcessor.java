@@ -126,7 +126,7 @@ public class OrderProcessor {
     log.info(
         "[OrderService] 주문 생성 성공 - 주문 식별자: {}, 학과명: {}, 주문자명: {}, 총 주문 금액: {}",
         order.getId(),
-        booth.getDepartment().getDescription(),
+        booth.getDepartment().getName(),
         order.getCustomerName(),
         order.getTotalOrderPrice());
 

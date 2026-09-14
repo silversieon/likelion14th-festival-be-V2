@@ -33,6 +33,7 @@ import com.skulikelion.festival.domain.order.service.OrderService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.common.pagenation.CursorCodec;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -132,12 +133,12 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/waiting")
   public ResponseEntity<BaseResponse<CursorPageResponse<WaitingOrderResponse>>> getWaitingOrders(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam(required = false) String encodedCursor,
       @RequestParam(defaultValue = "20") Integer size) {
     WaitingOrderCursor cursor = cursorCodec.decode(encodedCursor, WaitingOrderCursor.class);
     CursorPageResponse<WaitingOrderResponse> waitingOrders =
-        orderService.getWaitingOrders(departmentName, cursor, size);
+        orderService.getWaitingOrders(principal, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "대기 중인 주문 목록 조회에 성공했습니다.", waitingOrders));
   }
@@ -166,12 +167,12 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/cooking")
   public ResponseEntity<BaseResponse<CursorPageResponse<CookingOrderResponse>>> getCookingOrders(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam(required = false) String encodedCursor,
       @RequestParam(defaultValue = "20") Integer size) {
     CookingOrderCursor cursor = cursorCodec.decode(encodedCursor, CookingOrderCursor.class);
     CursorPageResponse<CookingOrderResponse> cookingOrders =
-        orderService.getCookingOrders(departmentName, cursor, size);
+        orderService.getCookingOrders(principal, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "조리 중인 테이블별 주문 목록 조회에 성공했습니다.", cookingOrders));
   }
@@ -208,7 +209,7 @@ public class OrderController {
   @GetMapping("/orders/completed")
   public ResponseEntity<BaseResponse<CursorPageResponse<CompletedOrderResponse>>>
       getCompletedOrders(
-          @AuthenticationPrincipal String departmentName,
+          @AuthenticationPrincipal AuthPrincipal principal,
           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
               LocalDate date,
           @RequestParam(required = false) String keyword,
@@ -216,7 +217,7 @@ public class OrderController {
           @RequestParam(defaultValue = "20") Integer size) {
     CompletedOrderCursor cursor = cursorCodec.decode(encodedCursor, CompletedOrderCursor.class);
     CursorPageResponse<CompletedOrderResponse> completedOrders =
-        orderService.getCompletedOrders(departmentName, date, keyword, cursor, size);
+        orderService.getCompletedOrders(principal, date, keyword, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "완료된 주문 목록 조회에 성공했습니다.", completedOrders));
   }
@@ -253,14 +254,14 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/canceled")
   public ResponseEntity<BaseResponse<CursorPageResponse<CanceledOrderResponse>>> getCanceledOrders(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String encodedCursor,
       @RequestParam(defaultValue = "20") Integer size) {
     CanceledOrderCursor cursor = cursorCodec.decode(encodedCursor, CanceledOrderCursor.class);
     CursorPageResponse<CanceledOrderResponse> canceledOrders =
-        orderService.getCanceledOrders(departmentName, date, keyword, cursor, size);
+        orderService.getCanceledOrders(principal, date, keyword, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "취소된 주문 목록 조회에 성공했습니다.", canceledOrders));
   }
@@ -278,10 +279,10 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/orders/sales")
   public ResponseEntity<BaseResponse<SalesResponse>> getSales(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate date) {
-    SalesResponse response = orderService.getSales(departmentName, date);
+    SalesResponse response = orderService.getSales(principal, date);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "매출 조회에 성공했습니다.", response));
   }
 
@@ -307,10 +308,10 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/orders/{orderId}/status")
   public ResponseEntity<BaseResponse<Void>> updateOrderStatus(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long orderId,
       @RequestParam OrderStatus orderStatus) {
-    orderService.updateOrderStatus(departmentName, orderId, orderStatus);
+    orderService.updateOrderStatus(principal, orderId, orderStatus);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "주문 상태 변경에 성공했습니다.", null));
   }
 
@@ -329,10 +330,10 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/orders/{orderId}/cancel")
   public ResponseEntity<BaseResponse<Void>> cancelOrder(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long orderId,
       @RequestParam OrderCancelReason orderCancelReason) {
-    orderService.cancelOrder(departmentName, orderId, orderCancelReason);
+    orderService.cancelOrder(principal, orderId, orderCancelReason);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "주문 취소에 성공했습니다.", null));
   }
 
@@ -351,10 +352,10 @@ public class OrderController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/order-item-units/{orderItemUnitId}")
   public ResponseEntity<BaseResponse<Void>> updateOrderItemUnit(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long orderItemUnitId,
       @RequestBody OrderItemUnitUpdateRequest request) {
-    orderService.updateServedStatus(departmentName, orderItemUnitId, request);
+    orderService.updateServedStatus(principal, orderItemUnitId, request);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "주문 상세 개별 상태 변경에 성공했습니다.", null));
   }

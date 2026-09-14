@@ -11,12 +11,13 @@ import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
-import com.skulikelion.festival.domain.manager.service.ManagerService;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterRegistry;
 import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.global.security.AuthPrincipal;
+import com.skulikelion.festival.global.security.BoothOwnershipValidator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,15 +27,15 @@ import lombok.extern.slf4j.Slf4j;
 public class LocalOrderSseSubscriber implements OrderSseSubscriber {
 
   private final BoothService boothService;
-  private final ManagerService managerService;
   private final OrderSseEmitterRegistry registry;
+  private final BoothOwnershipValidator boothOwnershipValidator;
 
   @Override
   public SseEmitter subscribeOrderStatus(
-      String departmentName, OrderSseSubscribeType subscribeType) {
-    Booth booth = boothService.getRequiredBooth(departmentName);
-    Manager manager = managerService.getRequiredManager(departmentName);
-    validateBoothManagerAuthority(booth, manager);
+      AuthPrincipal principal, OrderSseSubscribeType subscribeType) {
+    Booth booth = boothService.getRequiredBooth(principal);
+    boothOwnershipValidator.validateOwnerOrAdmin(
+        principal, booth, OrderErrorCode.BOOTH_ACCESS_DENIED);
 
     Long boothId = booth.getId();
     SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);

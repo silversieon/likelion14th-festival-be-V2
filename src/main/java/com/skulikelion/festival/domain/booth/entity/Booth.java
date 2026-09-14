@@ -10,17 +10,20 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import com.skulikelion.festival.domain.booth.converter.IntegerListJsonConverter;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
+import com.skulikelion.festival.domain.university.entity.Department;
 import com.skulikelion.festival.global.common.BaseTimeEntity;
-import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.AccessLevel;
@@ -41,8 +44,14 @@ public class Booth extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, unique = true)
+  /**
+   * 이 부스를 운영하는 학과입니다. {@code UNIQUE(department_id)}가 곧 1:1 관계를 강제한다.
+   *
+   * <p>전국 확장 이전에는 {@code Department} enum 값을 가진 {@code VARCHAR(100)} UNIQUE 컬럼이었다. 대학이 여러 개가 되면 동명
+   * 학과가 그 제약을 깨뜨리므로 학과 테이블 참조로 바꿨다. (ADR-0001)
+   */
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "department_id", nullable = false, unique = true)
   private Department department;
 
   private String thumbnailUrl;

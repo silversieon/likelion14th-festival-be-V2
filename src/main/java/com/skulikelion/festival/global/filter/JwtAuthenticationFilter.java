@@ -23,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.skulikelion.festival.domain.auth.exception.AuthErrorCode;
 import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 import com.skulikelion.festival.global.security.jwt.JwtProvider;
 import com.skulikelion.festival.global.security.jwt.TokenType;
 
@@ -91,11 +92,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String accessToken = jwtProvider.extractAccessToken(request);
 
       if (accessToken != null && jwtProvider.validateToken(accessToken, TokenType.ACCESS_TOKEN)) {
-        String departmentName = jwtProvider.getDepartmentFromToken(accessToken);
+        // principal은 토큰 클레임만으로 복원된다. 인가 때마다 managers를 조회하지 않기 위함이다 (ADR-0001 옵션 2).
+        AuthPrincipal principal = jwtProvider.getPrincipalFromToken(accessToken);
         List<GrantedAuthority> authorities = jwtProvider.getAuthoritiesFromToken(accessToken);
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(departmentName, null, authorities);
+            new UsernamePasswordAuthenticationToken(principal, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
       filterChain.doFilter(request, response);

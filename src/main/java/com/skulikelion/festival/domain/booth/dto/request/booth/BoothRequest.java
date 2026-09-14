@@ -10,7 +10,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
-import com.skulikelion.festival.global.enums.Department;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -21,8 +20,8 @@ import lombok.NoArgsConstructor;
 @Schema(title = "BoothRequest: 부스 생성/수정 요청 DTO")
 public class BoothRequest {
 
-  @NotNull(message = "학과를 입력해주세요.") @Schema(description = "학과", example = "SOFTWARE")
-  private Department department;
+  @NotNull(message = "학과를 입력해주세요.") @Schema(description = "학과 식별자", example = "12")
+  private Long departmentId;
 
   @Schema(description = "주문 서비스 사용 여부", example = "true")
   private Boolean orderEnabled;

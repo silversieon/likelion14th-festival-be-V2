@@ -21,6 +21,7 @@ import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
 import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.global.enums.Language;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 public interface BoothService {
 
@@ -62,22 +63,22 @@ public interface BoothService {
   /**
    * [ 부스 운영 시간 변경 메서드 ]
    *
-   * @param departmentName 요청한 관리자의 학과명
+   * @param principal 인증된 요청 주체
    * @param boothId 운영 시간을 변경할 부스의 식별자
    * @param request 부스 운영 시간 변경 요청 정보
    * @return 변경된 부스 운영 정보
    */
   BoothOperationResponse updateBoothOperation(
-      String departmentName, Long boothId, BoothOperationRequest request);
+      AuthPrincipal principal, Long boothId, BoothOperationRequest request);
 
   /**
    * [ 부스 운영 시간 정보 조회 메서드 ]
    *
-   * @param departmentName 요청한 관리자의 학과명
+   * @param principal 인증된 요청 주체
    * @param boothId 운영 시간 정보를 조회할 부스의 식별자
    * @return 부스 운영 시간 정보 리스트
    */
-  List<BoothOperationResponse> getBoothOperationInfos(String departmentName, Long boothId);
+  List<BoothOperationResponse> getBoothOperationInfos(AuthPrincipal principal, Long boothId);
 
   /**
    * [ 부스 삭제 메서드 ]
@@ -122,26 +123,26 @@ public interface BoothService {
   /**
    * [ 부스 영업 정보 조회 메서드 ]
    *
-   * @param departmentName 학과명
+   * @param principal 인증된 요청 주체
    * @param date 조회할 날짜
    * @return 부스 영업 정보
    */
-  BoothBusinessInfoResponse getBoothBusinessInfo(String departmentName, LocalDate date);
+  BoothBusinessInfoResponse getBoothBusinessInfo(AuthPrincipal principal, LocalDate date);
 
   /**
    * [ 부스 영업 중 전환 메서드 ]
    *
-   * @param departmentName 학과명
+   * @param principal 인증된 요청 주체
    */
-  void changeBoothStatusToOpen(String departmentName);
+  void changeBoothStatusToOpen(AuthPrincipal principal);
 
   /**
    * [ 부스 영업 중단 전환 메서드 ]
    *
-   * @param departmentName 학과명
+   * @param principal 인증된 요청 주체
    * @param boothStatus 부스 상태
    */
-  void changeBoothStatusToClose(String departmentName, BoothStatus boothStatus);
+  void changeBoothStatusToClose(AuthPrincipal principal, BoothStatus boothStatus);
 
   /** [ 모든 부스 상태 변경 메서드 ] 영업 종료로 변경 */
   void allBoothStatusToClose();
@@ -155,8 +156,8 @@ public interface BoothService {
   /**
    * [ 부스 정보 조회 메서드 ] 필요한 학과명으로 부스 조회
    *
-   * @param departmentName 학과명
+   * @param principal 인증된 요청 주체
    * @return 부스 엔티티
    */
-  Booth getRequiredBooth(String departmentName);
+  Booth getRequiredBooth(AuthPrincipal principal);
 }

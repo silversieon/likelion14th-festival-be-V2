@@ -14,6 +14,7 @@ import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.redis.OrderSseChannelResolver;
 import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterRegistry;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +31,8 @@ public class OrderPubSubSseSubscriber implements OrderSseSubscriber {
 
   @Override
   public SseEmitter subscribeOrderStatus(
-      String departmentName, OrderSseSubscribeType subscribeType) {
-    Long boothId = boothService.getRequiredBooth(departmentName).getId();
+      AuthPrincipal principal, OrderSseSubscribeType subscribeType) {
+    Long boothId = boothService.getRequiredBooth(principal).getId();
     SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
 
     boolean isFirst = registry.registerAndCheckFirst(boothId, subscribeType, emitter);

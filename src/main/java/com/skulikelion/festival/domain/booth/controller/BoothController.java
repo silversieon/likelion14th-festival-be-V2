@@ -30,6 +30,7 @@ import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -63,7 +64,7 @@ public class BoothController {
           location: 부스 위치 \n
           locationDescription: 부스 위치 설명 \n
           boothNumbers: 부스 번호 목록 \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
@@ -106,7 +107,7 @@ public class BoothController {
           location: 부스 위치 \n
           locationDescription: 부스 위치 설명 \n
           boothNumbers: 부스 번호 목록 \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
@@ -176,11 +177,11 @@ public class BoothController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
   @PatchMapping("/booths/{boothId}/operations")
   public ResponseEntity<BaseResponse<BoothOperationResponse>> updateBoothOperation(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long boothId,
       @Valid @RequestBody BoothOperationRequest request) {
     BoothOperationResponse response =
-        boothService.updateBoothOperation(departmentName, boothId, request);
+        boothService.updateBoothOperation(principal, boothId, request);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 운영 시간 변경 성공", response));
   }
 
@@ -201,9 +202,8 @@ public class BoothController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
   @GetMapping("/booths/{boothId}/operations")
   public ResponseEntity<BaseResponse<List<BoothOperationResponse>>> getBoothOperationInfos(
-      @AuthenticationPrincipal String departmentName, @PathVariable Long boothId) {
-    List<BoothOperationResponse> response =
-        boothService.getBoothOperationInfos(departmentName, boothId);
+      @AuthenticationPrincipal AuthPrincipal principal, @PathVariable Long boothId) {
+    List<BoothOperationResponse> response = boothService.getBoothOperationInfos(principal, boothId);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 정보 조회 성공", response));
   }
 
@@ -237,7 +237,7 @@ public class BoothController {
           location: 부스 위치 \n
           locationDescription: 부스 위치 설명 \n
           boothNumbers: 부스 번호 목록 \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           """)
   @GetMapping("/booths")
   public ResponseEntity<BaseResponse<List<BoothListResponse>>> getBooths(
@@ -259,7 +259,7 @@ public class BoothController {
           location: 부스 위치 \n
           locationDescription: 부스 위치 설명 \n
           boothNumbers: 부스 번호 목록 \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           """)
   @GetMapping("/booths/search")
   public ResponseEntity<BaseResponse<List<BoothListResponse>>> searchBooths(
@@ -284,7 +284,7 @@ public class BoothController {
           location: 부스 위치 \n
           locationDescription: 부스 위치 설명 \n
           boothNumbers: 부스 번호 목록 \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           boothName: 부스명 \n
           description: 부스 설명 \n
           detailImages: 부스 상세 이미지 리스트 \n
@@ -324,7 +324,7 @@ public class BoothController {
               date: 매출을 조회할 날짜 (2026-05-01 형태) \n
               \n
               **Returns**  \n
-              departmentName: 학과명 \n
+              principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
               isActive: 부스 영업 중 여부 \n
               dayOpenTime: 낮 오픈 시간 \n
               nightOpenTime: 밤 오픈 시간 \n
@@ -334,11 +334,11 @@ public class BoothController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping("/booths/business-info")
   public ResponseEntity<BaseResponse<BoothBusinessInfoResponse>> getBoothBusinessInfo(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate date) {
     BoothBusinessInfoResponse boothBusinessInfo =
-        boothService.getBoothBusinessInfo(departmentName, date);
+        boothService.getBoothBusinessInfo(principal, date);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "부스 영업 정보 조회 성공", boothBusinessInfo));
   }
@@ -351,8 +351,8 @@ public class BoothController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/booths/status/open")
   public ResponseEntity<BaseResponse<Void>> changeBoothStatusToOpen(
-      @AuthenticationPrincipal String departmentName) {
-    boothService.changeBoothStatusToOpen(departmentName);
+      @AuthenticationPrincipal AuthPrincipal principal) {
+    boothService.changeBoothStatusToOpen(principal);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 영업 중 전환 성공", null));
   }
 
@@ -368,8 +368,8 @@ public class BoothController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @PatchMapping("/booths/status/close")
   public ResponseEntity<BaseResponse<Void>> getBoothBusinessInfo(
-      @AuthenticationPrincipal String departmentName, @RequestParam BoothStatus boothStatus) {
-    boothService.changeBoothStatusToClose(departmentName, boothStatus);
+      @AuthenticationPrincipal AuthPrincipal principal, @RequestParam BoothStatus boothStatus) {
+    boothService.changeBoothStatusToClose(principal, boothStatus);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "부스 영업 중단 전환 성공", null));
   }
 }

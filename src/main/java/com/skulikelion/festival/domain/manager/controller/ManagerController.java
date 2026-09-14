@@ -16,6 +16,7 @@ import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.service.ManagerService;
 import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -108,8 +109,8 @@ public class ManagerController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER', 'STUDENT_COUNCIL'})")
   @GetMapping("/managers/me")
   public ResponseEntity<BaseResponse<ManagerResponse>> getMyInfo(
-      @AuthenticationPrincipal String departmentName) {
-    ManagerResponse manager = managerService.getMyInfo(departmentName);
+      @AuthenticationPrincipal AuthPrincipal principal) {
+    ManagerResponse manager = managerService.getMyInfo(principal);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "관리자 본인 정보 조회 성공", manager));
   }
 }

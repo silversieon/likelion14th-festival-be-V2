@@ -36,7 +36,7 @@
 
 | 번호 | 제목 | 상태 | 승인일 | 선택 옵션 | 작성일 | 이슈 | 작업 갈래 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| _(아직 없음)_ | 첫 ADR은 `ADR-0001`로 시작한다 | — | — | — | — | — | — |
+| [ADR-0001](ADR-0001-university-department-schema-and-auth-identity.md) | 대학·학과를 테이블로 승격하고, 인증 식별자를 `Department` enum 이름에서 대리 키로 바꾼다 | 승인됨 | 2026-09-14 | 옵션 2 | 2026-09-14 | [#3](https://github.com/silversieon/likelion14th-festival-be-V2/issues/3) | ① 전국 확장 |
 
 <!--
   행 예시 (첫 ADR 작성 시 위 안내 행을 지우고 이 형식으로 채운다):

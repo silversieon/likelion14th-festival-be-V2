@@ -14,7 +14,6 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
 import com.skulikelion.festival.domain.booth.service.booth.BoothService;
-import com.skulikelion.festival.domain.manager.service.ManagerService;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.local.LocalOrderSseNotifier;
@@ -29,6 +28,7 @@ import com.skulikelion.festival.domain.order.sse.redis.stream.OrderStreamSseSubs
 import com.skulikelion.festival.domain.order.sse.store.LocalOrderSseEmitterStore;
 import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterRegistry;
 import com.skulikelion.festival.global.config.property.OrderSseProperties;
+import com.skulikelion.festival.global.security.BoothOwnershipValidator;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -39,8 +39,10 @@ public class OrderSseConfig {
   @Bean
   @ConditionalOnProperty(name = "sse.strategy", havingValue = "local", matchIfMissing = true)
   LocalOrderSseSubscriber localOrderSseSubscriber(
-      OrderSseEmitterRegistry registry, BoothService boothService, ManagerService managerService) {
-    return new LocalOrderSseSubscriber(boothService, managerService, registry);
+      OrderSseEmitterRegistry registry,
+      BoothService boothService,
+      BoothOwnershipValidator boothOwnershipValidator) {
+    return new LocalOrderSseSubscriber(boothService, registry, boothOwnershipValidator);
   }
 
   @Bean

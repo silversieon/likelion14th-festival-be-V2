@@ -123,18 +123,21 @@
 - **다단계로 나눈다**: ① 컬럼 추가(nullable) → ② 백필 → ③ 애플리케이션이 새 컬럼 사용 → ④ NOT NULL/제약 추가 → ⑤ 옛 컬럼 제거.
   한 마이그레이션에 다 넣지 않는다.
 
-### 4.4 전국 확장 시 반드시 다룰 것 (⚠️ 해결 대상)
+### 4.4 전국 확장 — ✅ 해결됨 (ADR-0001, 이슈 #3, V14)
 
-`AGENTS.md` 1.4-①의 본체이며, ERD 6.1과 짝을 이룬다.
+`AGENTS.md` 1.4-①의 본체였다. 네 항목을 **한 덩어리로 묶어 하나의 ADR**로 결정했고(따로 고치면 중간 상태가 깨지기 때문), `V14__create_universities_and_departments.sql`로 반영했다.
 
-| 항목 | 문제 |
-|---|---|
-| `booth.department` UNIQUE | 대학이 여러 개가 되면 **같은 학과명이 중복**되어 제약이 깨진다 |
-| `Department` Java enum | 서경대 학과 30여 개가 코드에 하드코딩되어 있다. **전국 규모를 enum으로 감당할 수 없다** |
-| JWT subject = Department 이름 | 위 enum이 바뀌면 **인증 흐름 전체가 영향**을 받는다 |
-| `managers.department` ↔ `booth.department` | FK 없이 **문자열 값으로만** 이어져 있다. 대학이 늘면 동명 학과에서 소유권 판정이 깨진다 |
+| 항목 | 문제였던 것 | 해결 |
+|---|---|---|
+| `booth.department` UNIQUE | 대학이 여러 개가 되면 같은 학과명이 중복되어 제약이 깨진다 | `UNIQUE(booth.department_id)` + `UNIQUE(departments.university_id, name)`로 이전 — **다른 대학의 동명 학과가 공존**한다 |
+| `Department` Java enum | 서경대 학과 33개가 코드에 하드코딩 | `universities`·`departments` 테이블로 승격, **enum 삭제**. 학과 추가가 배포에서 INSERT로 바뀌었다 |
+| JWT subject = Department 이름 | 자연 키라 이름이 바뀌면 인증 흐름 전체가 영향 | subject = **`manager.id`**(대리 키), 소유권 판정용 `departmentId`를 클레임으로 동봉 (ADR-0001 옵션 2) |
+| `managers.department` ↔ `booth.department` | FK 없이 문자열 값으로만 연결 | 양쪽 모두 **`departments.id` FK**로 전환. 스키마에 FK 없는 참조가 더는 없다 |
 
-→ 위 넷은 **한 덩어리로 묶어 하나의 ADR**로 결정한다. 따로 고치면 중간 상태가 깨진다.
+**부수 효과**: 인가 경로에서 `managers` 조회가 요청당 1회 → 0회가 되었다(토큰 클레임 사용). 4곳에 복제돼 있던 소유권 검증은 `global/security/BoothOwnershipValidator` 하나로 모았다.
+
+> 현행 스키마는 `docs/erd/erd-0002-university-schema.md`를 본다 (erd-0001은 대체됨).
+> **남은 관련 항목**: 축제 엔티티(`festivals`) 필요 여부, 대학·학과 조회 API, `booth_translation.department_name`과 `departments.name`의 역할 정리 — 전부 후속 이슈다.
 
 ## 5. 조회 성능·인덱싱 방침
 
@@ -611,5 +614,5 @@ Spring의 예외 핸들러가 원인(cause)을 따라 올라가 주기 때문에
 | 11 | 에러 코드가 응답에 나가지 않음 / `ORDER_4007` 중복 | 14.2 | 계약 |
 | 12 | `traceId`가 응답에 없어 사용자 신고 건 추적 불가 | 15.2 | 관측성 |
 | 13 | `LocalOrderSseEmitterStore.findByBoothId` 전체 스캔 | 11.3 | 성능(확장) |
-| 14 | `Department` enum 하드코딩 / `booth.department` UNIQUE | 4.4 | 확장 차단 |
+| ~~14~~ | ~~`Department` enum 하드코딩 / `booth.department` UNIQUE~~ | 4.4 | ✅ **해결됨** — ADR-0001 / 이슈 #3 / V14 (`universities`·`departments` 테이블 승격 + 인증 식별자 대리 키 전환) |
 | 15 | `order_idempotency` 레거시 테이블 미삭제 | ERD 6.5 | 정리 |

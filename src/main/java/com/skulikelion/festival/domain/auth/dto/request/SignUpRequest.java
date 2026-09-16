@@ -19,9 +19,11 @@ import lombok.Getter;
 @Schema(title = "SignUpRequest: 회원가입 요청 DTO")
 public class SignUpRequest {
 
-  @NotBlank
-  @Schema(description = "사용자 학과", example = "SKULIKELION")
-  private String departmentName;
+  @NotNull @Schema(description = "대학 식별자", example = "1")
+  private Long universityId;
+
+  @NotNull @Schema(description = "학과 식별자", example = "12")
+  private Long departmentId;
 
   @NotBlank
   @Schema(description = "사용자 비밀번호", example = "lion1234!")

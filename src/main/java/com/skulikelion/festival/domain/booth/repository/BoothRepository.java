@@ -16,14 +16,13 @@ import org.springframework.data.repository.query.Param;
 import com.skulikelion.festival.domain.booth.dto.response.booth.BoothListResponse;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.enums.BoothLocation;
-import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 
 public interface BoothRepository extends JpaRepository<Booth, Long> {
 
-  Optional<Booth> findByDepartment(Department department);
+  Optional<Booth> findByDepartmentId(Long departmentId);
 
-  boolean existsByDepartment(Department department);
+  boolean existsByDepartmentId(Long departmentId);
 
   @Query(
       """

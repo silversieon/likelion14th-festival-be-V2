@@ -14,7 +14,8 @@ public class ManagerMapper {
   public ManagerResponse toManagerResponse(Manager manager) {
     return ManagerResponse.builder()
         .managerId(manager.getId())
-        .department(manager.getDepartment())
+        .departmentId(manager.getDepartment().getId())
+        .departmentName(manager.getDepartment().getName())
         .role(manager.getRole())
         .build();
   }

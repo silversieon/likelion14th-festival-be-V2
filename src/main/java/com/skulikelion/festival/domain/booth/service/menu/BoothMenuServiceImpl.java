@@ -28,16 +28,14 @@ import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.booth.service.translation.BoothTranslationService;
-import com.skulikelion.festival.domain.manager.entity.Manager;
-import com.skulikelion.festival.domain.manager.entity.enums.Role;
 import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
-import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.domain.order.exception.OrderErrorCode;
-import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
 import com.skulikelion.festival.global.s3.service.S3Service;
+import com.skulikelion.festival.global.security.AuthPrincipal;
+import com.skulikelion.festival.global.security.BoothOwnershipValidator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,10 +48,10 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   private final BoothRepository boothRepository;
   private final BoothMenuRepository boothMenuRepository;
   private final BoothOperationRepository boothOperationRepository;
-  private final ManagerRepository managerRepository;
   private final BoothTranslationService boothTranslationService;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
+  private final BoothOwnershipValidator boothOwnershipValidator;
 
   @Override
   @Transactional
@@ -100,16 +98,16 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   @Override
   @Transactional
   public BoothMenuResponse updateMenuPrice(
-      String departmentName, Long menuId, UpdateBoothMenuPriceRequest request) {
+      AuthPrincipal principal, Long menuId, UpdateBoothMenuPriceRequest request) {
     log.info(
-        "[BoothMenuService] 메뉴 가격 수정 요청 - 관리자 학과: {}, 메뉴 식별자: {}, 가격: {}",
-        departmentName,
+        "[BoothMenuService] 메뉴 가격 수정 요청 - 관리자 학과 식별자: {}, 메뉴 식별자: {}, 가격: {}",
+        principal.departmentId(),
         menuId,
         request.getPrice());
     BoothMenu boothMenu = getBoothMenu(menuId);
 
     // 부스 관리자 권한 검증
-    validateBoothManager(departmentName, boothMenu.getBooth());
+    validateBoothManager(principal, boothMenu.getBooth());
 
     // 메뉴 가격 변경
     boothMenu.updatePrice(request.getPrice());
@@ -120,16 +118,16 @@ public class BoothMenuServiceImpl implements BoothMenuService {
   @Override
   @Transactional
   public BoothMenuResponse updateMenuSoldOut(
-      String departmentName, Long menuId, UpdateBoothMenuSoldOutRequest request) {
+      AuthPrincipal principal, Long menuId, UpdateBoothMenuSoldOutRequest request) {
     log.info(
-        "[BoothMenuService] 메뉴 품절 여부 변경 요청 - 관리자 학과: {}, 메뉴 식별자: {}, 품절 여부: {}",
-        departmentName,
+        "[BoothMenuService] 메뉴 품절 여부 변경 요청 - 관리자 학과 식별자: {}, 메뉴 식별자: {}, 품절 여부: {}",
+        principal.departmentId(),
         menuId,
         request.getSoldOut());
     BoothMenu boothMenu = getBoothMenu(menuId);
 
     // 부스 관리자 권한 검증
-    validateBoothManager(departmentName, boothMenu.getBooth());
+    validateBoothManager(principal, boothMenu.getBooth());
 
     // 메뉴 품절 여부 변경
     boothMenu.updateSoldOut(request.getSoldOut());
@@ -184,16 +182,17 @@ public class BoothMenuServiceImpl implements BoothMenuService {
 
   @Override
   @Transactional(readOnly = true)
-  public OrderAvailableBoothMenuGroupResponse getAllMenus(String departmentName) {
-    log.info("[BoothMenuService] 부스 관리자 전체 메뉴 조회 요청 - 관리자 학과: {}", departmentName);
-    Department department = Department.valueOf(departmentName);
+  public OrderAvailableBoothMenuGroupResponse getAllMenus(AuthPrincipal principal) {
+    Long departmentId = principal.departmentId();
+    log.info("[BoothMenuService] 부스 관리자 전체 메뉴 조회 요청 - 관리자 학과 식별자: {}", departmentId);
     Booth booth =
         boothRepository
-            .findByDepartment(department)
+            .findByDepartmentId(departmentId)
             .orElseThrow(
                 () -> {
                   log.warn(
-                      "[BoothMenuService] 부스 관리자 전체 메뉴 조회 실패 - 할당 부스 없음, 관리자 학과: {}", department);
+                      "[BoothMenuService] 부스 관리자 전체 메뉴 조회 실패 - 할당 부스 없음, 관리자 학과 식별자: {}",
+                      departmentId);
                   return new CustomException(ManagerErrorCode.BOOTH_NOT_EXIST);
                 });
 
@@ -235,21 +234,9 @@ public class BoothMenuServiceImpl implements BoothMenuService {
             });
   }
 
-  private void validateBoothManager(String departmentName, Booth booth) {
-    Department department = Department.valueOf(departmentName);
-    Manager currentManager =
-        managerRepository
-            .findByDepartment(department)
-            .orElseThrow(() -> new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND));
-
-    if (!booth.getDepartment().equals(currentManager.getDepartment())
-        && currentManager.getRole() != Role.ADMIN) {
-      log.warn(
-          "[BoothMenuService] 메뉴 접근 권한 검증 실패 - 관리자 학과: {}, 부스 학과: {}",
-          currentManager.getDepartment(),
-          booth.getDepartment());
-      throw new CustomException(BoothErrorCode.BOOTH_ACCESS_DENIED);
-    }
+  private void validateBoothManager(AuthPrincipal principal, Booth booth) {
+    boothOwnershipValidator.validateOwnerOrAdmin(
+        principal, booth, BoothErrorCode.BOOTH_ACCESS_DENIED);
   }
 
   private String uploadImage(MultipartFile image) {

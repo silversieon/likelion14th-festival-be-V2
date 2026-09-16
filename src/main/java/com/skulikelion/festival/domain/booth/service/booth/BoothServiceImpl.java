@@ -38,17 +38,17 @@ import com.skulikelion.festival.domain.booth.repository.BoothMenuRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothOperationRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
 import com.skulikelion.festival.domain.booth.repository.BoothTranslationRepository;
-import com.skulikelion.festival.domain.manager.entity.Manager;
-import com.skulikelion.festival.domain.manager.entity.enums.Role;
-import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
-import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.domain.order.repository.OrderRepository;
-import com.skulikelion.festival.global.enums.Department;
+import com.skulikelion.festival.domain.university.entity.Department;
+import com.skulikelion.festival.domain.university.exception.UniversityErrorCode;
+import com.skulikelion.festival.domain.university.repository.DepartmentRepository;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 import com.skulikelion.festival.global.s3.enums.PathName;
 import com.skulikelion.festival.global.s3.service.S3AsyncService;
 import com.skulikelion.festival.global.s3.service.S3Service;
+import com.skulikelion.festival.global.security.AuthPrincipal;
+import com.skulikelion.festival.global.security.BoothOwnershipValidator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,21 +65,24 @@ public class BoothServiceImpl implements BoothService {
   private final BoothDetailImageRepository boothDetailImageRepository;
   private final BoothOperationRepository boothOperationRepository;
   private final BoothMenuRepository boothMenuRepository;
-  private final ManagerRepository managerRepository;
   private final BoothMapper boothMapper;
   private final S3Service s3Service;
   private final S3AsyncService s3AsyncService;
   private final OrderRepository orderRepository;
+  private final DepartmentRepository departmentRepository;
+  private final BoothOwnershipValidator boothOwnershipValidator;
 
   @Override
   @Transactional
   public BoothResponse createBooth(
       BoothRequest request, MultipartFile thumbnail, List<MultipartFile> detailImages) {
-    log.info("[BoothService] 부스 생성 요청 - 학과: {}", request.getDepartment());
+    log.info("[BoothService] 부스 생성 요청 - 학과 식별자: {}", request.getDepartmentId());
 
-    // 학과 중복 검증
-    if (boothRepository.existsByDepartment(request.getDepartment())) {
-      log.warn("[BoothService] 부스 생성 실패 - 중복 학과: {}", request.getDepartment());
+    Department department = getDepartment(request.getDepartmentId());
+
+    // 학과 중복 검증 - 한 학과에는 부스가 하나다
+    if (boothRepository.existsByDepartmentId(department.getId())) {
+      log.warn("[BoothService] 부스 생성 실패 - 중복 학과 식별자: {}", department.getId());
       throw new CustomException(BoothErrorCode.BOOTH_ALREADY_EXISTS);
     }
     // 요청값 사전 검증
@@ -90,7 +93,7 @@ public class BoothServiceImpl implements BoothService {
     // 썸네일 업로드 및 부스 저장
     String thumbnailUrl = uploadImage(PathName.BOOTH_THUMBNAIL, thumbnail);
     log.info("[BoothService] 부스 썸네일 처리 완료 - thumbnailUrl: {}", thumbnailUrl);
-    Booth booth = boothRepository.save(boothMapper.toBooth(request, thumbnailUrl));
+    Booth booth = boothRepository.save(boothMapper.toBooth(department, request, thumbnailUrl));
 
     // 운영 정보 저장
     List<BoothOperation> operations =
@@ -124,7 +127,7 @@ public class BoothServiceImpl implements BoothService {
             .findFirst()
             .orElse(translations.getFirst());
 
-    log.info("[BoothService] 부스 생성 발생 - 부스 식별자: {}, 학과: {}", booth.getId(), booth.getDepartment());
+    log.info("[BoothService] 부스 생성 발생 - 부스 식별자: {}, 학과: {}", booth.getId(), department.getName());
     return boothMapper.toBoothResponse(
         booth, responseTranslation, savedDetailImages, operations, List.of(), Language.KO);
   }
@@ -136,13 +139,16 @@ public class BoothServiceImpl implements BoothService {
       BoothRequest request,
       MultipartFile thumbnail,
       List<MultipartFile> detailImages) {
-    log.info("[BoothService] 부스 수정 요청 - 부스 식별자: {}, 학과: {}", boothId, request.getDepartment());
+    log.info(
+        "[BoothService] 부스 수정 요청 - 부스 식별자: {}, 학과 식별자: {}", boothId, request.getDepartmentId());
     Booth booth = getBooth(boothId);
 
-    // 학과 중복 검증
-    if (!booth.getDepartment().equals(request.getDepartment())
-        && boothRepository.existsByDepartment(request.getDepartment())) {
-      log.warn("[BoothService] 부스 수정 실패 - 부스 식별자: {}, 중복 학과: {}", boothId, request.getDepartment());
+    Department department = getDepartment(request.getDepartmentId());
+
+    // 학과 중복 검증 - 다른 부스가 이미 그 학과를 쓰고 있으면 안 된다
+    if (!booth.getDepartment().getId().equals(department.getId())
+        && boothRepository.existsByDepartmentId(department.getId())) {
+      log.warn("[BoothService] 부스 수정 실패 - 부스 식별자: {}, 중복 학과 식별자: {}", boothId, department.getId());
       throw new CustomException(BoothErrorCode.BOOTH_ALREADY_EXISTS);
     }
     // 요청값 사전 검증
@@ -161,7 +167,7 @@ public class BoothServiceImpl implements BoothService {
 
     // 부스 기본 정보 교체
     booth.update(
-        request.getDepartment(),
+        department,
         thumbnailUrl,
         request.getOrderEnabled(),
         request.getLocation(),
@@ -213,7 +219,7 @@ public class BoothServiceImpl implements BoothService {
     deleteImageQuietly(oldThumbnailUrl);
     oldDetailImages.forEach(detailImage -> deleteImageQuietly(detailImage.getImageUrl()));
 
-    log.info("[BoothService] 부스 수정 발생 - 부스 식별자: {}, 학과: {}", boothId, booth.getDepartment());
+    log.info("[BoothService] 부스 수정 발생 - 부스 식별자: {}, 학과: {}", boothId, department.getName());
     List<BoothMenu> menus = boothMenuRepository.findByBoothIdOrderByIdAsc(boothId);
     return boothMapper.toBoothResponse(
         booth, responseTranslation, responseDetailImages, operations, menus, Language.KO);
@@ -237,16 +243,16 @@ public class BoothServiceImpl implements BoothService {
   @Override
   @Transactional
   public BoothOperationResponse updateBoothOperation(
-      String departmentName, Long boothId, BoothOperationRequest request) {
+      AuthPrincipal principal, Long boothId, BoothOperationRequest request) {
     log.info(
-        "[BoothService] 부스 운영 시간 변경 요청 - 관리자 학과: {}, 부스 식별자: {}, 운영 날짜: {}",
-        departmentName,
+        "[BoothService] 부스 운영 시간 변경 요청 - 관리자 학과 식별자: {}, 부스 식별자: {}, 운영 날짜: {}",
+        principal.departmentId(),
         boothId,
         request.getOperationDate());
     Booth booth = getBooth(boothId);
 
     // 부스 관리자 권한 검증
-    validateBoothManager(departmentName, booth);
+    validateBoothManager(principal, booth);
 
     // 운영 시간 요청값 검증
     validateOperationTime(request);
@@ -279,12 +285,16 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<BoothOperationResponse> getBoothOperationInfos(String departmentName, Long boothId) {
-    log.info("[BoothService] 부스 운영 시간 정보 조회 요청 - 관리자 학과: {}, 부스 식별자: {}", departmentName, boothId);
+  public List<BoothOperationResponse> getBoothOperationInfos(
+      AuthPrincipal principal, Long boothId) {
+    log.info(
+        "[BoothService] 부스 운영 시간 정보 조회 요청 - 관리자 학과 식별자: {}, 부스 식별자: {}",
+        principal.departmentId(),
+        boothId);
     Booth booth = getBooth(boothId);
 
     // 부스 관리자 권한 검증
-    validateBoothManager(departmentName, booth);
+    validateBoothManager(principal, booth);
 
     // 전체 운영 시간 조회
     List<BoothOperation> operations =
@@ -389,8 +399,8 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional(readOnly = true)
-  public BoothBusinessInfoResponse getBoothBusinessInfo(String departmentName, LocalDate date) {
-    Booth booth = validateBoothExists(departmentName);
+  public BoothBusinessInfoResponse getBoothBusinessInfo(AuthPrincipal principal, LocalDate date) {
+    Booth booth = validateBoothExists(principal.departmentId());
     BoothOperation boothOperation =
         boothOperationRepository
             .findByBoothIdAndOperationDate(booth.getId(), LocalDate.now())
@@ -411,15 +421,15 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional
-  public void changeBoothStatusToOpen(String departmentName) {
-    Booth booth = validateBoothExists(departmentName);
+  public void changeBoothStatusToOpen(AuthPrincipal principal) {
+    Booth booth = validateBoothExists(principal.departmentId());
     booth.changeStatus(BoothStatus.OPEN);
   }
 
   @Override
   @Transactional
-  public void changeBoothStatusToClose(String departmentName, BoothStatus boothStatus) {
-    Booth booth = validateBoothExists(departmentName);
+  public void changeBoothStatusToClose(AuthPrincipal principal, BoothStatus boothStatus) {
+    Booth booth = validateBoothExists(principal.departmentId());
     booth.changeStatus(boothStatus);
   }
 
@@ -443,8 +453,8 @@ public class BoothServiceImpl implements BoothService {
 
   @Override
   @Transactional(readOnly = true)
-  public Booth getRequiredBooth(String departmentName) {
-    return validateBoothExists(departmentName);
+  public Booth getRequiredBooth(AuthPrincipal principal) {
+    return validateBoothExists(principal.departmentId());
   }
 
   private Booth getBooth(Long boothId) {
@@ -457,25 +467,19 @@ public class BoothServiceImpl implements BoothService {
             });
   }
 
-  private void validateBoothManager(String departmentName, Booth booth) {
-    Department department = Department.valueOf(departmentName);
-    Manager currentManager =
-        managerRepository
-            .findByDepartment(department)
-            .orElseThrow(
-                () -> {
-                  log.warn("[BoothService] 매니저 조회 실패 - 학과명: {}", departmentName);
-                  return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
-                });
+  private void validateBoothManager(AuthPrincipal principal, Booth booth) {
+    boothOwnershipValidator.validateOwnerOrAdmin(
+        principal, booth, BoothErrorCode.BOOTH_ACCESS_DENIED);
+  }
 
-    if (!booth.getDepartment().equals(currentManager.getDepartment())
-        && currentManager.getRole() != Role.ADMIN) {
-      log.warn(
-          "[BoothService] 부스 접근 권한 검증 실패 - 관리자 학과: {}, 부스 학과: {}",
-          currentManager.getDepartment(),
-          booth.getDepartment());
-      throw new CustomException(BoothErrorCode.BOOTH_ACCESS_DENIED);
-    }
+  private Department getDepartment(Long departmentId) {
+    return departmentRepository
+        .findById(departmentId)
+        .orElseThrow(
+            () -> {
+              log.warn("[BoothService] 존재하지 않는 학과 식별자 - 학과 식별자: {}", departmentId);
+              return new CustomException(UniversityErrorCode.DEPARTMENT_NOT_FOUND);
+            });
   }
 
   private List<BoothDetailImage> saveDetailImages(Booth booth, List<MultipartFile> detailImages) {
@@ -613,12 +617,12 @@ public class BoothServiceImpl implements BoothService {
     }
   }
 
-  private Booth validateBoothExists(String departmentName) {
+  private Booth validateBoothExists(Long departmentId) {
     return boothRepository
-        .findByDepartment(Department.valueOf(departmentName))
+        .findByDepartmentId(departmentId)
         .orElseThrow(
             () -> {
-              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              log.warn("[BoothService] 부스를 찾을 수 없습니다 - 학과 식별자: {}", departmentId);
               return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
             });
   }

@@ -31,6 +31,7 @@ import com.skulikelion.festival.domain.booth.enums.BoothStatus;
 import com.skulikelion.festival.domain.booth.enums.MenuCategory;
 import com.skulikelion.festival.domain.booth.enums.TimeType;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
+import com.skulikelion.festival.domain.university.entity.Department;
 import com.skulikelion.festival.global.enums.Language;
 import com.skulikelion.festival.global.exception.CustomException;
 
@@ -40,9 +41,9 @@ public class BoothMapper {
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
   private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-  public Booth toBooth(BoothRequest request, String thumbnailUrl) {
+  public Booth toBooth(Department department, BoothRequest request, String thumbnailUrl) {
     return Booth.builder()
-        .department(request.getDepartment())
+        .department(department)
         .thumbnailUrl(thumbnailUrl)
         .orderEnabled(Boolean.TRUE.equals(request.getOrderEnabled()))
         .location(request.getLocation())
@@ -178,7 +179,7 @@ public class BoothMapper {
   public BoothBusinessInfoResponse toBoothBusinessInfoResponse(
       Booth booth, BoothOperation operation, Long sales) {
     return BoothBusinessInfoResponse.builder()
-        .departmentName(booth.getDepartment().getDescription())
+        .departmentName(booth.getDepartment().getName())
         .isActive(booth.getBoothStatus().equals(BoothStatus.OPEN))
         .dayOpenTime(operation.getDayOpenTime())
         .nightOpenTime(operation.getNightOpenTime())

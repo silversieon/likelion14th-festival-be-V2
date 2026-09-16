@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -47,8 +48,8 @@ public class OrderSseController {
   @PreAuthorize("hasRole('BOOTH_MANAGER')")
   @GetMapping(value = "/orders/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribeOrders(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @RequestParam("orderSseSubscribeType") OrderSseSubscribeType orderSseSubscribeType) {
-    return subscriber.subscribeOrderStatus(departmentName, orderSseSubscribeType);
+    return subscriber.subscribeOrderStatus(principal, orderSseSubscribeType);
   }
 }

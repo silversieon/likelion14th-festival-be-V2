@@ -8,10 +8,15 @@
   이 문서의 구성(개요 → 설계 원칙 → 테이블 명세 → 다이어그램 → 인덱스 현황 → 개선 후보)이 이후 ERD 문서의 템플릿이다.
 -->
 
+> ⚠️ **이 문서는 [`erd-0002-university-schema.md`](erd-0002-university-schema.md)로 대체되었다.**
+> V14(전국 대학 확장) 적용 이후의 현행 스키마는 erd-0002를 본다.
+> 이 문서는 **V13 시점의 기록으로 보존**하며 고쳐 쓰지 않는다. 6.1(전국 확장 개선 후보)은 erd-0002 6.1에서 해소되었다.
+
 | 항목 | 내용 |
 |---|---|
-| 상태 | **활성** |
+| 상태 | **대체됨 (→ [erd-0002](erd-0002-university-schema.md))** |
 | 작성일 | 2026-09-10 (기존 뱅킹 프로젝트 문서를 축제 서비스 현행 스키마 기준으로 전면 재작성) |
+| 대체일 | 2026-09-14 (V14 적용 — 이슈 [#3](https://github.com/silversieon/likelion14th-festival-be-V2/issues/3), [ADR-0001](../adr/ADR-0001-university-department-schema-and-auth-identity.md)) |
 | 기준 | `src/main/resources/db/migration/V1__init.sql` ~ `V13__create_outbox.sql` **전부 적용된 상태** |
 | 관련 이슈 | 해당 없음 (현행 스키마 기록 — 이후 변경은 이슈·ADR 경유) |
 | 관련 문서 | `AGENTS.md` 1.4(작업 범위), `docs/api-spec/api-conventions.md`, `docs/policy/development-policy.md` |

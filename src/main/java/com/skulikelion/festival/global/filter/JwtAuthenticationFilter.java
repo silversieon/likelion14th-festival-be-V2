@@ -64,6 +64,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         || pathMatcher.match("/api/auth/login", uri)
         || pathMatcher.match("/api/auth/logout", uri)
         || pathMatcher.match("/api/auth/register", uri)
+        // 로그인 화면에서 쓰는 대학·학과 조회. 만료된 쿠키가 남아 있어도 401로 막히지 않게 한다 (LLD-0002).
+        || pathMatcher.match("/api/universities", uri)
+        || pathMatcher.match("/api/universities/*/departments", uri)
         || pathMatcher.match("/actuator/prometheus", uri)
         || pathMatcher.match("/actuator/health", uri)
         || "/error".equals(uri);

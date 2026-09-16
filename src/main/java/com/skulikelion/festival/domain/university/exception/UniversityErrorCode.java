@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum UniversityErrorCode implements BaseErrorCode {
+  UNIVERSITY_NAME_REQUIRED("UNIVERSITY_40001", "검색할 학교명을 입력해주세요.", HttpStatus.BAD_REQUEST),
   DEPARTMENT_NOT_IN_UNIVERSITY("UNIVERSITY_40002", "해당 대학에 속한 학과가 아닙니다.", HttpStatus.BAD_REQUEST),
   UNIVERSITY_NOT_FOUND("UNIVERSITY_40401", "해당 대학을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   DEPARTMENT_NOT_FOUND("UNIVERSITY_40402", "해당 학과를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);

@@ -13,6 +13,7 @@
 | 번호 | 제목 | 상태 | 작성일 | 이슈 | 근거 ADR | 작업 갈래 |
 | --- | --- | --- | --- | --- | --- | --- |
 | [LLD-0001](LLD-0001-university-department-and-auth-identity.md) | University·Department 도메인 신설과 인증 식별자 전환 | 구현 완료 | 2026-09-14 | [#3](https://github.com/silversieon/likelion14th-festival-be-V2/issues/3) | [ADR-0001](../adr/ADR-0001-university-department-schema-and-auth-identity.md) | ① 전국 확장 |
+| [LLD-0002](LLD-0002-university-department-search-api.md) | 로그인 화면용 학교명 검색·학과 목록 조회 API | 구현 완료 | 2026-09-16 | [#5](https://github.com/silversieon/likelion14th-festival-be-V2/issues/5) | 해당 없음 (사용자 지시 기반) | ① 전국 확장 (후속) |
 
 <!--
   행 예시 (첫 LLD 작성 시 위 안내 행을 지우고 이 형식으로 채운다):

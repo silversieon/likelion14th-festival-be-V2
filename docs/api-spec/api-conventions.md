@@ -7,7 +7,7 @@
 | 항목 | 내용 |
 |---|---|
 | 상태 | 활성 |
-| 작성일 | 2026-09-10 (기존 뱅킹 프로젝트 문서를 축제 서비스 현행 코드 기준으로 전면 재작성) |
+| 작성일 | 2026-09-10 |
 | 기준 코드 | `global/common/BaseResponse`, `global/exception/GlobalExceptionHandler`, `global/config/SwaggerConfig`, 각 도메인 `controller` |
 | 관련 ADR | 아직 없음 — 응답 형식·에러 코드 체계를 바꾸려면 ADR을 먼저 작성한다 |
 

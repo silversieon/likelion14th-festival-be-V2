@@ -36,8 +36,7 @@
 
 ### 1.2 설계 방법론
 
-현재는 **도메인형 패키지 구조**를 유지한다. DDD·레이어드 아키텍처(4계층, 의존성 역전 등)는 이번 범위에서 적용하지 않으며, 추후 별도 ADR을 거쳐 도입 여부를 결정한다.
-지금 이 문서는 그 이전 단계 — **대규모화·성능·조회 구조 개선**에 초점을 맞춘다.
+**도메인형 패키지 구조를 유지한다. DDD·레이어드 아키텍처는 적용하지 않는다.** (구조 규칙은 3장, 그 근거는 policy 2.3)
 
 ### 1.3 현재까지 구현된 기반 (작업 시작 전 반드시 인지)
 
@@ -59,38 +58,30 @@
 
 > 설정 값(`application*.yml`)은 에이전트가 직접 열지 않는다. 토글의 **존재와 허용 값**은 위 표와 `global/config/property/*`의 `@ConfigurationProperties` 레코드에서 확인한다.
 
-### 1.4 이번 프로젝트의 핵심 작업 범위
+### 1.4 이번 프로젝트의 핵심 작업 범위 (네 갈래)
 
-이 문서에서 다루는 에이전트 작업은 다음 네 갈래로 진행된다. ADR/LLD를 작성할 때는 어느 항목에 해당하는 작업인지 컨텍스트에 명시한다.
+**ADR·LLD를 쓸 때 어느 갈래의 작업인지 헤더에 명시한다.** 각 갈래에서 지켜야 할 방침은 policy의 해당 장이 정한다.
 
-1. **전국 단위 대학으로 서비스 확장**
-    - 기존에는 우리 학교 내부 학과(부스)만 존재했으나(`global/enums/Department` 하드코딩 enum), 여러 대학이 추가되고 **대학 ↔ 부스 간 연관 관계**를 매핑하는 등 데이터베이스 스키마 개편이 필요함
-    - 스키마 변경은 Flyway 마이그레이션으로 관리하며, 변경 전 ERD 문서를 갱신한다
-2. **대량 데이터 삽입**
-    - 개념 스키마 세팅 완료 후 수십만 → 수백만 → 수천만 건 규모로 단계적으로 데이터 적재
-    - 배치 삽입(batch insert) vs 프로시저 방식은 상황에 따라 ADR로 결정
-    - 데이터 편향·분포는 매 작업마다 사용자(프롬프트)가 직접 지정 — 에이전트가 임의로 분포를 가정하지 않는다
-3. **대량 데이터 기준 API 성능 문제 파악 및 해결**
-    - 기존 조회 API·삽입 API를 대상으로 병목 원인을 실측 기반으로 파악
-    - 인덱스 설계/적용, 쿼리 튜닝, 캐싱(Redis) 등 가용한 기법을 상황에 맞게 적용
-    - 현재 스키마에는 **FK 인덱스와 소수의 UNIQUE 외에 조회용 인덱스가 사실상 없다** (ERD 문서 6장 참조). 이것이 3번 작업의 출발점이다
-4. **Read Replica / CQRS 도입**
-    - Read Replica 구성, CQRS 패턴 적용에 따른 Read Model 설계
-    - 조회 전용 저장소로 MongoDB 활용 (비정규화된 조회 모델)
+| # | 작업 갈래 | 방침 |
+|---|---|---|
+| ① | **전국 단위 대학으로 서비스 확장** — 대학 ↔ 부스 연관관계 매핑 등 스키마 개편 | policy 4장 (특히 4.4) |
+| ② | **대량 데이터 삽입** — 수십만 → 수백만 → 수천만 건 단계적 적재 | policy 3장 |
+| ③ | **대량 데이터 기준 API 성능 문제 파악·해결** — 인덱스, 쿼리 튜닝, 캐싱 | policy 5·6장 |
+| ④ | **Read Replica / CQRS 도입** — Read Model(MongoDB) 설계 | policy 7장 |
 
 ### 1.5 문서 체계 — 내용을 어디에 쓰는가
 
+**본 문서는 "에이전트가 무엇을 어떤 순서로 하는가"(절차)와 "코드를 어디에 두는가"(구조)만 정한다.**
+"무엇을 왜 지켜야 하는가"(방침)는 전부 `docs/policy/development-policy.md`에 있다. 역할 구분표는 policy 1장 참조.
+
 | 쓰려는 내용 | 위치 |
 |---|---|
-| 프로젝트 전체에 지속 적용되는 방침 (대용량 처리, 인덱싱/캐싱 원칙, CQRS 조회 원칙 등) | `docs/policy/development-policy.md` |
-| 특정 시점의 기술/아키텍처 결정과 근거 (옵션 비교 포함) | `docs/adr/ADR-NNNN-*.md` |
+| 전역 방침 (대용량·인덱싱·캐싱·CQRS·멱등성·동시성·이벤트·SSE·로깅·검증 …) | `docs/policy/development-policy.md` |
+| 특정 시점의 기술/아키텍처 결정과 근거 | `docs/adr/ADR-NNNN-*.md` |
 | 특정 기능의 구현 직전 상세 설계 | `docs/lld/LLD-NNNN-*.md` |
 | REST API 계약 | `docs/api-spec/<domain>.md` (공통 규약은 `api-conventions.md`) |
-| 현재 DB 스키마 전체 상 | `docs/erd/erd-NNNN-*.md` |
-| 에이전트 작업 절차·워크플로·아키텍처 구조 규칙 | 본 문서 (`AGENTS.md`) |
-
-- policy와 ADR이 충돌하면 **최신 ADR이 우선**하며, 해당 ADR은 policy 갱신을 동반해야 한다.
-- policy 변경은 반드시 ADR을 거친다. (policy 절차 장 참조)
+| 현재 DB 스키마 | `docs/erd/erd-NNNN-*.md` |
+| 작업 절차·워크플로·패키지 구조 규칙 | 본 문서 (`AGENTS.md`) |
 
 ## 2. 개발 워크플로 (필수)
 
@@ -159,11 +150,8 @@ flowchart TD
 
 ### ② ADR 작성 (아키텍처/기술 결정 시)
 
-- 다음에 해당하면 **구현 전에 반드시** ADR을 작성한다:
-    - 스키마 개편 (대학-부스 연관관계, 정규화/비정규화 수준 결정 등)
-    - 대량 데이터 삽입 방식 결정 (배치 insert vs 프로시저, 트랜잭션 크기 등)
-    - 성능 개선 기법 선택 (인덱스 전략, 캐싱 전략, 페이징 전략 등)
-    - 저장소·아키텍처 구조 변경 (Read Replica 도입, CQRS 적용, MongoDB 등 신규 저장소 도입)
+- **ADR이 필요한 결정의 목록은 `docs/adr/README.md`가 정한다.** (스키마 개편, 적재 방식, 성능 기법, 저장소 구조, 계약 변경, 방침 변경)
+  해당하면 **구현 전에 반드시** 작성한다.
 - `docs/templates/adr.md` 템플릿을 복사하여 `docs/adr/ADR-NNNN-<kebab-제목>.md`로 작성한다.
   번호는 기존 ADR 최대 번호 + 1 (4자리, 0001부터).
 - 템플릿의 모든 섹션(컨텍스트, 결정 동인, 고려한 옵션, 결정, 결과)을 채운다. **성능·데이터 규모 관련 결정은 실측 수치를 컨텍스트/결과 섹션에 포함한다.**
@@ -216,15 +204,11 @@ flowchart TD
     2. ADR이 없는 경우 → **사용자의 프롬프트 지시**를 근거로 작성하고, 문서의 "관련 ADR" 항목에 "해당 없음 (사용자 지시 기반)"과 지시 요약을 남긴다. **대량 데이터의 편향·분포 조건은 항상 사용자 프롬프트 지시를 그대로 인용한다 — 에이전트가 임의로 가정하지 않는다.**
 - `docs/templates/lld.md` 템플릿을 복사하여 `docs/lld/LLD-NNNN-<kebab-제목>.md`로 작성한다.
   번호는 기존 LLD 최대 번호 + 1 (4자리, 0001부터).
-- 대상 엔티티/테이블 구조, API 명세, 인덱스/쿼리 변경안, 데이터 생성 스펙(규모·분포·삽입 방식), 캐싱 키 설계, 테스트 계획까지
-  **이 문서만 보고 구현할 수 있는 수준**으로 작성한다.
-- 특히 **테스트 계획**은 다음 단계 TDD Red의 직접적인 입력이므로, 검증할 동작 단위로 구체적으로 작성한다. 성능 관련 작업은 기능 테스트 외에 **측정 방법(부하 테스트 시나리오, 측정 지표)**도 함께 명시한다.
-- **API 스펙 선행 작성 (컨트롤러가 있는 작업 필수)**: REST API를 추가·변경하는 작업은 LLD 작성 시점에
-  `docs/api-spec/<domain>.md`를 `docs/api-spec/api-conventions.md`의 공통 규약·템플릿에 맞게 먼저 작성/갱신한다.
-    - LLD의 API 명세 장은 상세를 중복 기술하지 않고 해당 스펙 문서를 참조한다.
-    - **컨트롤러 구현은 스펙 문서와 일치해야 하며**, 다르게 구현해야 하면 스펙 문서를 먼저 수정한다. 스펙 갱신은 구현과 같은 PR에 포함한다.
-    - 공통 응답 형식(`BaseResponse`)·에러 응답·헤더 규약은 api-conventions.md가 단일 기준이다 (개별 스펙에서 재정의 금지).
-- **스키마를 바꾸는 작업은 `docs/erd/`의 최신 ERD 문서를 함께 갱신한다.** Flyway 마이그레이션 파일과 ERD 문서가 어긋난 상태로 커밋하지 않는다.
+- 템플릿의 각 장을 **이 문서만 보고 구현할 수 있는 수준**으로 채운다. 작업 갈래별로 반드시 채워야 하는 장은 `docs/lld/README.md`가 안내한다.
+- 특히 **테스트 계획(13장)** 은 다음 단계 TDD Red의 직접적인 입력이므로, 검증할 동작 단위로 구체적으로 작성한다.
+- **컨트롤러가 있는 작업은 `docs/api-spec/<domain>.md`를 LLD보다 먼저 작성·갱신한다.**
+  LLD 6장은 상세를 중복하지 않고 그 스펙 문서를 참조만 한다. (작성 규칙은 `docs/api-spec/api-conventions.md`)
+- **스키마를 바꾸는 작업은 `docs/erd/`의 최신 ERD 문서를 함께 갱신한다.** (마이그레이션 규칙은 policy 4장)
 - **문서 작성 스타일 규칙(위)을 적용한다** — 새로운 개념에 괄호 설명 병기, 기존 방식과의 비교 첨부.
 - **작성 후 `docs/lld/README.md`의 목록 표에 한 줄을 추가한다.** 구현이 끝나면 그 행의 상태를 `구현 완료`로 바꾼다.
 - LLD는 `docs(lld)` 커밋으로 남기고, 구현 중 설계가 바뀌면 문서를 갱신한 뒤 코드를 수정한다.
@@ -243,11 +227,13 @@ flowchart TD
 - Red 단계의 사전 정보(패키지, 클래스/메서드 시그니처, DTO 필드, 비즈니스 규칙, 의존 객체)는
   **LLD 문서(데이터 모델, 시그니처 정의, 예외 정책, 테스트 계획)에서 가져온다.**
   LLD에 없는 정보가 필요하면 LLD를 먼저 보완한 뒤 진행한다.
-- 대량 데이터 생성 스크립트·부하 테스트 스크립트처럼 운영 코드가 아닌 도구성 코드는 TDD 사이클을 강제하지 않되, LLD에 명시한 데이터 규모/분포 스펙을 반드시 반영하고 실행 결과(적재 건수, 소요 시간)를 커밋 메시지 또는 이슈에 기록한다.
+- 대량 데이터 생성·부하 테스트 스크립트 같은 도구성 코드는 TDD 사이클을 강제하지 않는다. (적재 스펙·결과 기록 규칙은 policy 3장)
 - 사이클 순서는 하위 계층(repository) → 상위 계층(service) → controller 순으로, 안쪽에서 바깥쪽으로 진행한다.
 - LLD 테스트 계획의 모든 항목이 Green + Refactor 완료될 때까지 사이클을 반복한다.
 - 아래 3장 패키지 구조 규칙을 항상 준수한다.
 - 구현 완료 기준: LLD 테스트 계획 전 항목 소화 + 이슈의 완료 조건(DoD) 충족 + `./gradlew test` 전체 통과.
+- **SSE·이벤트 발행·스케줄러·멱등성·Redis·스키마를 건드린 작업은 여기에 하나가 더 붙는다 — 3인스턴스 분산 환경 검증** (아래 6장, policy 17장).
+  단위 테스트만 통과한 상태를 "구현 완료"로 보고하지 않는다.
 
 ### ⑤ 커밋 (개발 이후)
 
@@ -285,8 +271,7 @@ flowchart TD
 
 ### 3.1 현재 구조
 
-**DDD·레이어드 아키텍처를 적용하지 않는다.** 최상위를 `domain`(비즈니스 도메인)과 `global`(횡단 관심사)로 나누고,
-`domain` 아래를 도메인별로 다시 나누는 구조를 유지한다.
+최상위를 `domain`(비즈니스 도메인)과 `global`(횡단 관심사)로 나누고, `domain` 아래를 도메인별로 다시 나눈다.
 
 ```
 com.skulikelion.festival
@@ -325,22 +310,17 @@ com.skulikelion.festival
 - 도메인 간 참조가 필요하면(예: `order`가 `booth` 정보를 참조) 상대 도메인의 `service`를 호출하는 방식을 기본으로 하되, CQRS·Read Model 도입 이후의 참조 방식은 해당 ADR에서 별도로 정의한다.
 - 전략이 여러 개인 기능(멱등성 4전략, SSE 3방식, 이벤트 2방식)은 **인터페이스 + `@ConditionalOnProperty` 빈 등록**으로 교체 가능하게 두는 기존 패턴을 따른다. 구현체를 `@Component`로 직접 달지 말고 `global/config`의 `@Configuration`에서 조립한다.
 
-### 3.2 CQRS / Read Model 도입 시 확장 규칙 (1.4의 4번 작업부터 적용)
+### 3.2 CQRS / Read Model 도입 시 배치 규칙 (1.4의 ④ 작업부터 적용)
 
-Read Replica·CQRS·MongoDB Read Model을 도입하는 시점부터는 아래 규칙을 따른다. **도입 이전 코드에는 소급 적용하지 않으며, 해당 ADR/LLD가 병합된 도메인부터 순차 적용한다.**
+**도입 이전 코드에는 소급 적용하지 않으며, 해당 ADR/LLD가 병합된 도메인부터 순차 적용한다.** (도입 판단과 정합성 방침은 policy 7장)
 
-- 조회 전용 로직은 `service` 내부에 섞지 않고 `query` 하위 패키지(예: `domain/order/query/OrderQueryService`)로 분리한다.
-- MongoDB를 사용하는 Read Model 문서(도큐먼트) 클래스는 별도 `readmodel` 패키지에 두어, MySQL 기반 JPA 엔티티(`entity`)와 명확히 구분한다.
-- Read Model 갱신 방식(동기 갱신 / 이벤트 기반 비동기 갱신)은 도입 시 ADR로 확정한다. **이미 있는 아웃박스(`global/outbox`)를 갱신 트리거로 재사용할 수 있는지를 옵션에 반드시 포함한다.**
-- Read Replica로의 라우팅(읽기 트랜잭션 분리)은 설정 방식을 ADR로 확정하고, LLD에 어느 API가 Replica를 사용하는지 명시한다.
+- 조회 전용 로직은 `service`에 섞지 않고 `query` 하위 패키지(예: `domain/order/query/OrderQueryService`)로 분리한다.
+- Read Model 문서(도큐먼트) 클래스는 별도 `readmodel` 패키지에 두어 JPA 엔티티(`entity`)와 구분한다.
 
-### 3.3 대량 데이터 작업 관련 규칙
+### 3.3 도구성 코드의 위치
 
-- 더미 데이터 생성 스크립트는 운영 코드(`src/main`)와 분리하여 별도 위치(예: `scripts/` 또는 `src/test` 하위 도구성 디렉터리)에 둔다. 위치는 최초 도입 시 ADR 또는 LLD에서 확정한다.
-- 데이터 규모·분포 조건은 항상 사용자가 지정한 값을 그대로 LLD에 기록하고, 에이전트가 임의로 추정하거나 대체하지 않는다.
-- 배치 삽입/프로시저 등 삽입 방식 선택, 트랜잭션 크기, 실패 시 재시도 전략은 LLD에 명시한다.
-- 인덱스 추가/변경은 반드시 실측(`EXPLAIN` 실행 계획, 응답시간 비교) 근거를 ADR 또는 LLD에 남긴다.
-- 스키마 변경은 **항상 새 Flyway 마이그레이션 파일(`V{N+1}__<snake_case_설명>.sql`)로 추가**한다. 이미 적용된 마이그레이션 파일을 수정하지 않는다(체크섬 불일치로 기동 실패).
+- 더미 데이터 생성·부하 테스트 스크립트는 운영 코드(`src/main`)와 분리해 별도 위치(예: `scripts/`)에 둔다. 위치는 최초 도입 시 ADR 또는 LLD에서 확정한다.
+- 적재 스펙·실행 결과 기록 규칙은 policy 3장, 마이그레이션 규칙은 policy 4장, 인덱스 실측 규칙은 policy 5장을 따른다.
 
 ## 4. 산출물 요약
 
@@ -358,7 +338,7 @@ Read Replica·CQRS·MongoDB Read Model을 도입하는 시점부터는 아래 �
 | 커밋 | git history | `.agents/skills/commit/SKILL.md` |
 | PR | GitHub Pull Requests (base: `develop`) | `.agents/skills/pr/SKILL.md`, `.github/pull_request_template.md` |
 
-## 5. 검증 명령
+## 5. 검증 명령 (테스트)
 
 ```bash
 ./gradlew test          # 전체 테스트 (커밋/PR 전 필수 통과)
@@ -371,3 +351,128 @@ Read Replica·CQRS·MongoDB Read Model을 도입하는 시점부터는 아래 �
   `IntegrationTestSupport`가 MySQL 8.0 + Redis 7-alpine 컨테이너를 띄운다. Docker가 꺼져 있으면
   `DbIdempotentServiceIntegrationTest` / `RedisIdempotentServiceIntegrationTest`가 `initializationError`로 실패한다 — 코드 문제가 아니다.
 - `compileJava`가 `spotlessApply`를 선행하므로, 위 명령을 돌리면 작업 트리의 소스 파일이 변경될 수 있다.
+
+## 6. 로컬 실행 — 3인스턴스 분산 환경
+
+**로컬 환경은 Nginx 뒤에 앱 3대(`festival-app-01|02|03`)가 붙은 분산 구성이다.**
+이 장은 **실행 절차**만 다룬다. *언제* 분산 환경으로 검증해야 하는지는 policy 17장이 정한다.
+
+### 6.0 ⚠️ 사전 조건
+
+```bash
+docker info                              # 실패하면 Docker Desktop이 꺼진 것
+docker network create festival-network   # 최초 1회 (external 네트워크). "already exists"는 무시
+```
+
+- `docker info`가 실패하면 **에이전트는 Docker를 임의로 기동시키지 말고 사용자에게 실행을 요청하고 기다린다** (policy 17.5).
+
+### 6.1 전체 기동
+
+| OS | 명령 |
+|---|---|
+| **Windows** | `.\start.bat` |
+| **macOS / Linux** | `./start.sh` |
+
+이 스크립트는 ① `gradlew build -x test`로 jar를 만들고 ② `docker/local`의 compose 4개(app-01/02/03 + local)를 `up -d --build` 한다.
+
+**⚠️ 기동 후 nginx 상태를 반드시 확인한다.**
+
+```bash
+docker ps -a --filter name=nginx
+```
+
+- nginx는 `upstream-app.conf`에 적힌 `festival-app-01|02|03`을 **시작 시점에 이름 해석**한다.
+  앱 컨테이너보다 먼저 뜨면 **해석에 실패해 그대로 종료(Exited)된다.**
+- 이 경우 앱들이 올라온 뒤 **한 번 더 켜준다**:
+
+```bash
+docker start nginx
+```
+
+- `restart: unless-stopped`가 걸려 있지 않으므로 **자동으로 되살아나지 않는다.** 기동 직후 이 확인을 습관적으로 한다.
+
+### 6.2 접속 포트
+
+| 대상 | 컨테이너 | 접속 | 비고 |
+|---|---|---|---|
+| **Nginx (부하분산 진입점)** | `nginx` | `http://localhost:8888` | **분산 동작을 검증할 때는 반드시 이 포트로 호출한다** |
+| 앱 #1 | `festival-app-01` | `http://localhost:8080` | 특정 인스턴스를 직접 때릴 때만 |
+| 앱 #2 | `festival-app-02` | `http://localhost:8081` | |
+| 앱 #3 | `festival-app-03` | `http://localhost:8082` | |
+| MySQL | `mysql` | `localhost:3307` → 컨테이너 3306 | DB `festival2`, root / `1234` |
+| Redis | `redis` | **호스트 포트 없음** (`expose`만) | 반드시 `docker exec`로 접근 |
+| Prometheus | `prometheus` | `http://localhost:9090` | |
+| Grafana | `grafana` | `http://localhost:3000` | admin / admin |
+
+### 6.3 컨테이너 안에서 명령 실행 — `docker exec`
+
+기동 후의 모든 점검·조작은 **호스트에 클라이언트를 설치하지 말고 `docker exec`로** 한다.
+특히 **Redis는 호스트 포트가 열려 있지 않아 `docker exec` 외에 접근 방법이 없다.**
+
+```bash
+# MySQL — 스키마/데이터 확인
+docker exec -it mysql mysql -uroot -p1234 festival2
+docker exec mysql mysql -uroot -p1234 festival2 -e "SHOW INDEX FROM orders;"
+docker exec mysql mysql -uroot -p1234 festival2 -e "EXPLAIN SELECT ...;"      # 실행 계획 확인
+docker exec mysql mysql -uroot -p1234 festival2 -e "SELECT version, description, success FROM flyway_schema_history;"
+
+# Redis — 멱등성 키, SSE Stream 상태 확인 (비밀번호 필수)
+docker exec -it redis redis-cli -a 1234
+docker exec redis redis-cli -a 1234 KEYS '*'
+docker exec redis redis-cli -a 1234 XINFO GROUPS <스트림키>      # 소비자 그룹·pending 확인
+
+# 애플리케이션 로그 (인스턴스별로 따로 본다)
+docker logs -f festival-app-01
+docker logs --tail 200 festival-app-02
+
+# Nginx — 설정 검증·리로드
+docker exec nginx nginx -t
+docker exec nginx nginx -s reload
+
+# 헬스 체크
+curl http://localhost:8080/actuator/health
+curl http://localhost:8888/actuator/health   # Nginx 경유 (요청마다 다른 인스턴스로 갈 수 있다)
+```
+
+> `-it`는 대화형 셸이 필요할 때만 쓴다. **에이전트가 실행하는 명령에는 `-it`를 붙이지 않는다** — 입력을 기다리며 멈춘다.
+
+### 6.4 특정 인스턴스만 재시작 — 카나리 롤링
+
+코드를 고친 뒤 **한 대만** 교체해 무중단 배포를 흉내 내거나, 분산 환경에서 인스턴스 이탈/복귀를 시험할 때 쓴다.
+
+| OS | 명령 |
+|---|---|
+| **Windows** | `.\restart.bat 01` (또는 `02`, `03`) |
+| **macOS / Linux** | `./restart.sh 01` (또는 `02`, `03`) |
+
+인자는 **`01` / `02` / `03` 두 자리 문자열**이다. `1`은 거부된다.
+
+스크립트가 하는 일 (6단계):
+
+1. 대상 인스턴스를 Nginx upstream에서 `down` 처리하고 reload → **트래픽에서 뺀다**
+2. 해당 컨테이너만 `--no-deps`로 재빌드·재기동
+3. `/actuator/health`가 200을 줄 때까지 최대 60회(5초 간격) 대기 — **실패하면 트래픽에 복귀시키지 않고 종료**
+4. 카나리 트래픽 투입 (대상 `weight=2`, 나머지 `weight=9` → 약 10%)
+5. **관찰 단계에서 키 입력을 기다리며 멈춘다** (로그·5xx·지연·Prometheus·Grafana 확인)
+6. 균등 트래픽(33/33/33)으로 복구
+
+> ⚠️ **5단계는 사람의 키 입력을 기다린다.** 에이전트가 비대화형으로 실행하면 그 지점에서 멈춘다.
+> 이 스크립트는 **사용자에게 실행을 요청**하거나, 관찰 단계에서 멈춘다는 것을 알고 별도 처리한다.
+
+> ⚠️ **`restart.bat`(Windows)의 알려진 문제**: 1단계에서 `nginx/conf.d/upstream-app.conf`에 쓰는데,
+> 이 시점의 작업 디렉터리가 **저장소 루트**라 경로가 존재하지 않는다(`cd docker/local`은 2단계에서 실행된다).
+> 즉 **Windows에서는 1단계의 "트래픽에서 빼기"가 실제로 적용되지 않고, 트래픽을 받는 채로 재기동된다.**
+> (`restart.sh`는 `cd docker/local`을 먼저 하므로 정상이다.) 별도 이슈로 고친다.
+
+### 6.5 정리·초기화
+
+```bash
+docker compose -f docker/local/docker-compose-local.yml \
+  -f docker/local/docker-compose-app-01.yml \
+  -f docker/local/docker-compose-app-02.yml \
+  -f docker/local/docker-compose-app-03.yml down          # 컨테이너만 제거 (데이터 유지)
+
+docker volume ls | grep festival                           # 데이터 볼륨 확인
+```
+
+- **`down -v`는 MySQL·Redis 볼륨을 지운다. 사용자 확인 없이 실행하지 않는다** (policy 17.6).

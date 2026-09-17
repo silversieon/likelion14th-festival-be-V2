@@ -14,6 +14,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | [LLD-0001](LLD-0001-university-department-and-auth-identity.md) | University·Department 도메인 신설과 인증 식별자 전환 | 구현 완료 | 2026-09-14 | [#3](https://github.com/silversieon/likelion14th-festival-be-V2/issues/3) | [ADR-0001](../adr/ADR-0001-university-department-schema-and-auth-identity.md) | ① 전국 확장 |
 | [LLD-0002](LLD-0002-university-department-search-api.md) | 로그인 화면용 학교명 검색·학과 목록 조회 API | 구현 완료 | 2026-09-16 | [#5](https://github.com/silversieon/likelion14th-festival-be-V2/issues/5) | 해당 없음 (사용자 지시 기반) | ① 전국 확장 (후속) |
+| [LLD-0003](LLD-0003-booth-menu-bulk-seed.md) | 전국 학과별 부스·번역·메뉴 대량 적재 (Flyway V17~V19) | 구현 완료 | 2026-09-17 | [#12](https://github.com/silversieon/likelion14th-festival-be-V2/issues/12) | [ADR-0002](../adr/ADR-0002-booth-menu-bulk-seed-path.md) | ② 대량 데이터 삽입 |
 
 <!--
   행 예시 (첫 LLD 작성 시 위 안내 행을 지우고 이 형식으로 채운다):
@@ -35,10 +36,11 @@
 
 | 작업 갈래 | 반드시 채우는 장 |
 |---|---|
-| ① 전국 대학 확장 | 2(데이터 모델), 7(스키마 변경 + **백필**), 8(인덱스), 12(에러) |
-| ② 대량 데이터 삽입 | **9(데이터 생성 스펙)**, 7(스키마), 13.3(측정) |
-| ③ 성능 개선 | **8(인덱스/쿼리 + 실행 계획 비교)**, 10(캐싱), **13.3(성능 측정)** |
-| ④ Read Replica·CQRS | 3.4(조회 전용 서비스), **10(Read Model·정합성 수준)**, 11(트랜잭션) |
+| ① 전국 대학 확장 | 2(데이터 모델), 7(스키마 변경 + **백필**), 8(인덱스), 12(에러), **13.3(분산 검증 — 마이그레이션 동시 기동)** |
+| ② 대량 데이터 삽입 | **9(데이터 생성 스펙)**, 7(스키마), 13.4(측정) |
+| ③ 성능 개선 | **8(인덱스/쿼리 + 실행 계획 비교)**, 10(캐싱), **13.4(성능 측정)** |
+| ④ Read Replica·CQRS | 3.4(조회 전용 서비스), **10(Read Model·정합성 수준)**, 11(트랜잭션), **13.3(분산 검증)** |
+| SSE·이벤트·스케줄러·멱등성·Redis 변경 | **13.3(분산 환경 검증) — 3인스턴스로 확인하지 않으면 완료가 아니다** (policy 17장) |
 
 ## 작성 시 자주 놓치는 것
 

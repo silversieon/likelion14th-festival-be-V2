@@ -37,6 +37,7 @@
 | 번호 | 제목 | 상태 | 승인일 | 선택 옵션 | 작성일 | 이슈 | 작업 갈래 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ADR-0001](ADR-0001-university-department-schema-and-auth-identity.md) | 대학·학과를 테이블로 승격하고, 인증 식별자를 `Department` enum 이름에서 대리 키로 바꾼다 | 승인됨 | 2026-09-14 | 옵션 2 | 2026-09-14 | [#3](https://github.com/silversieon/likelion14th-festival-be-V2/issues/3) | ① 전국 확장 |
+| [ADR-0002](ADR-0002-booth-menu-bulk-seed-path.md) | 전국 부스·번역·메뉴 더미 데이터를 Flyway 버전 마이그레이션으로 적재한다 | 승인됨 | 2026-09-17 | 옵션 1 | 2026-09-17 | [#12](https://github.com/silversieon/likelion14th-festival-be-V2/issues/12) | ② 대량 데이터 삽입 |
 
 <!--
   행 예시 (첫 ADR 작성 시 위 안내 행을 지우고 이 형식으로 채운다):
@@ -55,7 +56,7 @@
 | 성능 개선 기법 선택 | 인덱스 전략, 캐싱 전략(키·TTL·무효화), 페이징 전략 변경 |
 | 저장소·구조 변경 | Read Replica 도입, CQRS 적용, MongoDB 등 신규 저장소 도입 |
 | 계약 변경 | `BaseResponse` 스키마 변경(에러 코드 필드 추가 등), SSE 이벤트 이름 체계 변경 |
-| 방침 변경 | `docs/policy/development-policy.md`의 어떤 절이든 바꿀 때 (policy 18장) |
+| 방침 변경 | `docs/policy/development-policy.md`의 어떤 절이든 바꿀 때 (policy 19장) |
 
 기존 결정 범위 안의 단순 작업이면 ADR을 생략할 수 있으나, **이슈에 생략 사유를 남긴다.**
 
@@ -88,7 +89,7 @@
 
 ## 관련 문서
 
-- 방침: [`../policy/development-policy.md`](../policy/development-policy.md) — policy 변경은 반드시 ADR을 거친다 (policy 18장)
+- 방침: [`../policy/development-policy.md`](../policy/development-policy.md) — policy 변경은 반드시 ADR을 거친다 (policy 19장)
 - 구현 설계: [`../lld/README.md`](../lld/README.md)
 - 스키마: [`../erd/erd-0001-initial-schema.md`](../erd/erd-0001-initial-schema.md)
 - 템플릿: [`../templates/adr.md`](../templates/adr.md)

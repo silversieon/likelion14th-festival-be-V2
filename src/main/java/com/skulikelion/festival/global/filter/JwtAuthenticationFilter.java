@@ -23,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.skulikelion.festival.domain.auth.exception.AuthErrorCode;
 import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 import com.skulikelion.festival.global.security.jwt.JwtProvider;
 import com.skulikelion.festival.global.security.jwt.TokenType;
 
@@ -63,6 +64,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         || pathMatcher.match("/api/auth/login", uri)
         || pathMatcher.match("/api/auth/logout", uri)
         || pathMatcher.match("/api/auth/register", uri)
+        // 로그인 화면에서 쓰는 대학·학과 조회. 만료된 쿠키가 남아 있어도 401로 막히지 않게 한다 (LLD-0002).
+        || pathMatcher.match("/api/universities", uri)
+        || pathMatcher.match("/api/universities/*/departments", uri)
         || pathMatcher.match("/actuator/prometheus", uri)
         || pathMatcher.match("/actuator/health", uri)
         || "/error".equals(uri);
@@ -91,11 +95,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String accessToken = jwtProvider.extractAccessToken(request);
 
       if (accessToken != null && jwtProvider.validateToken(accessToken, TokenType.ACCESS_TOKEN)) {
-        String departmentName = jwtProvider.getDepartmentFromToken(accessToken);
+        // principal은 토큰 클레임만으로 복원된다. 인가 때마다 managers를 조회하지 않기 위함이다 (ADR-0001 옵션 2).
+        AuthPrincipal principal = jwtProvider.getPrincipalFromToken(accessToken);
         List<GrantedAuthority> authorities = jwtProvider.getAuthoritiesFromToken(accessToken);
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(departmentName, null, authorities);
+            new UsernamePasswordAuthenticationToken(principal, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
       filterChain.doFilter(request, response);

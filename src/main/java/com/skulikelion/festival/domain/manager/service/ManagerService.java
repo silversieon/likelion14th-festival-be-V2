@@ -9,6 +9,7 @@ import com.skulikelion.festival.domain.manager.dto.request.UpdateManagerPassword
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 /**
  * 멋쟁이사자처럼 서경대학교 축제 페이지 관리자 관련 Service interface 입니다.
@@ -54,16 +55,16 @@ public interface ManagerService {
   /**
    * [ 관리자 본인 정보 조회 메서드 ]
    *
-   * @param departmentName 사용자 아이디
+   * @param principal 인증된 요청 주체
    * @return
    */
-  ManagerResponse getMyInfo(String departmentName);
+  ManagerResponse getMyInfo(AuthPrincipal principal);
 
   /**
-   * [ 관리자 조회 메서드 ] 학과명으로 관리자 조회
+   * [ 관리자 조회 메서드 ] 관리자 식별자로 조회
    *
-   * @param departmentName 학과명
+   * @param managerId 관리자 식별자
    * @return 관리자 엔티티
    */
-  Manager getRequiredManager(String departmentName);
+  Manager getRequiredManager(Long managerId);
 }

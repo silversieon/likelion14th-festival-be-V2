@@ -11,6 +11,7 @@ import com.skulikelion.festival.domain.booth.dto.request.menu.UpdateBoothMenuSol
 import com.skulikelion.festival.domain.booth.dto.response.menu.BoothMenuResponse;
 import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoothMenuGroupResponse;
 import com.skulikelion.festival.global.enums.Language;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 /**
  * 멋쟁이사자처럼 서경대학교 축제 페이지 부스 메뉴 관련 Service interface 입니다.
@@ -41,24 +42,24 @@ public interface BoothMenuService {
   /**
    * [ 부스 메뉴 가격 수정 메서드 ]
    *
-   * @param departmentName 요청한 관리자의 학과명
+   * @param principal 인증된 요청 주체
    * @param menuId 가격을 수정할 메뉴의 식별자
    * @param request 부스 메뉴 가격 수정 요청 정보
    * @return 수정된 부스 메뉴 정보
    */
   BoothMenuResponse updateMenuPrice(
-      String departmentName, Long menuId, UpdateBoothMenuPriceRequest request);
+      AuthPrincipal principal, Long menuId, UpdateBoothMenuPriceRequest request);
 
   /**
    * [ 부스 메뉴 품절 여부 변경 메서드 ]
    *
-   * @param departmentName 요청한 관리자의 학과명
+   * @param principal 인증된 요청 주체
    * @param menuId 품절 여부를 변경할 메뉴의 식별자
    * @param request 부스 메뉴 품절 여부 변경 요청 정보
    * @return 변경된 부스 메뉴 정보
    */
   BoothMenuResponse updateMenuSoldOut(
-      String departmentName, Long menuId, UpdateBoothMenuSoldOutRequest request);
+      AuthPrincipal principal, Long menuId, UpdateBoothMenuSoldOutRequest request);
 
   /**
    * [ 주문 가능 부스 메뉴 조회 메서드 ]
@@ -72,10 +73,10 @@ public interface BoothMenuService {
   /**
    * [ 부스 관리자 전체 메뉴 조회 메서드 ]
    *
-   * @param departmentName 요청한 관리자의 학과명
+   * @param principal 인증된 요청 주체
    * @return 카테고리별 전체 메뉴 정보
    */
-  OrderAvailableBoothMenuGroupResponse getAllMenus(String departmentName);
+  OrderAvailableBoothMenuGroupResponse getAllMenus(AuthPrincipal principal);
 
   /**
    * [ 부스 메뉴 삭제 메서드 ]

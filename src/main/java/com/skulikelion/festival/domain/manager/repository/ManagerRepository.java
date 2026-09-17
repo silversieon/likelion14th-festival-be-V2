@@ -13,17 +13,19 @@ import org.springframework.data.repository.query.Param;
 import com.skulikelion.festival.domain.manager.dto.response.ManagerResponse;
 import com.skulikelion.festival.domain.manager.entity.Manager;
 import com.skulikelion.festival.domain.manager.entity.enums.Role;
-import com.skulikelion.festival.global.enums.Department;
 
 public interface ManagerRepository extends JpaRepository<Manager, Long> {
-  Optional<Manager> findByDepartment(Department department);
+  Optional<Manager> findByDepartmentId(Long departmentId);
+
+  boolean existsByDepartmentId(Long departmentId);
 
   @Query(
       """
   SELECT new com.skulikelion.festival.domain.manager.dto.response.ManagerResponse(
     m.id,
-      m.department,
-        m.role
+      m.department.id,
+        m.department.name,
+          m.role
     ) FROM Manager m
       WHERE m.role = :role
   """)
@@ -33,8 +35,9 @@ public interface ManagerRepository extends JpaRepository<Manager, Long> {
       """
   SELECT new com.skulikelion.festival.domain.manager.dto.response.ManagerResponse(
     m.id,
-      m.department,
-        m.role
+      m.department.id,
+        m.department.name,
+          m.role
     ) FROM Manager m
           WHERE m.id = :managerId
   """)

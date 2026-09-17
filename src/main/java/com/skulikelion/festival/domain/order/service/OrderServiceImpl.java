@@ -16,9 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.skulikelion.festival.domain.booth.entity.Booth;
 import com.skulikelion.festival.domain.booth.exception.BoothErrorCode;
 import com.skulikelion.festival.domain.booth.repository.BoothRepository;
-import com.skulikelion.festival.domain.manager.entity.Manager;
-import com.skulikelion.festival.domain.manager.exception.ManagerErrorCode;
-import com.skulikelion.festival.domain.manager.repository.ManagerRepository;
 import com.skulikelion.festival.domain.order.dto.request.CanceledOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.CompletedOrderCursor;
 import com.skulikelion.festival.domain.order.dto.request.CookingOrderCursor;
@@ -49,8 +46,9 @@ import com.skulikelion.festival.domain.order.repository.OrderRepository;
 import com.skulikelion.festival.domain.order.service.processor.OrderProcessor;
 import com.skulikelion.festival.global.common.pagenation.CursorPage;
 import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
-import com.skulikelion.festival.global.enums.Department;
 import com.skulikelion.festival.global.exception.CustomException;
+import com.skulikelion.festival.global.security.AuthPrincipal;
+import com.skulikelion.festival.global.security.BoothOwnershipValidator;
 import com.skulikelion.festival.global.util.idempotency.annotation.Idempotent;
 import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyType;
 
@@ -68,9 +66,9 @@ public class OrderServiceImpl implements OrderService {
   private final BoothRepository boothRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final OrderEventMapper orderEventMapper;
-  private final ManagerRepository managerRepository;
   private final OrderItemUnitRepository orderItemUnitRepository;
   private final OrderProcessor orderProcessor;
+  private final BoothOwnershipValidator boothOwnershipValidator;
 
   @Override
   @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyType.FALLBACK)
@@ -82,10 +80,10 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public CursorPageResponse<WaitingOrderResponse> getWaitingOrders(
-      String departmentName, WaitingOrderCursor cursor, Integer size) {
-    Booth booth = getBoothOrThrow(departmentName);
+      AuthPrincipal principal, WaitingOrderCursor cursor, Integer size) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
     Long boothId = booth.getId();
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+    validateBoothManagerBelongsToBooth(principal, booth);
 
     List<WaitingOrderResponse> waitingOrders =
         orderRepository.findWaitingOrdersByBoothId(
@@ -109,17 +107,19 @@ public class OrderServiceImpl implements OrderService {
         order -> order.addOrderItems(waitingItemMap.getOrDefault(order.getOrderId(), List.of())));
 
     log.debug(
-        "[OrderService] 대기 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, waitingOrders.size());
+        "[OrderService] 대기 주문 조회 완료 - 학과 식별자: {}, 주문 수: {}",
+        principal.departmentId(),
+        waitingOrders.size());
     return orderMapper.toWaitingOrderResponseCursorPage(page);
   }
 
   @Override
   @Transactional(readOnly = true)
   public CursorPageResponse<CookingOrderResponse> getCookingOrders(
-      String departmentName, CookingOrderCursor cursor, Integer size) {
-    Booth booth = getBoothOrThrow(departmentName);
+      AuthPrincipal principal, CookingOrderCursor cursor, Integer size) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
     Long boothId = booth.getId();
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+    validateBoothManagerBelongsToBooth(principal, booth);
 
     List<CookingOrderResponse> cookingOrders =
         orderRepository.findCookingOrdersByBoothId(
@@ -147,21 +147,23 @@ public class OrderServiceImpl implements OrderService {
                 cookingItemUnitMap.getOrDefault(order.getOrderId(), List.of())));
 
     log.debug(
-        "[OrderService] 조리 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, cookingOrders.size());
+        "[OrderService] 조리 주문 조회 완료 - 학과 식별자: {}, 주문 수: {}",
+        principal.departmentId(),
+        cookingOrders.size());
     return orderMapper.toCookingOrderResponseCursorPage(page);
   }
 
   @Override
   @Transactional(readOnly = true)
   public CursorPageResponse<CompletedOrderResponse> getCompletedOrders(
-      String departmentName,
+      AuthPrincipal principal,
       LocalDate orderDate,
       String keyword,
       CompletedOrderCursor cursor,
       Integer size) {
-    Booth booth = getBoothOrThrow(departmentName);
+    Booth booth = getBoothOrThrow(principal.departmentId());
     Long boothId = booth.getId();
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+    validateBoothManagerBelongsToBooth(principal, booth);
 
     List<CompletedOrderResponse> completedOrders =
         orderRepository.findCompletedOrdersByBoothIdAndDateAndKeyword(
@@ -187,21 +189,23 @@ public class OrderServiceImpl implements OrderService {
         order -> order.addOrderItems(completedItemMap.getOrDefault(order.getOrderId(), List.of())));
 
     log.debug(
-        "[OrderService] 완료 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, completedOrders.size());
+        "[OrderService] 완료 주문 조회 완료 - 학과 식별자: {}, 주문 수: {}",
+        principal.departmentId(),
+        completedOrders.size());
     return orderMapper.toCompletedOrderResponseCursorPage(page);
   }
 
   @Override
   @Transactional(readOnly = true)
   public CursorPageResponse<CanceledOrderResponse> getCanceledOrders(
-      String departmentName,
+      AuthPrincipal principal,
       LocalDate orderDate,
       String keyword,
       CanceledOrderCursor cursor,
       Integer size) {
-    Booth booth = getBoothOrThrow(departmentName);
+    Booth booth = getBoothOrThrow(principal.departmentId());
     Long boothId = booth.getId();
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+    validateBoothManagerBelongsToBooth(principal, booth);
 
     List<CanceledOrderResponse> canceledOrders =
         orderRepository.findCanceledOrdersByBoothIdAndDateAndKeyword(
@@ -227,16 +231,18 @@ public class OrderServiceImpl implements OrderService {
         order -> order.addOrderItems(canceledItemMap.getOrDefault(order.getOrderId(), List.of())));
 
     log.debug(
-        "[OrderService] 취소 주문 조회 완료 - 학과명: {}, 주문 수: {}", departmentName, canceledOrders.size());
+        "[OrderService] 취소 주문 조회 완료 - 학과 식별자: {}, 주문 수: {}",
+        principal.departmentId(),
+        canceledOrders.size());
     return orderMapper.toCanceledOrderResponseCursorPage(page);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public SalesResponse getSales(String departmentName, LocalDate date) {
-    Booth booth = getBoothOrThrow(departmentName);
+  public SalesResponse getSales(AuthPrincipal principal, LocalDate date) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
     Long boothId = booth.getId();
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+    validateBoothManagerBelongsToBooth(principal, booth);
 
     if (date == null) {
       return orderRepository.findCompletedOrderTotalAmountByBoothId(boothId);
@@ -250,9 +256,9 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional
-  public void updateOrderStatus(String departmentName, Long orderId, OrderStatus newOrderStatus) {
-    Booth booth = getBoothOrThrow(departmentName);
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+  public void updateOrderStatus(AuthPrincipal principal, Long orderId, OrderStatus newOrderStatus) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
+    validateBoothManagerBelongsToBooth(principal, booth);
     Order order = getOrderOrThrow(orderId);
 
     OrderStatus previousStatus = order.getOrderStatus();
@@ -264,8 +270,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     log.info(
-        "[OrderService] 주문 상태 변경 - 학과명: {}, 주문 식별자: {}, 변경 전: {}, 변경 후: {}",
-        departmentName,
+        "[OrderService] 주문 상태 변경 - 학과 식별자: {}, 주문 식별자: {}, 변경 전: {}, 변경 후: {}",
+        principal.departmentId(),
         orderId,
         previousStatus,
         newOrderStatus);
@@ -276,9 +282,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void cancelOrder(
-      String departmentName, Long orderId, OrderCancelReason orderCancelReason) {
-    Booth booth = getBoothOrThrow(departmentName);
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+      AuthPrincipal principal, Long orderId, OrderCancelReason orderCancelReason) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
+    validateBoothManagerBelongsToBooth(principal, booth);
     Order order = getOrderOrThrow(orderId);
 
     OrderStatus previousStatus = order.getOrderStatus();
@@ -289,8 +295,8 @@ public class OrderServiceImpl implements OrderService {
     order.cancelOrder(orderCancelReason);
 
     log.info(
-        "[OrderService] 주문 취소 - 학과명: {}, 주문 식별자: {}, 취소 사유: {}",
-        departmentName,
+        "[OrderService] 주문 취소 - 학과 식별자: {}, 주문 식별자: {}, 취소 사유: {}",
+        principal.departmentId(),
         orderId,
         orderCancelReason);
 
@@ -322,9 +328,9 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional
   public void updateServedStatus(
-      String departmentName, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
-    Booth booth = getBoothOrThrow(departmentName);
-    validateBoothManagerBelongsToBooth(departmentName, booth);
+      AuthPrincipal principal, Long orderItemUnitId, OrderItemUnitUpdateRequest request) {
+    Booth booth = getBoothOrThrow(principal.departmentId());
+    validateBoothManagerBelongsToBooth(principal, booth);
     validateOrderIsCooking(orderItemUnitId);
     OrderItemUnit orderItemUnit = getOrderItemUnitOrThrow(orderItemUnitId);
 
@@ -340,8 +346,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     log.info(
-        "[OrderService] 서빙 상태 변경 - 학과명: {}, 주문 항목 단위 식별자: {}, 변경 후: {}",
-        departmentName,
+        "[OrderService] 서빙 상태 변경 - 학과 식별자: {}, 주문 항목 단위 식별자: {}, 변경 후: {}",
+        principal.departmentId(),
         orderItemUnitId,
         request.isServed());
     eventPublisher.publishEvent(
@@ -350,33 +356,23 @@ public class OrderServiceImpl implements OrderService {
     log.debug("[OrderService] 서빙 상태 변경 이벤트 발행 - 주문 항목 단위 식별자: {}", orderItemUnitId);
   }
 
-  private Booth getBoothOrThrow(String departmentName) {
+  private Booth getBoothOrThrow(Long departmentId) {
     return boothRepository
-        .findByDepartment(Department.valueOf(departmentName))
+        .findByDepartmentId(departmentId)
         .orElseThrow(
             () -> {
-              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 학과명: {}", departmentName);
+              log.warn("[OrderService] 부스를 찾을 수 없습니다 - 학과 식별자: {}", departmentId);
               return new CustomException(BoothErrorCode.BOOTH_NOT_FOUND);
             });
   }
 
-  private void validateBoothManagerBelongsToBooth(String departmentName, Booth booth) {
-    Department department = Department.valueOf(departmentName);
-    Manager currentManager =
-        managerRepository
-            .findByDepartment(department)
-            .orElseThrow(
-                () -> {
-                  log.warn("[OrderService] 매니저를 찾을 수 없습니다 - 학과명: {}", departmentName);
-                  return new CustomException(ManagerErrorCode.MANAGER_NOT_FOUND);
-                });
-    if (!booth.getDepartment().equals(currentManager.getDepartment())) {
-      log.warn(
-          "[OrderService] 부스 접근 권한 없음 - 학과명: {}, 매니저 역할: {}",
-          departmentName,
-          currentManager.getRole());
-      throw new CustomException(OrderErrorCode.BOOTH_ACCESS_DENIED);
-    }
+  /**
+   * [ 주문 자원의 부스 소유권 검증 메서드 ]
+   *
+   * <p>ADMIN 우회가 없다. 이는 이 경로의 기존 동작을 그대로 보존한 것이다 (LLD-0001 2.3 R6, 14장 O1).
+   */
+  private void validateBoothManagerBelongsToBooth(AuthPrincipal principal, Booth booth) {
+    boothOwnershipValidator.validateOwner(principal, booth, OrderErrorCode.BOOTH_ACCESS_DENIED);
   }
 
   private Order getOrderOrThrow(Long orderId) {

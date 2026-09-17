@@ -22,6 +22,7 @@ import com.skulikelion.festival.domain.booth.dto.response.menu.OrderAvailableBoo
 import com.skulikelion.festival.domain.booth.service.menu.BoothMenuService;
 import com.skulikelion.festival.global.common.BaseResponse;
 import com.skulikelion.festival.global.enums.Language;
+import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -92,7 +93,7 @@ public class BoothMenuController {
       description =
           """
           **Parameters**  \n
-          departmentName: 토큰에서 추출되는 관리자 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           \n
           **Returns**  \n
           main: 메인 메뉴 목록 \n
@@ -108,8 +109,8 @@ public class BoothMenuController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
   @GetMapping("/booth-menus/all")
   public ResponseEntity<BaseResponse<OrderAvailableBoothMenuGroupResponse>> getAllMenus(
-      @AuthenticationPrincipal String departmentName) {
-    OrderAvailableBoothMenuGroupResponse response = boothMenuService.getAllMenus(departmentName);
+      @AuthenticationPrincipal AuthPrincipal principal) {
+    OrderAvailableBoothMenuGroupResponse response = boothMenuService.getAllMenus(principal);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "전체 메뉴 조회 성공", response));
   }
 
@@ -147,7 +148,7 @@ public class BoothMenuController {
       description =
           """
           **Parameters**  \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           menuId: 가격을 수정할 메뉴 식별자 \n
           price: 변경할 메뉴 가격 \n
           \n
@@ -166,10 +167,10 @@ public class BoothMenuController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
   @PatchMapping("/booth-menus/{menuId}/price")
   public ResponseEntity<BaseResponse<BoothMenuResponse>> updateMenuPrice(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long menuId,
       @Valid @RequestBody UpdateBoothMenuPriceRequest request) {
-    BoothMenuResponse response = boothMenuService.updateMenuPrice(departmentName, menuId, request);
+    BoothMenuResponse response = boothMenuService.updateMenuPrice(principal, menuId, request);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "메뉴 가격 수정 성공", response));
   }
 
@@ -178,7 +179,7 @@ public class BoothMenuController {
       description =
           """
           **Parameters**  \n
-          departmentName: 학과명 \n
+          principal: 토큰에서 추출되는 인증 주체(학과 식별자 포함) \n
           menuId: 품절 여부를 변경할 메뉴 식별자 \n
           soldOut: 변경할 품절 여부 \n
           \n
@@ -197,11 +198,10 @@ public class BoothMenuController {
   @PreAuthorize("hasAnyRole({'ADMIN', 'BOOTH_MANAGER'})")
   @PatchMapping("/booth-menus/{menuId}/sold-out")
   public ResponseEntity<BaseResponse<BoothMenuResponse>> updateMenuSoldOut(
-      @AuthenticationPrincipal String departmentName,
+      @AuthenticationPrincipal AuthPrincipal principal,
       @PathVariable Long menuId,
       @Valid @RequestBody UpdateBoothMenuSoldOutRequest request) {
-    BoothMenuResponse response =
-        boothMenuService.updateMenuSoldOut(departmentName, menuId, request);
+    BoothMenuResponse response = boothMenuService.updateMenuSoldOut(principal, menuId, request);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "메뉴 품절 여부 변경 성공", response));
   }
 

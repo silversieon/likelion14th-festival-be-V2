@@ -53,8 +53,10 @@ public class AuthController {
       description =
           """
             **Parameters**  \n
-            departmentName: 사용자 아이디 \n
+            universityId: 대학 식별자 \n
+            departmentId: 학과 식별자 \n
             password: 사용자 비밀번호 \n
+            role: 부여할 역할 \n
             adminKey: 관리자 키 \n
             \n
             **Returns**  \n
@@ -71,7 +73,8 @@ public class AuthController {
       description =
           """
                     **Parameters**  \n
-                    departmentName: 사용자 아이디  \n
+                    universityId: 대학 식별자  \n
+                    departmentId: 학과 식별자  \n
                     password: 사용자 비밀번호 \n
                     \n
                     **Returns (쿠키에 전달)**  \n

@@ -136,6 +136,11 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/lost-items/{lostItemId}", "/api/lost-items")
                 .permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/universities",
+                    "/api/universities/{universityId}/departments")
+                .permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/booths/{boothId}/orders")
                 .permitAll()
                 .anyRequest()

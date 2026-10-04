@@ -3,16 +3,20 @@
  */
 package com.skulikelion.festival.global.config;
 
-import java.util.UUID;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skulikelion.festival.global.config.property.AppProperties;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@RequiredArgsConstructor
 public class AppConfig {
+
+  private final AppProperties appProperties;
 
   @Bean
   public ObjectMapper objectMapper() {
@@ -21,7 +25,7 @@ public class AppConfig {
 
   @Bean
   public String instanceId() {
-    return UUID.randomUUID().toString().substring(0, 8);
+    return appProperties.getInstanceId();
   }
 
   @Bean

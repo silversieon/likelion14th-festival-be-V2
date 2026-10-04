@@ -21,9 +21,11 @@ import com.skulikelion.festival.domain.order.sse.local.LocalOrderSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.redis.*;
 import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubEventPublisher;
 import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubListener;
+import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubSseDispatcher;
 import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.redis.stream.OrderStreamEventPublisher;
 import com.skulikelion.festival.domain.order.sse.redis.stream.OrderStreamListener;
+import com.skulikelion.festival.domain.order.sse.redis.stream.OrderStreamSseDispatcher;
 import com.skulikelion.festival.domain.order.sse.redis.stream.OrderStreamSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.store.LocalOrderSseEmitterStore;
 import com.skulikelion.festival.domain.order.sse.store.OrderSseEmitterRegistry;
@@ -80,6 +82,14 @@ public class OrderSseConfig {
       OrderSseChannelResolver channelResolver,
       ObjectMapper objectMapper) {
     return new OrderPubSubEventPublisher(redisTemplate, channelResolver, objectMapper);
+  }
+
+  @Bean
+  @Primary
+  @ConditionalOnProperty(name = "sse.strategy", havingValue = "distributed")
+  @ConditionalOnProperty(name = "sse.redis.mode", havingValue = "pubsub")
+  public OrderSseDispatcher pubsubOrderSseDispatcher(LocalOrderSseEmitterStore store) {
+    return new OrderPubSubSseDispatcher(store);
   }
 
   @Bean
@@ -150,5 +160,18 @@ public class OrderSseConfig {
       OrderSseChannelResolver channelResolver,
       ObjectMapper objectMapper) {
     return new OrderStreamEventPublisher(redisTemplate, channelResolver, objectMapper);
+  }
+
+  @Bean
+  @ConditionalOnProperty(name = "sse.strategy", havingValue = "distributed")
+  @ConditionalOnProperty(name = "sse.redis.mode", havingValue = "stream")
+  public OrderSseDispatcher streamOrderSseDispatcher(
+      LocalOrderSseEmitterStore store,
+      RedisTemplate<String, String> redisTemplate,
+      BoothService boothService,
+      ObjectMapper objectMapper,
+      OrderSseChannelResolver channelResolver) {
+    return new OrderStreamSseDispatcher(
+        store, redisTemplate, boothService, channelResolver, objectMapper);
   }
 }

@@ -3,11 +3,11 @@
  */
 package com.skulikelion.festival.domain.order.sse.store;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -31,7 +31,7 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
         key(boothId, subscribeType),
         (k, list) -> {
           if (list == null) {
-            list = new ArrayList<>();
+            list = new CopyOnWriteArrayList<>();
           }
           list.add(emitter);
           return list;
@@ -58,7 +58,7 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
         key(boothId, subscribeType),
         (k, list) -> {
           if (list == null) {
-            list = new ArrayList<>();
+            list = new CopyOnWriteArrayList<>();
             wasFirst.set(true);
           }
           list.add(emitter);

@@ -6,14 +6,12 @@ package com.skulikelion.festival.domain.order.controller;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
+import com.skulikelion.festival.domain.order.sse.redis.OrderSseDispatcher;
 import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderSseController {
 
   private final OrderSseSubscriber subscriber;
+  private final OrderSseDispatcher dispatcher;
 
   @Operation(
       summary = "[ 부스 관리자 | 토큰 O | 주문 관리 탭별 구독 ]",
@@ -49,7 +48,12 @@ public class OrderSseController {
   @GetMapping(value = "/orders/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribeOrders(
       @AuthenticationPrincipal AuthPrincipal principal,
-      @RequestParam("orderSseSubscribeType") OrderSseSubscribeType orderSseSubscribeType) {
-    return subscriber.subscribeOrderStatus(principal, orderSseSubscribeType);
+      @RequestParam("orderSseSubscribeType") OrderSseSubscribeType orderSseSubscribeType,
+      @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId) {
+    SseEmitter emitter = subscriber.subscribeOrderStatus(principal, orderSseSubscribeType);
+    if (lastEventId != null && emitter != null) {
+      dispatcher.replay(principal, orderSseSubscribeType, lastEventId, emitter);
+    }
+    return emitter;
   }
 }

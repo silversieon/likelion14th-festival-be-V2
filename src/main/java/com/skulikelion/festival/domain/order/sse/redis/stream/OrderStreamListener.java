@@ -44,12 +44,13 @@ public class OrderStreamListener
   public void onMessage(MapRecord<String, String, String> message) {
     try {
       String stream = message.getStream();
+      String recordId = message.getId().getValue();
       OrderSseChannelInfo info = channelResolver.parse(Objects.requireNonNull(stream));
       Map<String, String> value = message.getValue();
       SseEventMessage eventMessage =
           objectMapper.readValue(value.get(FIELD_MESSAGE), SseEventMessage.class);
 
-      dispatcher.dispatch(info, eventMessage);
+      dispatcher.dispatch(info, eventMessage, recordId);
 
       // 처리 성공 시 ACK -> 유실 방지 핵심 포인트
       redisTemplate.opsForStream().acknowledge(groupName, message);

@@ -39,5 +39,6 @@ public class OrderStreamEventPublisher implements OrderSseEventPublisher {
             .ofMap(Map.of(FIELD_MESSAGE, objectMapper.writeValueAsString(message)))
             .withStreamKey(streamKey);
     redisTemplate.opsForStream().add(record);
+    redisTemplate.opsForStream().trim(streamKey, 10_000, true);
   }
 }

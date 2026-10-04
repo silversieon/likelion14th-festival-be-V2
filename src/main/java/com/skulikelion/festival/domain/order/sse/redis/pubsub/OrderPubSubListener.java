@@ -28,6 +28,7 @@ public class OrderPubSubListener implements MessageListener {
     OrderSseChannelInfo info = channelResolver.parse(channel);
     SseEventMessage eventMessage = objectMapper.readValue(message.getBody(), SseEventMessage.class);
 
-    dispatcher.dispatch(info, eventMessage);
+    // pubsub은 recordId로 null
+    dispatcher.dispatch(info, eventMessage, null);
   }
 }

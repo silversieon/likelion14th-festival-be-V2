@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/festival2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
 
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -19,7 +20,7 @@ services:
 
       JAVA_OPTS: >-
         -Xms1g
-        -Xmx2g
+        -Xmx1g
         -XX:+UseG1GC
         -XX:MaxGCPauseMillis=200
         -Dfile.encoding=UTF-8
@@ -38,11 +39,13 @@ services:
       retries: 3
       start_period: 120s
 
+    cpuset: "0,1"
+
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 4G
+          cpus: '1.5'
+          memory: 2G
 
     networks:
       - festival-network

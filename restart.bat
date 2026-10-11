@@ -55,6 +55,8 @@ echo [1/6] Removing %APP% from traffic...
     if not "%TARGET%"=="01" echo     server festival-app-01:8080;
     if not "%TARGET%"=="02" echo     server festival-app-02:8080;
     if not "%TARGET%"=="03" echo     server festival-app-03:8080;
+    echo     keepalive 32;
+    echo     keepalive_timeout 30s;
     echo }
 ) > nginx/conf.d/upstream-app.conf
 
@@ -171,6 +173,8 @@ echo [4/6] Starting Canary traffic...
     if not "%TARGET%"=="02" echo     server festival-app-02:8080 weight=9;
     if not "%TARGET%"=="03" echo     server festival-app-03:8080 weight=9;
 
+    echo     keepalive 32;
+    echo     keepalive_timeout 30s;
     echo }
 ) > nginx/conf.d/upstream-app.conf
 
@@ -228,6 +232,8 @@ echo [6/6] Restoring normal traffic...
     echo     server festival-app-01:8080;
     echo     server festival-app-02:8080;
     echo     server festival-app-03:8080;
+    echo     keepalive 32;
+    echo     keepalive_timeout 30s;
     echo }
 ) > nginx/conf.d/upstream-app.conf
 

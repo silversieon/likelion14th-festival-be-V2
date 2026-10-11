@@ -55,6 +55,8 @@ echo "[1/6] Removing $APP from traffic..."
       echo "    server festival-app-${n}:8080;"
     fi
   done
+  echo "    keepalive 32;"
+  echo "    keepalive_timeout 30s;"
   echo "}"
 } > nginx/conf.d/upstream-app.conf
 
@@ -151,6 +153,8 @@ echo "[4/6] Starting Canary traffic..."
       echo "    server festival-app-${n}:8080 weight=9;"
     fi
   done
+  echo "    keepalive 32;"
+  echo "    keepalive_timeout 30s;"
   echo "}"
 } > nginx/conf.d/upstream-app.conf
 
@@ -202,6 +206,8 @@ echo "[6/6] Restoring normal traffic..."
   echo "    server festival-app-01:8080;"
   echo "    server festival-app-02:8080;"
   echo "    server festival-app-03:8080;"
+  echo "    keepalive 32;"
+  echo "    keepalive_timeout 30s;"
   echo "}"
 } > nginx/conf.d/upstream-app.conf
 

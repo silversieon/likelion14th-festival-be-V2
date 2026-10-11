@@ -3,6 +3,7 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx
+    cpuset: "10"
     ports:
       - "8888:80"
     volumes:
@@ -23,8 +24,9 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=caching_sha2_password
-      - --max_connections=20
-      - --innodb_buffer_pool_size=512M
+      - --max_connections=25
+      - --innodb_buffer_pool_size=1228M
+      - --innodb_flush_method=O_DIRECT
     volumes:
       - mysql-data:/var/lib/mysql
       - ./mysql/conf.d:/etc/mysql/conf.d:ro
@@ -35,14 +37,16 @@ services:
       retries: 5
       start_period: 30s
 
+    cpuset: "6-8"
+
     deploy:
       resources:
         limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
           cpus: '1.0'
           memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
 
     networks:
       - festival-network
@@ -69,16 +73,16 @@ services:
       retries: 10
       start_period: 10s
 
-    cpuset: "0,1"
+    cpuset: "9"
 
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 384M
+          cpus: '1.0'
+          memory: 1G
         reservations:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.5'
+          memory: 512M
 
     networks:
       - festival-network
@@ -87,6 +91,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    cpuset: "11"
     ports:
       - "9090:9090"
     volumes:
@@ -102,6 +107,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    cpuset: "11"
     ports:
       - "3000:3000"
     environment:

@@ -16,6 +16,7 @@
 | [LLD-0002](LLD-0002-university-department-search-api.md) | 로그인 화면용 학교명 검색·학과 목록 조회 API | 구현 완료 | 2026-09-16 | [#5](https://github.com/silversieon/likelion14th-festival-be-V2/issues/5) | 해당 없음 (사용자 지시 기반) | ① 전국 확장 (후속) |
 | [LLD-0003](LLD-0003-booth-menu-bulk-seed.md) | 전국 학과별 부스·번역·메뉴 대량 적재 (Flyway V17~V19) | 구현 완료 | 2026-09-17 | [#12](https://github.com/silversieon/likelion14th-festival-be-V2/issues/12) | [ADR-0002](../adr/ADR-0002-booth-menu-bulk-seed-path.md) | ② 대량 데이터 삽입 |
 | [LLD-0004](LLD-0004-booth-manager-seed.md) | 전국 부스 매니저 계정 14,062개 적재 (BCrypt 사전 생성 + Flyway V20) | 구현 완료 | 2026-09-17 | [#14](https://github.com/silversieon/likelion14th-festival-be-V2/issues/14) | [ADR-0003](../adr/ADR-0003-booth-manager-seed-with-precomputed-bcrypt.md) | ② 대량 데이터 삽입 |
+| [LLD-0005](LLD-0005-admin-statistics-api.md) | 운영진 매출·부스·메뉴 통계 조회 API | 구현 완료 | 2026-10-10 | [#16](https://github.com/silversieon/likelion14th-festival-be-V2/issues/16) | 해당 없음 (사용자 지시 기반) | 기타 (기능 추가) |
 
 <!--
   행 예시 (첫 LLD 작성 시 위 안내 행을 지우고 이 형식으로 채운다):

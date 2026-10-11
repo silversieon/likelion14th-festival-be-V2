@@ -20,6 +20,7 @@ services:
       MYSQL_DATABASE: festival2
       MYSQL_ROOT_PASSWORD: 1234
       TZ: Asia/Seoul
+      LC_ALL: C.UTF-8
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci

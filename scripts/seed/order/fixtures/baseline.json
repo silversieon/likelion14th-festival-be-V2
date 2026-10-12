@@ -1,0 +1,12 @@
+{
+  "captured_at": "2026-10-12T18:05:03",
+  "legacy_max_ids": {
+    "orders": 2828,
+    "order_items": 4330,
+    "order_item_units": 5310
+  },
+  "legacy_order_count": 2284,
+  "legacy_order_total_price_sum": 36485400,
+  "idempotency_count": 3327,
+  "outbox_count": 116
+}

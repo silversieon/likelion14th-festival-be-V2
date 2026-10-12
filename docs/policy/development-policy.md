@@ -653,7 +653,7 @@ IDE에서 앱 하나만 띄워 확인한 것은 **동작 확인이지 검증이 
   | 대상 | cpuset (VM 가상 CPU) | CPU 상한 | 메모리 상한 | 주요 설정 |
   |---|---|---|---|---|
   | 앱 01 / 02 / 03 | `0,1` / `2,3` / `4,5` | 각 1.5 | 각 2G | `-Xms1g -Xmx1g`, HikariCP 풀 5 |
-  | MySQL | `6-8` | 2.0 | 2G | `max_connections=25`, `innodb_buffer_pool_size=1228M`, `innodb_flush_method=O_DIRECT` |
+  | MySQL | `6-8` | 2.0 | 2G | `max_connections=25`, `innodb_buffer_pool_size=1280M`(`innodb_buffer_pool_instances=1` — 기본 8개면 1,024MB 단위로 올림된다), `innodb_flush_method=O_DIRECT` |
   | Redis | `9` | 1.0 | 1G | `maxmemory 256mb`, `allkeys-lru` |
   | Nginx | `10` | — | — | |
   | Prometheus·Grafana | `11` | — | — | |

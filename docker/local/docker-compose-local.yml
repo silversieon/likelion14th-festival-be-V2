@@ -26,7 +26,8 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=caching_sha2_password
       - --max_connections=25
-      - --innodb_buffer_pool_size=1228M
+      - --innodb_buffer_pool_size=1280M
+      - --innodb_buffer_pool_instances=1
       - --innodb_flush_method=O_DIRECT
     volumes:
       - mysql-data:/var/lib/mysql

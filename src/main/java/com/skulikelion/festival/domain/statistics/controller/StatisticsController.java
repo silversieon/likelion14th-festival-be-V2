@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.skulikelion.festival.domain.statistics.dto.request.BoothMenuSalesCursor;
+import com.skulikelion.festival.domain.statistics.dto.request.BoothSalesCursor;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothMenuSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.DailySalesResponse;
@@ -24,6 +26,8 @@ import com.skulikelion.festival.domain.statistics.dto.response.SalesSummaryRespo
 import com.skulikelion.festival.domain.statistics.enums.MenuSortType;
 import com.skulikelion.festival.domain.statistics.service.StatisticsService;
 import com.skulikelion.festival.global.common.BaseResponse;
+import com.skulikelion.festival.global.common.pagenation.CursorCodec;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,6 +53,7 @@ import lombok.RequiredArgsConstructor;
 public class StatisticsController {
 
   private final StatisticsService statisticsService;
+  private final CursorCodec cursorCodec;
 
   @Operation(
       summary = "[ 운영진 | 토큰 O | 총 주문 수·총 수익 조회 ]",
@@ -150,22 +155,31 @@ public class StatisticsController {
       description =
           """
           **Parameters**  \n
-          universityName: 학교명 (부분 일치, 필수) \n
-          boothName: 부스(학과)명 (부분 일치, 선택) \n
+          universityName: 학교명 (접두 일치, 필수) \n
+          boothName: 부스(학과)명 (접두 일치, 선택) \n
+          encodedCursor: 직전 응답의 nextCursor (첫 페이지면 생략) \n
+          size: 페이지 크기 (1 ~ 100, 기본 20) \n
           \n
           **Returns**  \n
-          부스별 매출 TOP 10과 같은 필드. rank는 검색 결과 안이 아니라 전체 부스 기준 순위 \n
+          items: 부스별 매출 TOP 10과 같은 필드, 순위 오름차순. rank는 검색 결과 안이 아니라 전체 부스 기준 순위 \n
+          nextCursor / hasNext / size: 커서 페이지 정보 \n
           """)
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/booths/search")
-  public ResponseEntity<BaseResponse<List<BoothSalesResponse>>> searchBoothSales(
-      @Parameter(description = "학교명 (부분 일치)", example = "서경대학교") @RequestParam(required = false)
+  public ResponseEntity<BaseResponse<CursorPageResponse<BoothSalesResponse>>> searchBoothSales(
+      @Parameter(description = "학교명 (접두 일치)", example = "서경대학교") @RequestParam(required = false)
           String universityName,
-      @Parameter(description = "부스(학과)명 (부분 일치)", example = "소프트웨어학과")
+      @Parameter(description = "부스(학과)명 (접두 일치)", example = "소프트웨어학과")
           @RequestParam(required = false)
-          String boothName) {
-    List<BoothSalesResponse> responses =
-        statisticsService.searchBoothSales(universityName, boothName);
+          String boothName,
+      @Parameter(description = "직전 응답의 nextCursor (첫 페이지면 생략)") @RequestParam(required = false)
+          String encodedCursor,
+      @Parameter(description = "페이지 크기 (1 ~ 100)", example = "20")
+          @RequestParam(defaultValue = "20")
+          Integer size) {
+    BoothSalesCursor cursor = cursorCodec.decode(encodedCursor, BoothSalesCursor.class);
+    CursorPageResponse<BoothSalesResponse> responses =
+        statisticsService.searchBoothSales(universityName, boothName, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "부스별 매출 검색에 성공했습니다.", responses));
   }
@@ -175,10 +189,12 @@ public class StatisticsController {
       description =
           """
           **Parameters**  \n
-          universityName: 학교명 (부분 일치, 필수) \n
-          boothName: 부스(학과)명 (부분 일치, 선택) \n
+          universityName: 학교명 (접두 일치, 필수) \n
+          boothName: 부스(학과)명 (접두 일치, 선택) \n
+          encodedCursor: 직전 응답의 nextCursor (첫 페이지면 생략) \n
+          size: 페이지 크기 — 메뉴 행 수 (1 ~ 100, 기본 20) \n
           \n
-          **Returns**  \n
+          **Returns** (items 각 항목) \n
           rank: 부스 안에서의 순위 \n
           boothId: 부스 식별자 \n
           boothMenuId: 메뉴 식별자 \n
@@ -190,14 +206,21 @@ public class StatisticsController {
           """)
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/booths/menus")
-  public ResponseEntity<BaseResponse<List<BoothMenuSalesResponse>>> getBoothMenuRanking(
-      @Parameter(description = "학교명 (부분 일치)", example = "서경대학교") @RequestParam(required = false)
-          String universityName,
-      @Parameter(description = "부스(학과)명 (부분 일치)", example = "소프트웨어학과")
-          @RequestParam(required = false)
-          String boothName) {
-    List<BoothMenuSalesResponse> responses =
-        statisticsService.getBoothMenuRanking(universityName, boothName);
+  public ResponseEntity<BaseResponse<CursorPageResponse<BoothMenuSalesResponse>>>
+      getBoothMenuRanking(
+          @Parameter(description = "학교명 (접두 일치)", example = "서경대학교") @RequestParam(required = false)
+              String universityName,
+          @Parameter(description = "부스(학과)명 (접두 일치)", example = "소프트웨어학과")
+              @RequestParam(required = false)
+              String boothName,
+          @Parameter(description = "직전 응답의 nextCursor (첫 페이지면 생략)") @RequestParam(required = false)
+              String encodedCursor,
+          @Parameter(description = "페이지 크기 — 메뉴 행 수 (1 ~ 100)", example = "20")
+              @RequestParam(defaultValue = "20")
+              Integer size) {
+    BoothMenuSalesCursor cursor = cursorCodec.decode(encodedCursor, BoothMenuSalesCursor.class);
+    CursorPageResponse<BoothMenuSalesResponse> responses =
+        statisticsService.getBoothMenuRanking(universityName, boothName, cursor, size);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "부스별 인기 메뉴 순위 조회에 성공했습니다.", responses));
   }

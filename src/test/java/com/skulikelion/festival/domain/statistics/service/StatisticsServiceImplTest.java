@@ -27,6 +27,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.skulikelion.festival.domain.statistics.dto.request.BoothMenuSalesCursor;
+import com.skulikelion.festival.domain.statistics.dto.request.BoothSalesCursor;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothMenuSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.DailySalesResponse;
@@ -40,10 +42,12 @@ import com.skulikelion.festival.domain.statistics.repository.projection.BoothSal
 import com.skulikelion.festival.domain.statistics.repository.projection.DailySalesRow;
 import com.skulikelion.festival.domain.statistics.repository.projection.HourlySalesRow;
 import com.skulikelion.festival.domain.statistics.repository.projection.MenuSalesRow;
+import com.skulikelion.festival.global.common.pagenation.CursorCodec;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.exception.CustomException;
 
 /**
- * {@link StatisticsServiceImpl} 테스트입니다. (LLD-0005 13.1)
+ * {@link StatisticsServiceImpl} 테스트입니다. (LLD-0005 13.1, 검색 페이지네이션은 LLD-0007 13.1)
  *
  * <p>리포지토리는 Mock이다. 실제 SQL은 {@code StatisticsApiIntegrationTest}가 검증한다.
  *
@@ -55,7 +59,12 @@ class StatisticsServiceImplTest {
 
   @Mock private StatisticsRepository statisticsRepository;
 
+  @Mock private CursorCodec cursorCodec;
+
   @InjectMocks private StatisticsServiceImpl statisticsService;
+
+  /** 페이지 크기 기본값. 리포지토리에는 다음 페이지 확인용으로 1을 더해 넘긴다. */
+  private static final int SIZE = 20;
 
   private static final LocalDate OCT_9 = LocalDate.of(2026, 10, 9);
   private static final LocalDate OCT_10 = LocalDate.of(2026, 10, 10);
@@ -377,21 +386,43 @@ class StatisticsServiceImplTest {
     @ValueSource(strings = {"", "   "})
     @DisplayName("학교명이 없거나 공백뿐이면 STATISTICS_UNIVERSITY_NAME_REQUIRED를 던진다")
     void throwsUniversityNameRequired_whenBlank(String universityName) {
-      assertThatThrownBy(() -> statisticsService.searchBoothSales(universityName, "소프트웨어"))
+      assertThatThrownBy(
+              () -> statisticsService.searchBoothSales(universityName, "소프트웨어", null, SIZE))
           .isInstanceOf(CustomException.class)
           .extracting(StatisticsServiceImplTest::errorCodeOf)
           .isEqualTo(StatisticsErrorCode.STATISTICS_UNIVERSITY_NAME_REQUIRED);
-      verify(statisticsRepository, never()).searchBoothSales(any(), any());
+      verify(statisticsRepository, never()).searchBoothSales(any(), any(), any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("학교명이 공백이면 size가 범위 밖이어도 학교명 오류를 먼저 던진다")
+    void checksUniversityNameBeforeSize() {
+      assertThatThrownBy(() -> statisticsService.searchBoothSales(" ", null, null, 0))
+          .isInstanceOf(CustomException.class)
+          .extracting(StatisticsServiceImplTest::errorCodeOf)
+          .isEqualTo(StatisticsErrorCode.STATISTICS_UNIVERSITY_NAME_REQUIRED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 0, 101})
+    @DisplayName("size가 1~100 밖이면 STATISTICS_INVALID_PAGE_SIZE를 던지고 조회하지 않는다")
+    void throwsInvalidPageSize_whenOutOfRange(int size) {
+      assertThatThrownBy(() -> statisticsService.searchBoothSales("서경", null, null, size))
+          .isInstanceOf(CustomException.class)
+          .extracting(StatisticsServiceImplTest::errorCodeOf)
+          .isEqualTo(StatisticsErrorCode.STATISTICS_INVALID_PAGE_SIZE);
+      verify(statisticsRepository, never()).searchBoothSales(any(), any(), any(), anyInt());
     }
 
     @Test
     @DisplayName("학교명·부스명의 앞뒤 공백을 제거하고 !, %, _를 이스케이프해 조회한다")
     void trimsAndEscapesKeywords() {
-      given(statisticsRepository.searchBoothSales("서경!%대", "소프!_트!!웨어")).willReturn(List.of());
+      given(statisticsRepository.searchBoothSales("서경!%대", "소프!_트!!웨어", null, SIZE + 1))
+          .willReturn(List.of());
 
-      statisticsService.searchBoothSales("  서경%대  ", " 소프_트!웨어 ");
+      statisticsService.searchBoothSales("  서경%대  ", " 소프_트!웨어 ", null, SIZE);
 
-      verify(statisticsRepository).searchBoothSales("서경!%대", "소프!_트!!웨어");
+      verify(statisticsRepository).searchBoothSales("서경!%대", "소프!_트!!웨어", null, SIZE + 1);
     }
 
     @ParameterizedTest
@@ -399,24 +430,67 @@ class StatisticsServiceImplTest {
     @ValueSource(strings = {"", "   "})
     @DisplayName("부스명이 없거나 공백뿐이면 부스명 조건 없이 조회한다")
     void searchesWithoutBoothName_whenBlank(String boothName) {
-      given(statisticsRepository.searchBoothSales("서경", null)).willReturn(List.of());
+      given(statisticsRepository.searchBoothSales("서경", null, null, SIZE + 1))
+          .willReturn(List.of());
 
-      statisticsService.searchBoothSales("서경", boothName);
+      statisticsService.searchBoothSales("서경", boothName, null, SIZE);
 
-      verify(statisticsRepository).searchBoothSales("서경", null);
+      verify(statisticsRepository).searchBoothSales("서경", null, null, SIZE + 1);
+    }
+
+    @Test
+    @DisplayName("커서가 있으면 마지막 순위를 넘겨 그다음부터 조회한다")
+    void passesLastRank_whenCursorGiven() {
+      given(statisticsRepository.searchBoothSales("서경", null, 37L, SIZE + 1)).willReturn(List.of());
+
+      statisticsService.searchBoothSales("서경", null, new BoothSalesCursor(37L), SIZE);
+
+      verify(statisticsRepository).searchBoothSales("서경", null, 37L, SIZE + 1);
     }
 
     @Test
     @DisplayName("결과의 순위와 평균 주문 금액을 응답으로 옮긴다")
     void mapsRankAndAverage() {
-      given(statisticsRepository.searchBoothSales("서경", null))
+      given(statisticsRepository.searchBoothSales("서경", null, null, SIZE + 1))
           .willReturn(List.of(boothRow(37, 9000L, 2L)));
 
-      List<BoothSalesResponse> result = statisticsService.searchBoothSales("서경", null);
+      CursorPageResponse<BoothSalesResponse> result =
+          statisticsService.searchBoothSales("서경", null, null, SIZE);
 
-      assertThat(result)
+      assertThat(result.getItems())
           .extracting(BoothSalesResponse::getRank, BoothSalesResponse::getAverageOrderAmount)
           .containsExactly(tuple(37L, 4500L));
+    }
+
+    @Test
+    @DisplayName("size + 1행을 받으면 size개만 담고 마지막 항목의 순위로 다음 커서를 만든다")
+    void returnsNextCursor_whenMoreRowsExist() {
+      given(statisticsRepository.searchBoothSales("서경", null, null, 3))
+          .willReturn(List.of(boothRow(4, 0L, 0L), boothRow(5, 0L, 0L), boothRow(6, 0L, 0L)));
+      given(cursorCodec.encode(new BoothSalesCursor(5L))).willReturn("next-cursor");
+
+      CursorPageResponse<BoothSalesResponse> result =
+          statisticsService.searchBoothSales("서경", null, null, 2);
+
+      assertThat(result.getItems()).extracting(BoothSalesResponse::getRank).containsExactly(4L, 5L);
+      assertThat(result.getHasNext()).isTrue();
+      assertThat(result.getNextCursor()).isEqualTo("next-cursor");
+      assertThat(result.getSize()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("size행 이하면 다음 페이지가 없고 커서를 만들지 않는다")
+    void returnsNoCursor_whenLastPage() {
+      given(statisticsRepository.searchBoothSales("서경", null, null, 3))
+          .willReturn(List.of(boothRow(4, 0L, 0L), boothRow(5, 0L, 0L)));
+
+      CursorPageResponse<BoothSalesResponse> result =
+          statisticsService.searchBoothSales("서경", null, null, 2);
+
+      assertThat(result.getItems()).hasSize(2);
+      assertThat(result.getHasNext()).isFalse();
+      assertThat(result.getNextCursor()).isNull();
+      verify(cursorCodec, never()).encode(any());
     }
   }
 
@@ -427,22 +501,36 @@ class StatisticsServiceImplTest {
     @Test
     @DisplayName("학교명이 공백뿐이면 STATISTICS_UNIVERSITY_NAME_REQUIRED를 던진다")
     void throwsUniversityNameRequired_whenBlank() {
-      assertThatThrownBy(() -> statisticsService.getBoothMenuRanking("  ", null))
+      assertThatThrownBy(() -> statisticsService.getBoothMenuRanking("  ", null, null, SIZE))
           .isInstanceOf(CustomException.class)
           .extracting(StatisticsServiceImplTest::errorCodeOf)
           .isEqualTo(StatisticsErrorCode.STATISTICS_UNIVERSITY_NAME_REQUIRED);
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 101})
+    @DisplayName("size가 1~100 밖이면 STATISTICS_INVALID_PAGE_SIZE를 던지고 조회하지 않는다")
+    void throwsInvalidPageSize_whenOutOfRange(int size) {
+      assertThatThrownBy(() -> statisticsService.getBoothMenuRanking("서경", null, null, size))
+          .isInstanceOf(CustomException.class)
+          .extracting(StatisticsServiceImplTest::errorCodeOf)
+          .isEqualTo(StatisticsErrorCode.STATISTICS_INVALID_PAGE_SIZE);
+      verify(statisticsRepository, never())
+          .findBoothMenuRanking(any(), any(), any(), any(), any(), any(), anyInt());
+    }
+
     @Test
-    @DisplayName("정제한 검색어로 조회하고 결과를 응답으로 옮긴다")
+    @DisplayName("정제한 검색어로 첫 페이지를 조회하고 결과를 응답으로 옮긴다")
     void searchesWithNormalizedKeywordsAndMapsRows() {
-      given(statisticsRepository.findBoothMenuRanking("서경", "소프트웨어"))
+      given(
+              statisticsRepository.findBoothMenuRanking(
+                  "서경", "소프트웨어", null, null, null, null, SIZE + 1))
           .willReturn(List.of(menuRow(1, "닭꼬치"), menuRow(2, "떡볶이")));
 
-      List<BoothMenuSalesResponse> result =
-          statisticsService.getBoothMenuRanking(" 서경 ", " 소프트웨어 ");
+      CursorPageResponse<BoothMenuSalesResponse> result =
+          statisticsService.getBoothMenuRanking(" 서경 ", " 소프트웨어 ", null, SIZE);
 
-      assertThat(result)
+      assertThat(result.getItems())
           .extracting(
               BoothMenuSalesResponse::getRank,
               BoothMenuSalesResponse::getBoothId,
@@ -455,6 +543,58 @@ class StatisticsServiceImplTest {
           .containsExactly(
               tuple(1L, 1L, 11L, "서경대학교", "소프트웨어학과", "닭꼬치", 5L, 20000L),
               tuple(2L, 1L, 12L, "서경대학교", "소프트웨어학과", "떡볶이", 5L, 20000L));
+      assertThat(result.getHasNext()).isFalse();
+      assertThat(result.getNextCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("커서가 있으면 커서의 네 값을 그대로 넘긴다")
+    void passesCursorValues_whenCursorGiven() {
+      BoothMenuSalesCursor cursor = new BoothMenuSalesCursor("서경대학교", "소프트웨어학과", 1L, 3L);
+      given(
+              statisticsRepository.findBoothMenuRanking(
+                  "서경", null, "서경대학교", "소프트웨어학과", 1L, 3L, SIZE + 1))
+          .willReturn(List.of());
+
+      statisticsService.getBoothMenuRanking("서경", null, cursor, SIZE);
+
+      verify(statisticsRepository)
+          .findBoothMenuRanking("서경", null, "서경대학교", "소프트웨어학과", 1L, 3L, SIZE + 1);
+    }
+
+    @Test
+    @DisplayName("size + 1행을 받으면 size개만 담고 마지막 항목의 정렬 키로 다음 커서를 만든다")
+    void returnsNextCursor_whenMoreRowsExist() {
+      given(statisticsRepository.findBoothMenuRanking("서경", null, null, null, null, null, 3))
+          .willReturn(List.of(menuRow(1, "닭꼬치"), menuRow(2, "떡볶이"), menuRow(3, "어묵")));
+      given(cursorCodec.encode(new BoothMenuSalesCursor("서경대학교", "소프트웨어학과", 1L, 2L)))
+          .willReturn("next-cursor");
+
+      CursorPageResponse<BoothMenuSalesResponse> result =
+          statisticsService.getBoothMenuRanking("서경", null, null, 2);
+
+      assertThat(result.getItems())
+          .extracting(BoothMenuSalesResponse::getMenuName)
+          .containsExactly("닭꼬치", "떡볶이");
+      assertThat(result.getHasNext()).isTrue();
+      assertThat(result.getNextCursor()).isEqualTo("next-cursor");
+      assertThat(result.getSize()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("결과가 없으면 빈 페이지를 반환한다")
+    void returnsEmptyPage_whenNoRows() {
+      given(statisticsRepository.findBoothMenuRanking("서경", null, null, null, null, null, 21))
+          .willReturn(List.of());
+
+      CursorPageResponse<BoothMenuSalesResponse> result =
+          statisticsService.getBoothMenuRanking("서경", null, null, SIZE);
+
+      assertThat(result.getItems()).isEmpty();
+      assertThat(result.getHasNext()).isFalse();
+      assertThat(result.getNextCursor()).isNull();
+      assertThat(result.getSize()).isZero();
+      verify(statisticsRepository).findBoothMenuRanking("서경", null, null, null, null, null, 21);
     }
   }
 

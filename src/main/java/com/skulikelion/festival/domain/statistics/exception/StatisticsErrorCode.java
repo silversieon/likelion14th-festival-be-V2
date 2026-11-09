@@ -25,7 +25,9 @@ public enum StatisticsErrorCode implements BaseErrorCode {
   STATISTICS_INVALID_DATE_RANGE(
       "STATISTICS_40002", "시작일은 종료일보다 늦을 수 없습니다.", HttpStatus.BAD_REQUEST),
   STATISTICS_UNIVERSITY_NAME_REQUIRED(
-      "STATISTICS_40003", "검색할 학교명을 입력해주세요.", HttpStatus.BAD_REQUEST);
+      "STATISTICS_40003", "검색할 학교명을 입력해주세요.", HttpStatus.BAD_REQUEST),
+  STATISTICS_INVALID_PAGE_SIZE(
+      "STATISTICS_40004", "페이지 크기는 1 이상 100 이하로 입력해주세요.", HttpStatus.BAD_REQUEST);
 
   private final String code;
 

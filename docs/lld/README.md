@@ -18,6 +18,7 @@
 | [LLD-0004](LLD-0004-booth-manager-seed.md) | 전국 부스 매니저 계정 14,062개 적재 (BCrypt 사전 생성 + Flyway V20) | 구현 완료 | 2026-09-17 | [#14](https://github.com/silversieon/likelion14th-festival-be-V2/issues/14) | [ADR-0003](../adr/ADR-0003-booth-manager-seed-with-precomputed-bcrypt.md) | ② 대량 데이터 삽입 |
 | [LLD-0005](LLD-0005-admin-statistics-api.md) | 운영진 매출·부스·메뉴 통계 조회 API | 구현 완료 | 2026-10-10 | [#16](https://github.com/silversieon/likelion14th-festival-be-V2/issues/16) | 해당 없음 (사용자 지시 기반) | 기타 (기능 추가) |
 | [LLD-0006](LLD-0006-order-hotspot-bulk-load.md) | 핫스팟 분포 주문 대량 적재 (Python 생성기 → CSV → LOAD DATA, 누적 5만→500만) | 확정 | 2026-10-12 | [#18](https://github.com/silversieon/likelion14th-festival-be-V2/issues/18) | [ADR-0004](../adr/ADR-0004-order-bulk-load-with-csv-load-data.md) | ② 대량 데이터 삽입 |
+| [LLD-0007](LLD-0007-statistics-search-prefix-keyset-cursor.md) | 부스 통계 검색 접두 일치 전환과 키셋 커서 페이지네이션 | 구현 완료 | 2026-11-10 | [#20](https://github.com/silversieon/likelion14th-festival-be-V2/issues/20) | [ADR-0005](../adr/ADR-0005-statistics-search-prefix-match-and-keyset-cursor.md) | ③ 성능 개선 |
 
 <!--
   행 예시 (첫 LLD 작성 시 위 안내 행을 지우고 이 형식으로 채운다):

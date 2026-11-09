@@ -83,23 +83,37 @@ public interface StatisticsRepository extends Repository<Order, Long> {
       nativeQuery = true)
   List<BoothSalesRow> findTopBoothSales(@Param("limit") int limit);
 
-  /** 순위를 전체 부스 기준으로 먼저 매긴 뒤 검색 조건으로 거른다. {@code boothName}이 null이면 학교 조건만 건다. */
+  /**
+   * 순위를 전체 부스 기준으로 먼저 매긴 뒤 검색 조건(접두 일치)으로 거른다. {@code boothName}이 null이면 학교 조건만 건다. 순위가 유일하므로
+   * {@code lastRank} 다음부터 {@code limit}개를 읽는다. {@code lastRank}가 null이면 첫 페이지다. (LLD-0007 8.1)
+   */
   @Query(
       value =
           RANKED_BOOTH_SALES
               + """
-              WHERE ranked.universityName LIKE CONCAT('%', :universityName, '%') ESCAPE '!'
-                AND (:boothName IS NULL OR ranked.departmentName LIKE CONCAT('%', :boothName, '%') ESCAPE '!')
+              WHERE ranked.universityName LIKE CONCAT(:universityName, '%') ESCAPE '!'
+                AND (:boothName IS NULL OR ranked.departmentName LIKE CONCAT(:boothName, '%') ESCAPE '!')
+                AND (:lastRank IS NULL OR ranked.salesRank > :lastRank)
               ORDER BY ranked.salesRank
+              LIMIT :limit
               """,
       nativeQuery = true)
   List<BoothSalesRow> searchBoothSales(
-      @Param("universityName") String universityName, @Param("boothName") String boothName);
+      @Param("universityName") String universityName,
+      @Param("boothName") String boothName,
+      @Param("lastRank") Long lastRank,
+      @Param("limit") int limit);
 
-  /** 순위는 부스 안에서 매긴다(PARTITION BY 부스). 부스 단위로 거르므로 WHERE가 순위를 바꾸지 않는다. */
+  /**
+   * 순위는 부스 안에서 매긴다(PARTITION BY 부스). 부스 단위로 거르므로 WHERE가 순위를 바꾸지 않는다.
+   *
+   * <p>순위는 윈도 함수 결과라 같은 SELECT의 WHERE에서 쓸 수 없으므로, 순위를 매긴 결과를 감싼 바깥 쿼리에서 정렬 키 {@code (학교명, 학과명, 부스
+   * id, 순위)}로 커서 다음부터 {@code limit}개를 읽는다. 커서 값이 null이면 첫 페이지다. (LLD-0007 8.1)
+   */
   @Query(
       value =
           """
+          SELECT r.* FROM (
           SELECT ROW_NUMBER() OVER (
                    PARTITION BY b.id
                    ORDER BY COALESCE(s.quantity, 0) DESC, COALESCE(s.sales, 0) DESC, bm.id ASC
@@ -119,13 +133,24 @@ public interface StatisticsRepository extends Repository<Order, Long> {
               + MENU_SALES
               + """
           ) s ON s.booth_menu_id = bm.id
-          WHERE u.name LIKE CONCAT('%', :universityName, '%') ESCAPE '!'
-            AND (:boothName IS NULL OR d.name LIKE CONCAT('%', :boothName, '%') ESCAPE '!')
-          ORDER BY universityName, departmentName, boothId, menuRank
+          WHERE u.name LIKE CONCAT(:universityName, '%') ESCAPE '!'
+            AND (:boothName IS NULL OR d.name LIKE CONCAT(:boothName, '%') ESCAPE '!')
+          ) r
+          WHERE :lastBoothId IS NULL
+             OR (r.universityName, r.departmentName, r.boothId, r.menuRank)
+                > (:lastUniversityName, :lastDepartmentName, :lastBoothId, :lastMenuRank)
+          ORDER BY r.universityName, r.departmentName, r.boothId, r.menuRank
+          LIMIT :limit
           """,
       nativeQuery = true)
   List<MenuSalesRow> findBoothMenuRanking(
-      @Param("universityName") String universityName, @Param("boothName") String boothName);
+      @Param("universityName") String universityName,
+      @Param("boothName") String boothName,
+      @Param("lastUniversityName") String lastUniversityName,
+      @Param("lastDepartmentName") String lastDepartmentName,
+      @Param("lastBoothId") Long lastBoothId,
+      @Param("lastMenuRank") Long lastMenuRank,
+      @Param("limit") int limit);
 
   @Query(
       value =

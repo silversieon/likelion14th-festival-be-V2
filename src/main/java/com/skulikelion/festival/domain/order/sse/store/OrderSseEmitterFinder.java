@@ -29,4 +29,11 @@ public interface OrderSseEmitterFinder {
    */
   List<SseEmitter> findByBoothIdAndSubscribeType(
       Long boothId, OrderSseSubscribeType orderSseSubscribeType);
+
+  /**
+   * [ 모든 Emitter 조회 ]
+   *
+   * @return 모든 SSE Emitter
+   */
+  List<SseEmitter> findAll();
 }

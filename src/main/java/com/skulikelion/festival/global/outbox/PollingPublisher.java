@@ -20,7 +20,7 @@ public class PollingPublisher {
   private final OutboxRepository repository;
   private final OrderEventDispatcher orderEventDispatcher;
 
-  @Scheduled(fixedDelay = 200)
+  @Scheduled(fixedDelay = 250)
   @Transactional
   public void publishPendingEvents() {
     List<Outbox> pendingEvents = repository.findPendingEvents(1);

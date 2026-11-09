@@ -94,6 +94,11 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
   }
 
   @Override
+  public List<SseEmitter> findAll() {
+    return emitters.values().stream().flatMap(List::stream).collect(Collectors.toList());
+  }
+
+  @Override
   public Map<OrderSseSubscribeType, List<SseEmitter>> findByBoothId(Long boothId) {
     return emitters.entrySet().stream()
         .filter(e -> e.getKey().startsWith(boothId + ":"))

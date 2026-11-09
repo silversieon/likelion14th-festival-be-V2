@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.order.sse.redis.stream;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,12 +72,21 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     lock.lock();
     try {
       boolean isFirst = registry.registerAndCheckFirst(boothId, subscribeType, emitter);
-      if (isFirst) {
+      Subscription current = activeSubscriptions.get(streamKey);
+      boolean dead = current != null && !current.isActive();
+
+      if (isFirst || dead) {
+        if (dead) {
+          log.warn("[OrderStream] 죽은 구독 감지, 재구독: stream={}", streamKey);
+          listenerContainer.remove(current);
+        }
         try {
           subscribe(streamKey);
         } catch (RuntimeException e) {
           registry.remove(boothId, subscribeType, emitter);
           throw e;
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         }
       }
     } finally {
@@ -87,7 +97,7 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     return emitter;
   }
 
-  private void subscribe(String streamKey) {
+  private void subscribe(String streamKey) throws InterruptedException {
     createGroupIfNotExists(streamKey, groupName);
     try {
       discardPoisonMessages(streamKey);
@@ -96,17 +106,24 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
       log.warn("[OrderStream] PEL 정리 실패, 구독은 계속 진행: stream={}", streamKey, e);
     }
 
-    Subscription subscription =
-        listenerContainer.receive(
-            Consumer.from(groupName, consumerName),
-            StreamOffset.create(streamKey, ReadOffset.lastConsumed()),
-            orderStreamListener);
+    StreamMessageListenerContainer.StreamReadRequest<String> request =
+        StreamMessageListenerContainer.StreamReadRequest.builder(
+                StreamOffset.create(streamKey, ReadOffset.lastConsumed()))
+            .consumer(Consumer.from(groupName, consumerName))
+            .autoAcknowledge(false)
+            .cancelOnError(e -> false) // Redis 에러가 나도 폴링을 멈추지 않음
+            .errorHandler(
+                e -> log.warn("[OrderStream] 폴링 실패, 재시도: stream={}, {}", streamKey, e.getMessage()))
+            .build();
+    Subscription subscription = listenerContainer.register(request, orderStreamListener);
+    subscription.await(Duration.ofSeconds(2));
     activeSubscriptions.put(streamKey, subscription);
   }
 
   private void unsubscribe(
       SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType, String streamKey) {
     ReentrantLock lock = lockFor(streamKey);
+    lock.lock();
     try {
       boolean isLast = registry.removeAndCheckLast(boothId, subscribeType, emitter);
       if (!isLast) return;

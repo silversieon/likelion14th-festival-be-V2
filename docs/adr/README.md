@@ -40,6 +40,7 @@
 | [ADR-0002](ADR-0002-booth-menu-bulk-seed-path.md) | 전국 부스·번역·메뉴 더미 데이터를 Flyway 버전 마이그레이션으로 적재한다 | 승인됨 | 2026-09-17 | 옵션 1 | 2026-09-17 | [#12](https://github.com/silversieon/likelion14th-festival-be-V2/issues/12) | ② 대량 데이터 삽입 |
 | [ADR-0003](ADR-0003-booth-manager-seed-with-precomputed-bcrypt.md) | 전국 부스 매니저 계정은 BCrypt(cost 10) 해시를 미리 만든 Flyway SQL로 적재한다 | 승인됨 | 2026-09-17 | 옵션 B | 2026-09-17 | [#14](https://github.com/silversieon/likelion14th-festival-be-V2/issues/14) | ② 대량 데이터 삽입 |
 | [ADR-0004](ADR-0004-order-bulk-load-with-csv-load-data.md) | 핫스팟 분포 주문 데이터는 Python 생성기 → CSV → `LOAD DATA INFILE`로 단계 적재한다 | 승인됨 | 2026-10-12 | 옵션 3 | 2026-10-12 | [#18](https://github.com/silversieon/likelion14th-festival-be-V2/issues/18) | ② 대량 데이터 삽입 |
+| [ADR-0005](ADR-0005-statistics-search-prefix-match-and-keyset-cursor.md) | 부스 통계 검색은 접두 일치로 바꾸고, 기존 집계 쿼리 위에 키셋 커서를 얹는다 | 승인됨 | 2026-11-10 | 옵션 1 | 2026-11-10 | [#20](https://github.com/silversieon/likelion14th-festival-be-V2/issues/20) | ③ 성능 개선 |
 
 <!--
   행 예시 (첫 ADR 작성 시 위 안내 행을 지우고 이 형식으로 채운다):

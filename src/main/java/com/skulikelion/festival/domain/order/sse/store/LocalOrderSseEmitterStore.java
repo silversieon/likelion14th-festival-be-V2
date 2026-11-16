@@ -4,6 +4,7 @@
 package com.skulikelion.festival.domain.order.sse.store;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,10 +96,11 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
 
   @Override
   public Map<OrderSseSubscribeType, List<SseEmitter>> findByBoothId(Long boothId) {
-    return emitters.entrySet().stream()
-        .filter(e -> e.getKey().startsWith(boothId + ":"))
-        .collect(
-            Collectors.toMap(
-                e -> OrderSseSubscribeType.valueOf(e.getKey().split(":")[1]), Map.Entry::getValue));
+      Map<OrderSseSubscribeType, List<SseEmitter>> result = new EnumMap<>(OrderSseSubscribeType.class);
+      for(OrderSseSubscribeType type : OrderSseSubscribeType.values()) {
+          List<SseEmitter> list = emitters.get(key(boothId, type));
+          if (list != null) result.put(type, list);
+      }
+      return result;
   }
 }

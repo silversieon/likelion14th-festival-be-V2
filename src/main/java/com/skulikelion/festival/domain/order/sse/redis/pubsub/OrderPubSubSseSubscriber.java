@@ -48,7 +48,13 @@ public class OrderPubSubSseSubscriber implements OrderSseSubscriber {
 
     emitter.onCompletion(() -> unsubscribe(emitter, boothId, subscribeType, channel, topic));
     emitter.onTimeout(emitter::complete);
-    emitter.onError(e -> emitter.complete());
+    emitter.onError(e -> {
+      try {
+        log.warn("[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
+            boothId, subscribeType, e.getMessage());
+        emitter.complete();
+      } catch (Exception ignore) {}
+    });
 
     ReentrantLock lock = lockFor(channel);
     lock.lock();

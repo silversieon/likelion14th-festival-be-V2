@@ -50,20 +50,21 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
       SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType) {
     emitter.onCompletion(
         () -> {
-          log.debug("[OrderSseService] SSE 연결 종료 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
+          log.debug("[SseSubscriber] SSE 연결 종료 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
           registry.remove(boothId, subscribeType, emitter);
         });
     emitter.onTimeout(
         () -> {
-          log.debug("[OrderSseService] SSE 타임아웃 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
-          registry.remove(boothId, subscribeType, emitter);
+          log.debug("[SseSubscriber] SSE 타임아웃 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
           emitter.complete();
         });
     emitter.onError(
         e -> {
-          log.warn("[OrderSseService] SSE 에러 - 부스 식별자: {}, 구독 타입: {}", boothId, subscribeType);
-          registry.remove(boothId, subscribeType, emitter);
-          emitter.complete();
+            try {
+                log.warn("[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
+                    boothId, subscribeType, e.getMessage());
+                emitter.complete();
+            } catch (Exception ignore) {}
         });
   }
 

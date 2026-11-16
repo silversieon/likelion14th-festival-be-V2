@@ -107,6 +107,7 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
   private void unsubscribe(
       SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType, String streamKey) {
     ReentrantLock lock = lockFor(streamKey);
+    lock.lock();
     try {
       boolean isLast = registry.removeAndCheckLast(boothId, subscribeType, emitter);
       if (!isLast) return;

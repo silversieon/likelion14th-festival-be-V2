@@ -83,7 +83,7 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
       lock.unlock();
     }
 
-    connectCheck(emitter, boothId, subscribeType);
+    connectCheck(emitter);
     return emitter;
   }
 
@@ -164,11 +164,11 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     }
   }
 
-  private void connectCheck(SseEmitter emitter, Long boothId, OrderSseSubscribeType subscribeType) {
+  private void connectCheck(SseEmitter emitter) {
     try {
       emitter.send(SseEmitter.event().name("connect").data("connected order subscribe"));
     } catch (IOException e) {
-      registry.remove(boothId, subscribeType, emitter);
+      emitter.completeWithError(e);
     }
   }
 

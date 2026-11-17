@@ -65,13 +65,18 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     SseEmitter emitter = new SseEmitter(60 * 60 * 1000L);
     emitter.onCompletion(() -> unsubscribe(emitter, boothId, subscribeType, streamKey));
     emitter.onTimeout(emitter::complete);
-    emitter.onError(e -> {
-      try {
-        log.warn("[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
-            boothId, subscribeType, e.getMessage());
-        emitter.complete();
-      } catch (Exception ignore) {}
-    });
+    emitter.onError(
+        e -> {
+          try {
+            log.warn(
+                "[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
+                boothId,
+                subscribeType,
+                e.getMessage());
+            emitter.complete();
+          } catch (Exception ignore) {
+          }
+        });
 
     ReentrantLock lock = lockFor(streamKey);
     lock.lock();
@@ -81,7 +86,7 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
         try {
           subscribe(streamKey);
         } catch (RuntimeException e) {
-          registry.remove(boothId, subscribeType, emitter);
+          unsubscribe(emitter, boothId, subscribeType, streamKey);
           throw e;
         }
       }

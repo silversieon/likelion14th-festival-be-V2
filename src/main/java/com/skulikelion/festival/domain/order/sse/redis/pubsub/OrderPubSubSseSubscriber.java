@@ -48,13 +48,18 @@ public class OrderPubSubSseSubscriber implements OrderSseSubscriber {
 
     emitter.onCompletion(() -> unsubscribe(emitter, boothId, subscribeType, channel, topic));
     emitter.onTimeout(emitter::complete);
-    emitter.onError(e -> {
-      try {
-        log.warn("[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
-            boothId, subscribeType, e.getMessage());
-        emitter.complete();
-      } catch (Exception ignore) {}
-    });
+    emitter.onError(
+        e -> {
+          try {
+            log.warn(
+                "[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
+                boothId,
+                subscribeType,
+                e.getMessage());
+            emitter.complete();
+          } catch (Exception ignore) {
+          }
+        });
 
     ReentrantLock lock = lockFor(channel);
     lock.lock();
@@ -64,7 +69,7 @@ public class OrderPubSubSseSubscriber implements OrderSseSubscriber {
         try {
           listenerContainer.addMessageListener(listener, topic);
         } catch (RuntimeException e) {
-          registry.remove(boothId, subscribeType, emitter); // 등록 롤백
+          unsubscribe(emitter, boothId, subscribeType, channel, topic);
           throw e;
         }
       }

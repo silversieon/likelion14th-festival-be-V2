@@ -60,11 +60,15 @@ public class LocalOrderSseSubscriber implements OrderSseSubscriber {
         });
     emitter.onError(
         e -> {
-            try {
-                log.warn("[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
-                    boothId, subscribeType, e.getMessage());
-                emitter.complete();
-            } catch (Exception ignore) {}
+          try {
+            log.warn(
+                "[SseSubscriber] SSE 에러 - 부스: {}, 타입: {}, 원인: {}",
+                boothId,
+                subscribeType,
+                e.getMessage());
+            emitter.complete();
+          } catch (Exception ignore) {
+          }
         });
   }
 

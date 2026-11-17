@@ -29,4 +29,6 @@ public interface OrderSseEmitterFinder {
    */
   List<SseEmitter> findByBoothIdAndSubscribeType(
       Long boothId, OrderSseSubscribeType orderSseSubscribeType);
+
+  Map<String, List<SseEmitter>> findAll();
 }

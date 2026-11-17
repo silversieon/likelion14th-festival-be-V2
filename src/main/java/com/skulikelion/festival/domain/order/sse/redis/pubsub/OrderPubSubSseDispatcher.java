@@ -28,7 +28,7 @@ public class OrderPubSubSseDispatcher implements OrderSseDispatcher {
         emitter.send(
             SseEmitter.event().name(eventMessage.eventName()).data(eventMessage.payload()));
       } catch (IOException e) {
-        store.remove(info.boothId(), info.subscribeType(), emitter);
+        emitter.completeWithError(e);
       }
     }
   }

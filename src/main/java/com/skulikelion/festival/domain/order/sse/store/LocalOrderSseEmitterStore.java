@@ -10,13 +10,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscribeType;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, OrderSseEmitterFinder {
 
@@ -63,6 +65,11 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
             wasFirst.set(true);
           }
           list.add(emitter);
+          log.debug(
+              "emitter 등록 부스 식별자: {}, 주문 상태: {}, 현재 시각: {}",
+              boothId,
+              subscribeType.name(),
+              System.currentTimeMillis());
           return list;
         });
 
@@ -78,6 +85,11 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
     emitters.computeIfPresent(
         key(boothId, subscribeType),
         (k, list) -> {
+          log.debug(
+              "[SseEmitter 제거] 부스 식별자: {}, 주문 상태: {}, 현재 시각: {}",
+              boothId,
+              subscribeType.name(),
+              System.currentTimeMillis());
           list.remove(emitter);
           if (list.isEmpty()) {
             wasLast.set(true);
@@ -95,12 +107,18 @@ public class LocalOrderSseEmitterStore implements OrderSseEmitterRegistry, Order
   }
 
   @Override
+  public Map<String, List<SseEmitter>> findAll() {
+    return emitters;
+  }
+
+  @Override
   public Map<OrderSseSubscribeType, List<SseEmitter>> findByBoothId(Long boothId) {
-      Map<OrderSseSubscribeType, List<SseEmitter>> result = new EnumMap<>(OrderSseSubscribeType.class);
-      for(OrderSseSubscribeType type : OrderSseSubscribeType.values()) {
-          List<SseEmitter> list = emitters.get(key(boothId, type));
-          if (list != null) result.put(type, list);
-      }
-      return result;
+    Map<OrderSseSubscribeType, List<SseEmitter>> result =
+        new EnumMap<>(OrderSseSubscribeType.class);
+    for (OrderSseSubscribeType type : OrderSseSubscribeType.values()) {
+      List<SseEmitter> list = emitters.get(key(boothId, type));
+      if (list != null) result.put(type, list);
+    }
+    return result;
   }
 }

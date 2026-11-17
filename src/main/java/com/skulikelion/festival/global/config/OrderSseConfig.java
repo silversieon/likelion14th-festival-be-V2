@@ -17,7 +17,7 @@ import com.skulikelion.festival.domain.booth.service.booth.BoothService;
 import com.skulikelion.festival.domain.order.sse.OrderSseNotifier;
 import com.skulikelion.festival.domain.order.sse.OrderSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.local.LocalOrderSseNotifier;
-import com.skulikelion.festival.domain.order.sse.local.LocalOrderSseSubscriber;
+import com.skulikelion.festival.domain.order.sse.local.OrderLocalSseSubscriber;
 import com.skulikelion.festival.domain.order.sse.redis.*;
 import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubEventPublisher;
 import com.skulikelion.festival.domain.order.sse.redis.pubsub.OrderPubSubListener;
@@ -40,17 +40,17 @@ public class OrderSseConfig {
 
   @Bean
   @ConditionalOnProperty(name = "sse.strategy", havingValue = "local", matchIfMissing = true)
-  LocalOrderSseSubscriber localOrderSseSubscriber(
+  OrderLocalSseSubscriber localOrderSseSubscriber(
       OrderSseEmitterRegistry registry,
       BoothService boothService,
       BoothOwnershipValidator boothOwnershipValidator) {
-    return new LocalOrderSseSubscriber(boothService, registry, boothOwnershipValidator);
+    return new OrderLocalSseSubscriber(boothService, registry, boothOwnershipValidator);
   }
 
   @Bean
   @Primary
   @ConditionalOnProperty(name = "sse.strategy", havingValue = "local", matchIfMissing = true)
-  public OrderSseSubscriber localOnlySubscriber(LocalOrderSseSubscriber subscriber) {
+  public OrderSseSubscriber localOnlySubscriber(OrderLocalSseSubscriber subscriber) {
     return subscriber;
   }
 

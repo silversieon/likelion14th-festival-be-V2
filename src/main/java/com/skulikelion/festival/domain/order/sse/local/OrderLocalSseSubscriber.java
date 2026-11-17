@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-public class LocalOrderSseSubscriber implements OrderSseSubscriber {
+public class OrderLocalSseSubscriber implements OrderSseSubscriber {
 
   private final BoothService boothService;
   private final OrderSseEmitterRegistry registry;

@@ -45,7 +45,8 @@ import com.skulikelion.festival.domain.university.repository.DepartmentRepositor
 import com.skulikelion.festival.domain.university.repository.UniversityRepository;
 
 /**
- * 운영진 통계 API를 실제 MySQL(윈도 함수·날짜 함수)과 Spring Security 필터 체인 위에서 검증합니다. (LLD-0005 13.2)
+ * 운영진 통계 API를 실제 MySQL(윈도 함수·날짜 함수)과 Spring Security 필터 체인 위에서 검증합니다. (LLD-0005 13.2, 검색 접두
+ * 일치·페이지네이션은 LLD-0007 13.2)
  *
  * <p>Flyway 더미(부스·메뉴, 주문 없음)가 함께 적재되고 테스트 클래스 간에 DB를 공유하므로, 각 테스트는 고유한 학교명으로 데이터를 만들고 전체 합계는 호출 전후
  * 차이로 검증한다. 주문은 {@code completed_at}을 지정하려고 {@link JdbcTemplate}으로 넣는다.
@@ -76,8 +77,12 @@ class StatisticsApiIntegrationTest extends IntegrationTestSupport {
   }
 
   private University saveUniversity(String name) {
+    return saveUniversity(name, Region.JEJU);
+  }
+
+  private University saveUniversity(String name, Region region) {
     return universityRepository.saveAndFlush(
-        University.builder().name(name).region(Region.JEJU).build());
+        University.builder().name(name).region(region).build());
   }
 
   private Booth saveBooth(University university, String departmentName) {
@@ -274,23 +279,24 @@ class StatisticsApiIntegrationTest extends IntegrationTestSupport {
     mockMvc
         .perform(get("/api/statistics/booths/search").param("universityName", "통계검색").with(admin()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data[*].departmentName", Matchers.contains("검색판매학과", "검색휴업학과")))
-        .andExpect(jsonPath("$.data[0].totalSales").value(9000))
-        .andExpect(jsonPath("$.data[0].orderCount").value(2))
-        .andExpect(jsonPath("$.data[0].averageOrderAmount").value(4500))
-        .andExpect(jsonPath("$.data[0].totalQuantity").value(3))
-        .andExpect(jsonPath("$.data[1].totalSales").value(0))
-        .andExpect(jsonPath("$.data[1].averageOrderAmount").value(0));
+        .andExpect(
+            jsonPath("$.data.items[*].departmentName", Matchers.contains("검색판매학과", "검색휴업학과")))
+        .andExpect(jsonPath("$.data.items[0].totalSales").value(9000))
+        .andExpect(jsonPath("$.data.items[0].orderCount").value(2))
+        .andExpect(jsonPath("$.data.items[0].averageOrderAmount").value(4500))
+        .andExpect(jsonPath("$.data.items[0].totalQuantity").value(3))
+        .andExpect(jsonPath("$.data.items[1].totalSales").value(0))
+        .andExpect(jsonPath("$.data.items[1].averageOrderAmount").value(0));
 
     mockMvc
         .perform(
             get("/api/statistics/booths/search")
                 .param("universityName", "통계검색대학교")
-                .param("boothName", "휴업")
+                .param("boothName", "검색휴업")
                 .with(admin()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.length()").value(1))
-        .andExpect(jsonPath("$.data[0].boothId").value(idle.getId()));
+        .andExpect(jsonPath("$.data.items.length()").value(1))
+        .andExpect(jsonPath("$.data.items[0].boothId").value(idle.getId()));
   }
 
   @Test
@@ -316,8 +322,8 @@ class StatisticsApiIntegrationTest extends IntegrationTestSupport {
         .perform(
             get("/api/statistics/booths/search").param("universityName", "통계순위대학교").with(admin()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data[0].rank").value(topRanks.get(0).longValue()))
-        .andExpect(jsonPath("$.data[0].averageOrderAmount").value(900_000_000));
+        .andExpect(jsonPath("$.data.items[0].rank").value(topRanks.get(0).longValue()))
+        .andExpect(jsonPath("$.data.items[0].averageOrderAmount").value(900_000_000));
   }
 
   @Test
@@ -338,10 +344,10 @@ class StatisticsApiIntegrationTest extends IntegrationTestSupport {
         .perform(get("/api/statistics/booths/menus").param("universityName", "통계메뉴").with(admin()))
         .andExpect(status().isOk())
         .andExpect(
-            jsonPath("$.data[*].menuName", Matchers.contains("가-많이", "가-적게", "가-없음", "나-하나")))
-        .andExpect(jsonPath("$.data[*].rank", Matchers.contains(1, 2, 3, 1)))
-        .andExpect(jsonPath("$.data[*].quantity", Matchers.contains(5, 1, 0, 2)))
-        .andExpect(jsonPath("$.data[*].sales", Matchers.contains(5000, 10000, 0, 4000)));
+            jsonPath("$.data.items[*].menuName", Matchers.contains("가-많이", "가-적게", "가-없음", "나-하나")))
+        .andExpect(jsonPath("$.data.items[*].rank", Matchers.contains(1, 2, 3, 1)))
+        .andExpect(jsonPath("$.data.items[*].quantity", Matchers.contains(5, 1, 0, 2)))
+        .andExpect(jsonPath("$.data.items[*].sales", Matchers.contains(5000, 10000, 0, 4000)));
 
     mockMvc
         .perform(
@@ -350,7 +356,168 @@ class StatisticsApiIntegrationTest extends IntegrationTestSupport {
                 .param("boothName", "나메뉴")
                 .with(admin()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data[*].menuName", Matchers.contains("나-하나")));
+        .andExpect(jsonPath("$.data.items[*].menuName", Matchers.contains("나-하나")));
+  }
+
+  @Test
+  @DisplayName("학교명·부스명은 접두 일치라 이름 중간의 검색어로는 찾지 못한다")
+  void searchesByPrefixOnly() throws Exception {
+    Booth booth = saveBooth(saveUniversity("통계접두대학교"), "접두검색학과");
+    saveMenu(booth, "접두메뉴", 1000);
+
+    for (String path : List.of("/api/statistics/booths/search", "/api/statistics/booths/menus")) {
+      mockMvc
+          .perform(get(path).param("universityName", "접두대학교").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.data.items").isEmpty())
+          .andExpect(jsonPath("$.data.hasNext").value(false));
+
+      mockMvc
+          .perform(
+              get(path).param("universityName", "통계접두").param("boothName", "검색학과").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.data.items").isEmpty());
+
+      mockMvc
+          .perform(
+              get(path).param("universityName", "통계접두").param("boothName", "접두검색").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.data.items[0].boothId").value(booth.getId()));
+    }
+  }
+
+  @Test
+  @DisplayName("부스 검색은 size만큼 순위 순으로 주고 nextCursor로 나머지를 이어 준다")
+  void boothSearchPagesByRank() throws Exception {
+    University university = saveUniversity("통계페이지대학교");
+    Booth high = saveBooth(university, "페이지상학과");
+    Booth mid = saveBooth(university, "페이지중학과");
+    Booth low = saveBooth(university, "페이지하학과");
+    LocalDateTime at = LocalDateTime.of(2007, 7, 1, 12, 0);
+    saveCompletedOrder(at, new Item(saveMenu(high, "상메뉴", 30000), 1));
+    saveCompletedOrder(at, new Item(saveMenu(mid, "중메뉴", 20000), 1));
+    saveCompletedOrder(at, new Item(saveMenu(low, "하메뉴", 10000), 1));
+
+    String first =
+        mockMvc
+            .perform(
+                get("/api/statistics/booths/search")
+                    .param("universityName", "통계페이지")
+                    .param("size", "2")
+                    .with(admin()))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath(
+                    "$.data.items[*].boothId",
+                    Matchers.contains(high.getId().intValue(), mid.getId().intValue())))
+            .andExpect(jsonPath("$.data.hasNext").value(true))
+            .andExpect(jsonPath("$.data.size").value(2))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    String nextCursor = JsonPath.read(first, "$.data.nextCursor");
+    List<Number> firstRanks = JsonPath.read(first, "$.data.items[*].rank");
+
+    String second =
+        mockMvc
+            .perform(
+                get("/api/statistics/booths/search")
+                    .param("universityName", "통계페이지")
+                    .param("size", "2")
+                    .param("encodedCursor", nextCursor)
+                    .with(admin()))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.data.items[*].boothId", Matchers.contains(low.getId().intValue())))
+            .andExpect(jsonPath("$.data.hasNext").value(false))
+            .andExpect(jsonPath("$.data.nextCursor").value(Matchers.nullValue()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    List<Number> secondRanks = JsonPath.read(second, "$.data.items[*].rank");
+
+    assertThat(firstRanks.get(0).longValue()).isLessThan(firstRanks.get(1).longValue());
+    assertThat(firstRanks.get(1).longValue()).isLessThan(secondRanks.get(0).longValue());
+  }
+
+  @Test
+  @DisplayName("부스별 메뉴 순위는 이름이 같은 학교가 있어도 페이지 경계에서 누락·중복 없이 이어진다")
+  void boothMenuRankingPagesAcrossSameNamedUniversities() throws Exception {
+    Booth jeju = saveBooth(saveUniversity("통계동명대학교", Region.JEJU), "동명학과");
+    Booth seoul = saveBooth(saveUniversity("통계동명대학교", Region.SEOUL), "동명학과");
+    BoothMenu jejuA = saveMenu(jeju, "제주-하나", 1000);
+    saveMenu(jeju, "제주-둘", 1000);
+    BoothMenu seoulA = saveMenu(seoul, "서울-하나", 1000);
+    saveMenu(seoul, "서울-둘", 1000);
+    LocalDateTime at = LocalDateTime.of(2008, 8, 1, 12, 0);
+    saveCompletedOrder(at, new Item(jejuA, 2), new Item(seoulA, 3));
+
+    List<Number> boothIds = new java.util.ArrayList<>();
+    List<String> menuNames = new java.util.ArrayList<>();
+    String cursor = null;
+    int pages = 0;
+    do {
+      var request =
+          get("/api/statistics/booths/menus")
+              .param("universityName", "통계동명대학교")
+              .param("size", "3")
+              .with(admin());
+      if (cursor != null) {
+        request.param("encodedCursor", cursor);
+      }
+      String body =
+          mockMvc
+              .perform(request)
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      boothIds.addAll(JsonPath.read(body, "$.data.items[*].boothId"));
+      menuNames.addAll(JsonPath.read(body, "$.data.items[*].menuName"));
+      boolean hasNext = JsonPath.read(body, "$.data.hasNext");
+      cursor = hasNext ? JsonPath.read(body, "$.data.nextCursor") : null;
+      pages++;
+    } while (cursor != null && pages < 5);
+
+    Booth firstBooth = jeju.getId() < seoul.getId() ? jeju : seoul;
+    Booth secondBooth = firstBooth == jeju ? seoul : jeju;
+    String firstPrefix = firstBooth == jeju ? "제주" : "서울";
+    String secondPrefix = firstBooth == jeju ? "서울" : "제주";
+    assertThat(pages).isEqualTo(2);
+    assertThat(boothIds)
+        .extracting(Number::longValue)
+        .containsExactly(
+            firstBooth.getId(), firstBooth.getId(), secondBooth.getId(), secondBooth.getId());
+    assertThat(menuNames)
+        .containsExactly(
+            firstPrefix + "-하나", firstPrefix + "-둘", secondPrefix + "-하나", secondPrefix + "-둘");
+  }
+
+  @Test
+  @DisplayName("부스 검색 API의 size가 1~100 밖이면 400이다")
+  void rejectsOutOfRangePageSize() throws Exception {
+    for (String path : List.of("/api/statistics/booths/search", "/api/statistics/booths/menus")) {
+      for (String size : List.of("0", "101")) {
+        mockMvc
+            .perform(get(path).param("universityName", "서경").param("size", size).with(admin()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("페이지 크기는 1 이상 100 이하로 입력해주세요."));
+      }
+    }
+  }
+
+  @Test
+  @DisplayName("해석할 수 없는 커서를 주면 400이다")
+  void rejectsMalformedCursor() throws Exception {
+    for (String path : List.of("/api/statistics/booths/search", "/api/statistics/booths/menus")) {
+      mockMvc
+          .perform(
+              get(path)
+                  .param("universityName", "서경")
+                  .param("encodedCursor", "not-a-cursor")
+                  .with(admin()))
+          .andExpect(status().isBadRequest());
+    }
   }
 
   @Test

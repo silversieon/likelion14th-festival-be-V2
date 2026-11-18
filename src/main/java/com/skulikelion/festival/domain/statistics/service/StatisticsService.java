@@ -6,6 +6,8 @@ package com.skulikelion.festival.domain.statistics.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.skulikelion.festival.domain.statistics.dto.request.BoothMenuSalesCursor;
+import com.skulikelion.festival.domain.statistics.dto.request.BoothSalesCursor;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothMenuSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.DailySalesResponse;
@@ -13,6 +15,7 @@ import com.skulikelion.festival.domain.statistics.dto.response.HourlySalesRespon
 import com.skulikelion.festival.domain.statistics.dto.response.MenuSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.SalesSummaryResponse;
 import com.skulikelion.festival.domain.statistics.enums.MenuSortType;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 
 /**
  * 운영진 통계 조회 Service interface 입니다.
@@ -59,20 +62,26 @@ public interface StatisticsService {
   /**
    * [ 부스별 매출 검색 메서드 ]
    *
-   * @param universityName 학교명 (부분 일치, 필수)
-   * @param boothName 부스(학과)명 (부분 일치, 선택)
-   * @return 일치하는 부스 전부 (순위는 전체 부스 기준), 순위 오름차순
+   * @param universityName 학교명 (접두 일치, 필수)
+   * @param boothName 부스(학과)명 (접두 일치, 선택)
+   * @param cursor 직전 페이지 커서 (첫 페이지면 null)
+   * @param size 페이지 크기 (1 ~ 100)
+   * @return 일치하는 부스 한 페이지 (순위는 전체 부스 기준), 순위 오름차순
    */
-  List<BoothSalesResponse> searchBoothSales(String universityName, String boothName);
+  CursorPageResponse<BoothSalesResponse> searchBoothSales(
+      String universityName, String boothName, BoothSalesCursor cursor, int size);
 
   /**
    * [ 부스별 인기 메뉴 순위 조회 메서드 ]
    *
-   * @param universityName 학교명 (부분 일치, 필수)
-   * @param boothName 부스(학과)명 (부분 일치, 선택)
-   * @return 일치하는 부스들의 모든 메뉴 (순위는 부스 안 기준)
+   * @param universityName 학교명 (접두 일치, 필수)
+   * @param boothName 부스(학과)명 (접두 일치, 선택)
+   * @param cursor 직전 페이지 커서 (첫 페이지면 null)
+   * @param size 페이지 크기 — 메뉴 행 수 (1 ~ 100)
+   * @return 일치하는 부스들의 메뉴 한 페이지 (순위는 부스 안 기준)
    */
-  List<BoothMenuSalesResponse> getBoothMenuRanking(String universityName, String boothName);
+  CursorPageResponse<BoothMenuSalesResponse> getBoothMenuRanking(
+      String universityName, String boothName, BoothMenuSalesCursor cursor, int size);
 
   /**
    * [ 메뉴 TOP 10 조회 메서드 ]

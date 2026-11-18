@@ -14,6 +14,8 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.skulikelion.festival.domain.statistics.dto.request.BoothMenuSalesCursor;
+import com.skulikelion.festival.domain.statistics.dto.request.BoothSalesCursor;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothMenuSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.BoothSalesResponse;
 import com.skulikelion.festival.domain.statistics.dto.response.DailySalesResponse;
@@ -27,6 +29,9 @@ import com.skulikelion.festival.domain.statistics.repository.projection.BoothSal
 import com.skulikelion.festival.domain.statistics.repository.projection.DailySalesRow;
 import com.skulikelion.festival.domain.statistics.repository.projection.HourlySalesRow;
 import com.skulikelion.festival.domain.statistics.repository.projection.MenuSalesRow;
+import com.skulikelion.festival.global.common.pagenation.CursorCodec;
+import com.skulikelion.festival.global.common.pagenation.CursorPage;
+import com.skulikelion.festival.global.common.pagenation.CursorPageResponse;
 import com.skulikelion.festival.global.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -45,10 +50,16 @@ public class StatisticsServiceImpl implements StatisticsService {
 
   private static final int TOP_LIMIT = 10;
 
+  /** 검색 API 페이지 크기 하한·상한. (LLD-0007 R4) */
+  private static final int MIN_PAGE_SIZE = 1;
+
+  private static final int MAX_PAGE_SIZE = 100;
+
   /** JPQL·SQL {@code ESCAPE '!'}와 짝을 이루는 LIKE 이스케이프 문자. */
   private static final String LIKE_ESCAPE = "!";
 
   private final StatisticsRepository statisticsRepository;
+  private final CursorCodec cursorCodec;
 
   @Override
   @Transactional(readOnly = true)
@@ -111,22 +122,56 @@ public class StatisticsServiceImpl implements StatisticsService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<BoothSalesResponse> searchBoothSales(String universityName, String boothName) {
-    return statisticsRepository
-        .searchBoothSales(requireUniversityKeyword(universityName), optionalKeyword(boothName))
-        .stream()
-        .map(this::toBoothSalesResponse)
-        .toList();
+  public CursorPageResponse<BoothSalesResponse> searchBoothSales(
+      String universityName, String boothName, BoothSalesCursor cursor, int size) {
+    String universityKeyword = requireUniversityKeyword(universityName);
+    validatePageSize(size);
+
+    List<BoothSalesResponse> rows =
+        statisticsRepository
+            .searchBoothSales(
+                universityKeyword,
+                optionalKeyword(boothName),
+                cursor != null ? cursor.lastRank() : null,
+                size + 1)
+            .stream()
+            .map(this::toBoothSalesResponse)
+            .toList();
+    CursorPage<BoothSalesResponse> page = CursorPage.of(rows, size);
+
+    return toCursorPageResponse(page, last -> new BoothSalesCursor(last.getRank()));
   }
 
   @Override
   @Transactional(readOnly = true)
-  public List<BoothMenuSalesResponse> getBoothMenuRanking(String universityName, String boothName) {
-    return statisticsRepository
-        .findBoothMenuRanking(requireUniversityKeyword(universityName), optionalKeyword(boothName))
-        .stream()
-        .map(this::toBoothMenuSalesResponse)
-        .toList();
+  public CursorPageResponse<BoothMenuSalesResponse> getBoothMenuRanking(
+      String universityName, String boothName, BoothMenuSalesCursor cursor, int size) {
+    String universityKeyword = requireUniversityKeyword(universityName);
+    validatePageSize(size);
+
+    List<BoothMenuSalesResponse> rows =
+        statisticsRepository
+            .findBoothMenuRanking(
+                universityKeyword,
+                optionalKeyword(boothName),
+                cursor != null ? cursor.lastUniversityName() : null,
+                cursor != null ? cursor.lastDepartmentName() : null,
+                cursor != null ? cursor.lastBoothId() : null,
+                cursor != null ? cursor.lastMenuRank() : null,
+                size + 1)
+            .stream()
+            .map(this::toBoothMenuSalesResponse)
+            .toList();
+    CursorPage<BoothMenuSalesResponse> page = CursorPage.of(rows, size);
+
+    return toCursorPageResponse(
+        page,
+        last ->
+            new BoothMenuSalesCursor(
+                last.getUniversityName(),
+                last.getDepartmentName(),
+                last.getBoothId(),
+                last.getRank()));
   }
 
   @Override
@@ -149,6 +194,26 @@ public class StatisticsServiceImpl implements StatisticsService {
 
   private LocalDateTime startOf(LocalDate date) {
     return date.atStartOfDay();
+  }
+
+  private void validatePageSize(int size) {
+    if (size < MIN_PAGE_SIZE || size > MAX_PAGE_SIZE) {
+      log.info("[StatisticsService] 부스 통계 검색 실패 - 페이지 크기 범위 밖: {}", size);
+      throw new CustomException(StatisticsErrorCode.STATISTICS_INVALID_PAGE_SIZE);
+    }
+  }
+
+  /**
+   * [ 커서 페이지 응답 변환 메서드 ]
+   *
+   * <p>다음 페이지가 있을 때만 이번 페이지 마지막 항목으로 커서를 만든다. 응답 {@code size}는 이번 페이지 항목 수다. (LLD-0007 R7, R8)
+   */
+  private <T, C> CursorPageResponse<T> toCursorPageResponse(
+      CursorPage<T> page, Function<T, C> cursorExtractor) {
+    List<T> content = page.content();
+    String nextCursor =
+        page.hasNext() ? cursorCodec.encode(cursorExtractor.apply(content.getLast())) : null;
+    return CursorPageResponse.of(content, nextCursor, page.hasNext(), content.size());
   }
 
   /** 학교명은 필수다. 앞뒤 공백을 지우고 LIKE 와일드카드를 이스케이프한다. */

@@ -71,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
   private final BoothOwnershipValidator boothOwnershipValidator;
 
   @Override
-  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyType.FALLBACK)
+  @Idempotent(idempotencyKey = "#idempotencyKey", strategy = IdempotencyType.WRITETHROUGHFALLBACK)
   public OrderResponse createOrder(
       Long boothId, String idempotencyKey, OrderCreateRequest request) {
     return orderProcessor.processOrder(boothId, request);

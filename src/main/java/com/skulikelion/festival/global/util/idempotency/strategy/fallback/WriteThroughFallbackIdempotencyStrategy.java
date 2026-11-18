@@ -22,14 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class FallbackIdempotencyStrategy implements IdempotencyStrategy {
+public class WriteThroughFallbackIdempotencyStrategy implements IdempotencyStrategy {
 
   private final WriteThroughIdempotencyStrategy writeThrough;
   private final DbIdempotencyStrategy db;
   private final CircuitBreaker circuitBreaker;
   private final Retry retry;
 
-  public FallbackIdempotencyStrategy(
+  public WriteThroughFallbackIdempotencyStrategy(
       WriteThroughIdempotencyStrategy writeThrough,
       DbIdempotencyStrategy db,
       CircuitBreakerRegistry cbRegistry,
@@ -60,6 +60,6 @@ public class FallbackIdempotencyStrategy implements IdempotencyStrategy {
 
   @Override
   public IdempotencyType getType() {
-    return IdempotencyType.FALLBACK;
+    return IdempotencyType.WRITETHROUGHFALLBACK;
   }
 }

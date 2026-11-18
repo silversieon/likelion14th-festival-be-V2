@@ -7,5 +7,6 @@ public enum IdempotencyType {
   DB,
   REDIS,
   WRITETHROUGH,
-  FALLBACK
+  REDISFALLBACK,
+  WRITETHROUGHFALLBACK
 }

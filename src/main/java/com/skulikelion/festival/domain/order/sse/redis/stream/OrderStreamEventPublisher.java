@@ -5,6 +5,7 @@ package com.skulikelion.festival.domain.order.sse.redis.stream;
 
 import java.util.Map;
 
+import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -38,7 +39,6 @@ public class OrderStreamEventPublisher implements OrderSseEventPublisher {
         StreamRecords.newRecord()
             .ofMap(Map.of(FIELD_MESSAGE, objectMapper.writeValueAsString(message)))
             .withStreamKey(streamKey);
-    redisTemplate.opsForStream().add(record);
-    redisTemplate.opsForStream().trim(streamKey, 10_000, true);
+    redisTemplate.opsForStream().add(record, RedisStreamCommands.XAddOptions.maxlen(10_000).approximateTrimming(true));
   }
 }

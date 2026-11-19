@@ -6,6 +6,7 @@ package com.skulikelion.festival.global.util.idempotency.strategy.fallback;
 import java.util.function.Supplier;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
@@ -50,7 +51,7 @@ public class RedisFallbackIdempotencyStrategy implements IdempotencyStrategy {
                 retry, () -> redis.executeIdempotent(idempotencyKey, processor, responseType)));
     try {
       return redisDecorated.get();
-    } catch (DataAccessException | CallNotPermittedException e) {
+    } catch (RedisConnectionFailureException | CallNotPermittedException e) {
       log.warn(
           "Redis 처리 실패({}), DB로 fallback. key={}", e.getClass().getSimpleName(), idempotencyKey, e);
       return db.executeIdempotent(idempotencyKey, processor, responseType);

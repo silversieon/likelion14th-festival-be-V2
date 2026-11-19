@@ -5,6 +5,7 @@ package com.skulikelion.festival.global.util.idempotency.strategy.writethrough;
 
 import java.util.function.Supplier;
 
+import com.skulikelion.festival.global.exception.CustomException;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
@@ -39,12 +40,13 @@ public class WriteThroughIdempotencyStrategy implements IdempotencyStrategy {
 
     try {
       T response = dbIdempotencyExecutor.runAndMark(idempotencyKey, processor);
-      redisIdempotencyKeyManager.saveResponse(idempotencyKey, response);
+      try {
+        redisIdempotencyKeyManager.saveResponse(idempotencyKey, response);
+      } catch (RedisException e) {
+        return response;
+      }
       return response;
-    } catch (RedisException e) {
-      redisIdempotencyKeyManager.deleteKey(idempotencyKey);
-      throw e;
-    } catch (Exception e) {
+    } catch (CustomException e) {
       redisIdempotencyKeyManager.deleteKey(idempotencyKey);
       dbIdempotencyKeyManager.deleteKey(idempotencyKey);
       throw e;

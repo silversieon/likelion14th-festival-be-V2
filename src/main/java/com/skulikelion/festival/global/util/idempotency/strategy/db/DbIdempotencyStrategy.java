@@ -5,6 +5,7 @@ package com.skulikelion.festival.global.util.idempotency.strategy.db;
 
 import java.util.function.Supplier;
 
+import com.skulikelion.festival.global.exception.CustomException;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
@@ -29,7 +30,7 @@ public class DbIdempotencyStrategy implements IdempotencyStrategy {
 
     try {
       return idempotencyExecutor.runAndMark(idempotencyKey, processor);
-    } catch (Exception e) {
+    } catch (CustomException e) { // 비즈니스 예외 시에는 키 삭제, DB 예외 시에는 예외 던지기만
       idempotencyKeyManager.deleteKey(idempotencyKey);
       throw e;
     }

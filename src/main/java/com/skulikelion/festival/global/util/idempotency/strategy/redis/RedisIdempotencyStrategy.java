@@ -5,6 +5,7 @@ package com.skulikelion.festival.global.util.idempotency.strategy.redis;
 
 import java.util.function.Supplier;
 
+import com.skulikelion.festival.global.exception.CustomException;
 import org.springframework.stereotype.Component;
 
 import com.skulikelion.festival.global.util.idempotency.strategy.IdempotencyStrategy;
@@ -26,7 +27,7 @@ public class RedisIdempotencyStrategy implements IdempotencyStrategy {
         T response = processor.get();
         idempotencyKeyManager.saveResponse(idempotencyKey, response);
         return response;
-      } catch (Exception e) {
+      } catch (CustomException e) {
         idempotencyKeyManager.deleteKey(idempotencyKey);
         throw e;
       }

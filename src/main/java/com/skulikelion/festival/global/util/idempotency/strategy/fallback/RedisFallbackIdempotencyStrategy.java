@@ -5,7 +5,6 @@ package com.skulikelion.festival.global.util.idempotency.strategy.fallback;
 
 import java.util.function.Supplier;
 
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.stereotype.Component;
 

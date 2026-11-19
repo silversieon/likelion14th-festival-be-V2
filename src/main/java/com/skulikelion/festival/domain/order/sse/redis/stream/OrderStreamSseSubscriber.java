@@ -4,18 +4,15 @@
 package com.skulikelion.festival.domain.order.sse.redis.stream;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.annotation.PostConstruct;
 
-import org.springframework.data.domain.Range;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -99,13 +96,8 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
   }
 
   private void subscribe(String streamKey) {
-    createGroupIfNotExists(streamKey, groupName);
-    try {
-      discardPoisonMessages(streamKey);
-      drainPending(streamKey);
-    } catch (Exception e) {
-      log.warn("[OrderStream] PEL 정리 실패, 구독은 계속 진행: stream={}", streamKey, e);
-    }
+    destroyGroup(streamKey);
+    createGroupIfNotExists(streamKey);
 
     Subscription subscription =
         listenerContainer.receive(
@@ -132,46 +124,20 @@ public class OrderStreamSseSubscriber implements OrderSseSubscriber {
     }
   }
 
-  private void createGroupIfNotExists(String streamKey, String groupName) {
+  private void destroyGroup(String streamKey) {
+    try {
+      redisTemplate.opsForStream().destroyGroup(streamKey, groupName);
+    } catch (RedisSystemException e) {
+      log.debug("[OrderStream] 그룹 삭제 생략: stream={}", streamKey);
+    }
+  }
+
+  private void createGroupIfNotExists(String streamKey) {
     try {
       redisTemplate.opsForStream().createGroup(streamKey, ReadOffset.from("$"), groupName);
     } catch (RedisSystemException e) {
       // 컨슈머 그룹이 고정이기 때문에 RedisBusyException은 정상 예외 (이 외에만 던짐)
       if (!(e.getCause() instanceof RedisBusyException)) throw e;
-    }
-  }
-
-  private void discardPoisonMessages(String streamKey) {
-    PendingMessages pending =
-        redisTemplate
-            .opsForStream()
-            .pending(streamKey, Consumer.from(groupName, consumerName), Range.unbounded(), 100);
-
-    for (PendingMessage pm : pending) {
-      if (pm.getTotalDeliveryCount() >= 5) {
-        log.error("[PEL] 재시도 한도 초과로 폐기: stream={}, id={}", streamKey, pm.getIdAsString());
-        redisTemplate.opsForStream().acknowledge(streamKey, groupName, pm.getId());
-      }
-    }
-  }
-
-  private void drainPending(String streamKey) {
-    StreamOperations<String, String, String> ops = redisTemplate.opsForStream();
-    String lastId = "0";
-
-    while (true) {
-      List<MapRecord<String, String, String>> records =
-          ops.read(
-              Consumer.from(groupName, consumerName),
-              StreamReadOptions.empty().count(100),
-              StreamOffset.create(streamKey, ReadOffset.from(lastId)));
-
-      if (records == null || records.isEmpty()) return;
-
-      for (MapRecord<String, String, String> record : records) {
-        orderStreamListener.onMessage(record);
-        lastId = record.getId().getValue();
-      }
     }
   }
 

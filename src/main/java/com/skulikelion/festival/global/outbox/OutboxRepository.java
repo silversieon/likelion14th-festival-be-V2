@@ -16,7 +16,7 @@ public interface OutboxRepository extends JpaRepository<Outbox, Long> {
           """
         SELECT * FROM outbox
         WHERE published_at IS NULL
-        ORDER BY id ASC
+        ORDER BY created_at ASC
         LIMIT :limit
         FOR UPDATE SKIP LOCKED
         """,

@@ -22,8 +22,10 @@ import com.skulikelion.festival.domain.order.sse.store.LocalOrderSseEmitterStore
 import com.skulikelion.festival.global.security.AuthPrincipal;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
+@Slf4j
 @RequiredArgsConstructor
 public class OrderStreamSseDispatcher implements OrderSseDispatcher {
 
@@ -60,6 +62,8 @@ public class OrderStreamSseDispatcher implements OrderSseDispatcher {
         redisTemplate
             .opsForStream()
             .range(streamKey, Range.rightUnbounded(Range.Bound.exclusive(lastEventId)));
+    log.debug(
+        "[LastEventId 기반 재조회 발생] LastEventId: {} 미조회 이벤트 크기: {}", lastEventId, messages.size());
     // emitter.send 수행 (보내는 메서드 따로 없는지 확인, 없으면 하나 만들기 )
     for (MapRecord<String, Object, Object> message : messages) {
       String recordId = message.getId().getValue();
